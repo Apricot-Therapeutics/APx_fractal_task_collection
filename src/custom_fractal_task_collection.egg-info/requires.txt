@@ -1,4 +1,7 @@
 fractal-tasks-core
+scikit-image
+matplotlib
+image_registration
 
 [dev]
 devtools

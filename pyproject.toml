@@ -11,7 +11,7 @@ authors = [
 
 # Required Python version and dependencies
 requires-python = ">=3.8"
-dependencies = ["fractal-tasks-core"]
+dependencies = ["fractal-tasks-core", "scikit-image", "matplotlib", "image_registration"]
 
 # Optional dependencies (e.g. for `pip install -e ".[dev]"`, see
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies)

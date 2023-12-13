@@ -8,6 +8,9 @@ Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: fractal-tasks-core
+Requires-Dist: scikit-image
+Requires-Dist: matplotlib
+Requires-Dist: image_registration
 Provides-Extra: dev
 Requires-Dist: devtools; extra == "dev"
 Requires-Dist: pytest; extra == "dev"
