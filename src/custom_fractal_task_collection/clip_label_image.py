@@ -54,38 +54,32 @@ def clip_label_image(  # noqa: C901
     output_label_name: str,
     level: int = 0,
     overwrite: bool = True,
-):
+) -> None:
     """
-    Clip region of a mask in a label image
+    Short description of thresholding_task.
 
-    Takes a label image clips all regions that are present in the clipping mask.
+    Long description of thresholding_task.
 
     Args:
-        input_paths: List of input paths where the image data is stored as
-            OME-Zarrs. Should point to the parent folder containing one or many
-            OME-Zarr files, not the actual OME-Zarr file. Example:
-            `["/some/path/"]`. This task only supports a single input path.
+        input_paths: Path to the parent folder of the NGFF image.
+            This task only supports a single input path.
             (standard argument for Fractal tasks, managed by Fractal server).
-        output_path: This parameter is not used by this task.
+        output_path: This argument is not used in this task.
             (standard argument for Fractal tasks, managed by Fractal server).
-        component: Path to the OME-Zarr image in the OME-Zarr plate that is
-            processed. Example: `"some_plate.zarr/B/03/0"`.
+        component: Path of the NGFF image, relative to `input_paths[0]`.
             (standard argument for Fractal tasks, managed by Fractal server).
-        metadata: dictionary containing metadata about the OME-Zarr. This task
-            requires the following elements to be present in the metadata.
-            `coarsening_xy (int)`: coarsening factor in XY of the downsampling
-            when building the pyramid. (standard argument for Fractal tasks,
-            managed by Fractal server).
+        metadata: This argument is not used in this task.
+            (standard argument for Fractal tasks, managed by Fractal server).
         label_image_name: Name of the label image to be clipped.
-            Needs to exist in OME-Zarr file
+            Needs to exist in OME-Zarr file.
         clipping_mask_name: Name of the label image used as mask for clipping. This
-        image will be binarized. Needs to exist in OME-Zarr file
-        label_image_cycle: indicates which cycle contains the label image (only needed if multiplexed)
-        clipping_mask_cycle: indicates which cycle contains the clipping mask image (only needed if multiplexed)
-        output_label_cycle:  "indicates in which cycle to store the result (only needed if multiplexed)"
+            image will be binarized. Needs to exist in OME-Zarr file.
+        label_image_cycle: indicates which cycle contains the label image (only needed if multiplexed).
+        clipping_mask_cycle: indicates which cycle contains the clipping mask image (only needed if multiplexed).
+        output_label_cycle:  indicates in which cycle to store the result (only needed if multiplexed).
         output_label_name: Name of the output label image.
         level: Resolution of the label image to calculate overlap.
-            Only tested for level 0
+            Only tested for level 0.
         overwrite: If True, overwrite existing label image.
     """
 

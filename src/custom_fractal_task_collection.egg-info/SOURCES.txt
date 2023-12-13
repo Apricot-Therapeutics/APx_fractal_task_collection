@@ -3,7 +3,9 @@ README.md
 pyproject.toml
 src/custom_fractal_task_collection/__FRACTAL_MANIFEST__.json
 src/custom_fractal_task_collection/__init__.py
+src/custom_fractal_task_collection/calculate_registration_image_based_chi_squared_shift.py
 src/custom_fractal_task_collection/clip_label_image.py
+src/custom_fractal_task_collection/label_assignment_by_overlap.py
 src/custom_fractal_task_collection.egg-info/PKG-INFO
 src/custom_fractal_task_collection.egg-info/SOURCES.txt
 src/custom_fractal_task_collection.egg-info/dependency_links.txt
