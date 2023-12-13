@@ -16,47 +16,48 @@
             "items": {
               "type": "string"
             },
-            "description": "List of input paths where the image data is stored as OME-Zarrs. Should point to the parent folder containing one or many OME-Zarr files, not the actual OME-Zarr file. Example: `[\"/some/path/\"]`. This task only supports a single input path. (standard argument for Fractal tasks, managed by Fractal server)."
+            "description": "Path to the parent folder of the NGFF image. This task only supports a single input path. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "output_path": {
             "title": "Output Path",
             "type": "string",
-            "description": "This parameter is not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
+            "description": "This argument is not used in this task. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "component": {
             "title": "Component",
             "type": "string",
-            "description": "Path to the OME-Zarr image in the OME-Zarr plate that is processed. Example: `\"some_plate.zarr/B/03/0\"`. (standard argument for Fractal tasks, managed by Fractal server)."
+            "description": "Path of the NGFF image, relative to `input_paths[0]`. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "metadata": {
             "title": "Metadata",
             "type": "object",
-            "description": "dictionary containing metadata about the OME-Zarr. This task requires the following elements to be present in the metadata. `coarsening_xy (int)`: coarsening factor in XY of the downsampling when building the pyramid. (standard argument for Fractal tasks, managed by Fractal server)."
+            "description": "This argument is not used in this task. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "label_image_name": {
-            "title": "Label Image",
+            "title": "Label Image Name",
             "type": "string",
-            "description": "Name of the label image to be clipped. Needs to exist in OME-Zarr file"
+            "description": "Name of the label image to be clipped. Needs to exist in OME-Zarr file."
           },
           "clipping_mask_name": {
-            "title": "Clipping Mask",
+            "title": "Clipping Mask Name",
             "type": "string",
-            "description": "Name of the label image used as mask for clipping. This image will be binarized. Needs to exist in OME-Zarr file"
+            "description": "Name of the label image used as mask for clipping. This image will be binarized. Needs to exist in OME-Zarr file."
           },
           "label_image_cycle": {
-            "title": "Label Cycle",
+            "title": "Label Image Cycle",
             "type": "integer",
-            "description": "indicates which cycle contains the label image (only needed if multiplexed)"
+            "description": "indicates which cycle contains the label image (only needed if multiplexed)."
           },
           "clipping_mask_cycle": {
             "title": "Clipping Mask Cycle",
             "type": "integer",
-            "description": "indicates which cycle contains the clipping mask (only needed if multiplexed)"
+            "description": "indicates which cycle contains the clipping mask image (only needed if multiplexed)."
           },
           "output_label_cycle": {
             "title": "Output Label Cycle",
+            "default": 0,
             "type": "integer",
-            "description": "indicates in which cycle to store the result (only needed if multiplexed)"
+            "description": " indicates in which cycle to store the result (only needed if multiplexed)."
           },
           "output_label_name": {
             "title": "Output Label Name",
@@ -67,7 +68,7 @@
             "title": "Level",
             "default": 0,
             "type": "integer",
-            "description": "Resolution of the label image to calculate overlap. Only tested for level 0"
+            "description": "Resolution of the label image to calculate overlap. Only tested for level 0."
           },
           "overwrite": {
             "title": "Overwrite",
@@ -85,13 +86,11 @@
           "clipping_mask_name",
           "label_image_cycle",
           "clipping_mask_cycle",
-          "output_label_name",
-          "output_label_cycle",
-          "level",
-          "overwrite"
+          "output_label_name"
         ],
         "additionalProperties": false
-      }
+      },
+      "docs_info": "Short description of thresholding_task.\n\nLong description of thresholding_task."
     }
   ],
   "has_args_schemas": true,
