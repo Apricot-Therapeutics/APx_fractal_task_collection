@@ -2,6 +2,156 @@
   "manifest_version": "1",
   "task_list": [
     {
+      "name": "Calculate Registration (image-based) [chi-squared shift]",
+      "executable": "calculate_registration_image_based_chi_squared_shift.py",
+      "input_type": "zarr",
+      "output_type": "zarr",
+      "args_schema": {
+        "title": "CalculateRegistrationImageBasedChiSquaredShift",
+        "type": "object",
+        "properties": {
+          "input_paths": {
+            "title": "Input Paths",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of input paths where the image data is stored as OME-Zarrs. Should point to the parent folder containing one or many OME-Zarr files, not the actual OME-Zarr file. Example: `[\"/some/path/\"]`. This task only supports a single input path. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "output_path": {
+            "title": "Output Path",
+            "type": "string",
+            "description": "This parameter is not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "component": {
+            "title": "Component",
+            "type": "string",
+            "description": "Path to the OME-Zarr image in the OME-Zarr plate that is processed. Example: `\"some_plate.zarr/B/03/0\"`. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "metadata": {
+            "title": "Metadata",
+            "type": "object",
+            "description": "This parameter is not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "wavelength_id": {
+            "title": "Wavelength Id",
+            "type": "string",
+            "description": "Wavelength that will be used for image-based registration; e.g. `A01_C01` for Yokogawa, `C01` for MD."
+          },
+          "roi_table": {
+            "title": "Roi Table",
+            "default": "FOV_ROI_table",
+            "type": "string",
+            "description": "Name of the ROI table over which the task loops to calculate the registration. Examples: `FOV_ROI_table` => loop over the field of views, `well_ROI_table` => process the whole well as one image."
+          },
+          "reference_cycle": {
+            "title": "Reference Cycle",
+            "default": 0,
+            "type": "integer",
+            "description": "Which cycle to register against. Defaults to 0, which is the first OME-Zarr image in the well (usually the first cycle that was provided)."
+          },
+          "level": {
+            "title": "Level",
+            "default": 2,
+            "type": "integer",
+            "description": "Pyramid level of the image to be segmented. Choose `0` to process at full resolution."
+          }
+        },
+        "required": [
+          "input_paths",
+          "output_path",
+          "component",
+          "metadata",
+          "wavelength_id"
+        ],
+        "additionalProperties": false
+      },
+      "docs_info": "Calculate registration based on images\n\nThis task consists of 3 parts:\n\n1. Loading the images of a given ROI (=> loop over ROIs)\n2. Calculating the transformation for that ROI\n3. Storing the calculated transformation in the ROI table\n\nParallelization level: image"
+    },
+    {
+      "name": "Label Assignment by Overlap",
+      "executable": "label_assignment_by_overlap.py",
+      "input_type": "zarr",
+      "output_type": "zarr",
+      "args_schema": {
+        "title": "LabelAssignmentByOverlap",
+        "type": "object",
+        "properties": {
+          "input_paths": {
+            "title": "Input Paths",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of input paths where the image data is stored as OME-Zarrs. Should point to the parent folder containing one or many OME-Zarr files, not the actual OME-Zarr file. Example: `[\"/some/path/\"]`. This task only supports a single input path. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "output_path": {
+            "title": "Output Path",
+            "type": "string",
+            "description": "This parameter is not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "component": {
+            "title": "Component",
+            "type": "string",
+            "description": "Path to the OME-Zarr image in the OME-Zarr plate that is processed. Example: `\"some_plate.zarr/B/03/0\"`. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "metadata": {
+            "title": "Metadata",
+            "type": "object",
+            "description": "dictionary containing metadata about the OME-Zarr. This task requires the following elements to be present in the metadata. `coarsening_xy (int)`: coarsening factor in XY of the downsampling when building the pyramid. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "parent_label_image": {
+            "title": "Parent Label Image",
+            "type": "string",
+            "description": "Name of the parent label image. Needs to exist in OME-Zarr file."
+          },
+          "child_label_image": {
+            "title": "Child Label Image",
+            "type": "string",
+            "description": "Name of the child label image. Needs to exist in OME-Zarr file."
+          },
+          "parent_label_cycle": {
+            "title": "Parent Label Cycle",
+            "type": "integer",
+            "description": "indicates which cycle contains the parent label image (only needed if multiplexed)."
+          },
+          "child_label_cycle": {
+            "title": "Child Label Cycle",
+            "type": "integer",
+            "description": "indicates which cycle contains the child label image (only needed if multiplexed)."
+          },
+          "child_table_name": {
+            "title": "Child Table Name",
+            "type": "string",
+            "description": "Name of the feature table associated with the child label image."
+          },
+          "level": {
+            "title": "Level",
+            "default": 0,
+            "type": "integer",
+            "description": "Resolution of the label image to calculate overlap. Only tested for level 0."
+          },
+          "overlap_threshold": {
+            "title": "Overlap Threshold",
+            "default": 1.0,
+            "type": "number",
+            "description": "The minimum percentage (between 0 and 1) of child label object that must be contained in parent label object to be considered a match."
+          }
+        },
+        "required": [
+          "input_paths",
+          "output_path",
+          "component",
+          "metadata",
+          "parent_label_image",
+          "child_label_image",
+          "child_table_name"
+        ],
+        "additionalProperties": false
+      },
+      "docs_info": "Assign labels to each other based on overlap.\n\nTakes a parent label image and a child label image and calculates\noverlaps between their labels. Child labels will be assigned to parent\nlabels based on an overlap threshold."
+    },
+    {
       "name": "Clip Label Image",
       "executable": "clip_label_image.py",
       "input_type": "zarr",
