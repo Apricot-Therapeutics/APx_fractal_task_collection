@@ -5,7 +5,93 @@
       "name": "Clip Label Image",
       "executable": "clip_label_image.py",
       "input_type": "zarr",
-      "output_type": "zarr"
+      "output_type": "zarr",
+      "args_schema": {
+        "title": "ClipLabelImage",
+        "type": "object",
+        "properties": {
+          "input_paths": {
+            "title": "Input Paths",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of input paths where the image data is stored as OME-Zarrs. Should point to the parent folder containing one or many OME-Zarr files, not the actual OME-Zarr file. Example: `[\"/some/path/\"]`. This task only supports a single input path. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "output_path": {
+            "title": "Output Path",
+            "type": "string",
+            "description": "This parameter is not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "component": {
+            "title": "Component",
+            "type": "string",
+            "description": "Path to the OME-Zarr image in the OME-Zarr plate that is processed. Example: `\"some_plate.zarr/B/03/0\"`. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "metadata": {
+            "title": "Metadata",
+            "type": "object",
+            "description": "dictionary containing metadata about the OME-Zarr. This task requires the following elements to be present in the metadata. `coarsening_xy (int)`: coarsening factor in XY of the downsampling when building the pyramid. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "label_image_name": {
+            "title": "Label Image",
+            "type": "string",
+            "description": "Name of the label image to be clipped. Needs to exist in OME-Zarr file"
+          },
+          "clipping_mask_name": {
+            "title": "Clipping Mask",
+            "type": "string",
+            "description": "Name of the label image used as mask for clipping. This image will be binarized. Needs to exist in OME-Zarr file"
+          },
+          "label_image_cycle": {
+            "title": "Label Cycle",
+            "type": "integer",
+            "description": "indicates which cycle contains the label image (only needed if multiplexed)"
+          },
+          "clipping_mask_cycle": {
+            "title": "Clipping Mask Cycle",
+            "type": "integer",
+            "description": "indicates which cycle contains the clipping mask (only needed if multiplexed)"
+          },
+          "output_label_cycle": {
+            "title": "Output Label Cycle",
+            "type": "integer",
+            "description": "indicates in which cycle to store the result (only needed if multiplexed)"
+          },
+          "output_label_name": {
+            "title": "Output Label Name",
+            "type": "string",
+            "description": "Name of the output label image."
+          },
+          "level": {
+            "title": "Level",
+            "default": 0,
+            "type": "integer",
+            "description": "Resolution of the label image to calculate overlap. Only tested for level 0"
+          },
+          "overwrite": {
+            "title": "Overwrite",
+            "default": true,
+            "type": "boolean",
+            "description": "If True, overwrite existing label image."
+          }
+        },
+        "required": [
+          "input_paths",
+          "output_path",
+          "component",
+          "metadata",
+          "label_image_name",
+          "clipping_mask_name",
+          "label_image_cycle",
+          "clipping_mask_cycle",
+          "output_label_name",
+          "output_label_cycle",
+          "level",
+          "overwrite"
+        ],
+        "additionalProperties": false
+      }
     }
   ],
   "has_args_schemas": true,

@@ -1,0 +1,14 @@
+LICENSE
+README.md
+pyproject.toml
+src/custom_fractal_task_collection/__FRACTAL_MANIFEST__.json
+src/custom_fractal_task_collection/__init__.py
+src/custom_fractal_task_collection/clip_label_image.py
+src/custom_fractal_task_collection.egg-info/PKG-INFO
+src/custom_fractal_task_collection.egg-info/SOURCES.txt
+src/custom_fractal_task_collection.egg-info/dependency_links.txt
+src/custom_fractal_task_collection.egg-info/requires.txt
+src/custom_fractal_task_collection.egg-info/top_level.txt
+tests/test_valid_args_schemas.py
+tests/test_valid_manifest.py
+tests/test_valid_task_interface.py

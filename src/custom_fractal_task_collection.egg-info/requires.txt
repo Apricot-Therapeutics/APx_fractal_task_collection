@@ -1,0 +1,8 @@
+fractal-tasks-core
+
+[dev]
+devtools
+pytest
+requests
+build
+jsonschema

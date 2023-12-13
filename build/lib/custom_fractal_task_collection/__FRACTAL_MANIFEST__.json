@@ -1,0 +1,13 @@
+{
+  "manifest_version": "1",
+  "task_list": [
+    {
+      "name": "Clip Label Image",
+      "executable": "clip_label_image.py",
+      "input_type": "zarr",
+      "output_type": "zarr"
+    }
+  ],
+  "has_args_schemas": true,
+  "args_schema_version": "pydantic_v1"
+}
