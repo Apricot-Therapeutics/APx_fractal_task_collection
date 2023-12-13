@@ -1,0 +1,51 @@
+{
+  "manifest_version": "1",
+  "task_list": [
+    {
+      "name": "Thresholding Task",
+      "executable": "thresholding_task.py",
+      "input_type": "zarr",
+      "output_type": "zarr",
+      "args_schema": {
+        "title": "ThresholdingTask",
+        "type": "object",
+        "properties": {
+          "input_paths": {
+            "title": "Input Paths",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Path to the parent folder of the NGFF image. This task only supports a single input path. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "output_path": {
+            "title": "Output Path",
+            "type": "string",
+            "description": "This argument is not used in this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "component": {
+            "title": "Component",
+            "type": "string",
+            "description": "Path of the NGFF image, relative to `input_paths[0]`. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "metadata": {
+            "title": "Metadata",
+            "type": "object",
+            "description": "This argument is not used in this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          }
+        },
+        "required": [
+          "input_paths",
+          "output_path",
+          "component",
+          "metadata"
+        ],
+        "additionalProperties": false
+      },
+      "docs_info": "Short description of thresholding_task.\n\nLong description of thresholding_task.",
+      "docs_link": "https://example.com"
+    }
+  ],
+  "has_args_schemas": true,
+  "args_schema_version": "pydantic_v1"
+}

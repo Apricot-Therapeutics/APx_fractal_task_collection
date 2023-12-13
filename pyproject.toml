@@ -1,0 +1,32 @@
+# Project metadata (see https://peps.python.org/pep-0621)
+[project]
+name = "custom-fractal-task-collection"
+version = "0.0.1"
+description = "A collection of custom fractal tasks."
+readme = "README.md"
+license = { text = "BSD-3-Clause" }
+authors = [
+    { name = "Adrian Tschan", email = "adrian.tschan@uzh.ch" },
+]
+
+# Required Python version and dependencies
+requires-python = ">=3.8"
+dependencies = ["fractal-tasks-core"]
+
+# Optional dependencies (e.g. for `pip install -e ".[dev]"`, see
+# https://peps.python.org/pep-0621/#dependencies-optional-dependencies)
+[project.optional-dependencies]
+dev = ["devtools", "pytest", "requests", "build", "jsonschema"]
+
+# Build options (see https://peps.python.org/pep-0517)
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["custom_fractal_task_collection"]
+
+# Always include the __FRACTAL_MANIFEST__.json file in the package
+[tool.setuptools.package-data]
+"*" = ["__FRACTAL_MANIFEST__.json"]
