@@ -1,4 +1,4 @@
-fractal-tasks-core
+fractal-tasks-core==0.13.1
 scikit-image
 matplotlib
 image_registration

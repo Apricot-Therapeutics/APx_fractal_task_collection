@@ -1,7 +1,7 @@
 # Project metadata (see https://peps.python.org/pep-0621)
 [project]
 name = "custom-fractal-task-collection"
-version = "0.0.2"
+version = "0.0.3"
 description = "A collection of custom fractal tasks."
 readme = "README.md"
 license = { text = "BSD-3-Clause" }
@@ -11,7 +11,7 @@ authors = [
 
 # Required Python version and dependencies
 requires-python = ">=3.8"
-dependencies = ["fractal-tasks-core", "scikit-image", "matplotlib", "image_registration"]
+dependencies = ["fractal-tasks-core==0.13.1", "scikit-image", "matplotlib", "image_registration"]
 
 # Optional dependencies (e.g. for `pip install -e ".[dev]"`, see
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies)
