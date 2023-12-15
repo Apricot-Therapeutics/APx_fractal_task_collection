@@ -46,9 +46,9 @@ def clip_label_image(  # noqa: C901
     # Task-specific arguments:
     label_image_name: str,
     clipping_mask_name: str,
-    label_image_cycle: Optional[int],
-    clipping_mask_cycle: Optional[int],
-    output_label_cycle: Optional[int],
+    label_image_cycle: Optional[int] = None,
+    clipping_mask_cycle: Optional[int] = None,
+    output_label_cycle: Optional[int] = None,
     output_label_name: str,
     level: int = 0,
     overwrite: bool = True,

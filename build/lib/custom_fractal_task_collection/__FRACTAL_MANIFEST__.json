@@ -248,9 +248,6 @@
           "metadata",
           "label_image_name",
           "clipping_mask_name",
-          "label_image_cycle",
-          "clipping_mask_cycle",
-          "output_label_cycle",
           "output_label_name"
         ],
         "additionalProperties": false
