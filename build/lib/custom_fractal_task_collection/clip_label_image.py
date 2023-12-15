@@ -17,13 +17,11 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, Sequence
 
-import anndata as ad
 import dask.array as da
 import fractal_tasks_core
 import numpy as np
-import pandas as pd
 import zarr
-from fractal_tasks_core.lib_write import write_table
+from typing import Optional
 from fractal_tasks_core.lib_write import prepare_label_group
 from fractal_tasks_core.lib_zattrs_utils import rescale_datasets
 from fractal_tasks_core.lib_ngff import load_NgffImageMeta
@@ -48,58 +46,55 @@ def clip_label_image(  # noqa: C901
     # Task-specific arguments:
     label_image_name: str,
     clipping_mask_name: str,
-    label_image_cycle: int,
-    clipping_mask_cycle: int,
-    output_label_cycle: int = 0,
+    label_image_cycle: Optional[int],
+    clipping_mask_cycle: Optional[int],
+    output_label_cycle: Optional[int],
     output_label_name: str,
     level: int = 0,
     overwrite: bool = True,
-):
+) -> None:
     """
-    Clip region of a mask in a label image
+    Clips a label image with a mask.
 
-    Takes a label image clips all regions that are present in the clipping mask.
+    Takes two label images (or a label image and a binary mask) and replaces
+    all values in the first label image with 0 where the second label image has
+    values > 0.
 
     Args:
-        input_paths: List of input paths where the image data is stored as
-            OME-Zarrs. Should point to the parent folder containing one or many
-            OME-Zarr files, not the actual OME-Zarr file. Example:
-            `["/some/path/"]`. This task only supports a single input path.
+        input_paths: Path to the parent folder of the NGFF image.
+            This task only supports a single input path.
             (standard argument for Fractal tasks, managed by Fractal server).
-        output_path: This parameter is not used by this task.
+        output_path: This argument is not used in this task.
             (standard argument for Fractal tasks, managed by Fractal server).
-        component: Path to the OME-Zarr image in the OME-Zarr plate that is
-            processed. Example: `"some_plate.zarr/B/03/0"`.
+        component: Path of the NGFF image, relative to `input_paths[0]`.
             (standard argument for Fractal tasks, managed by Fractal server).
-        metadata: dictionary containing metadata about the OME-Zarr. This task
-            requires the following elements to be present in the metadata.
-            `coarsening_xy (int)`: coarsening factor in XY of the downsampling
-            when building the pyramid. (standard argument for Fractal tasks,
-            managed by Fractal server).
+        metadata: This argument is not used in this task.
+            (standard argument for Fractal tasks, managed by Fractal server).
         label_image_name: Name of the label image to be clipped.
-            Needs to exist in OME-Zarr file
+            Needs to exist in OME-Zarr file.
         clipping_mask_name: Name of the label image used as mask for clipping. This
-        image will be binarized. Needs to exist in OME-Zarr file
-        label_image_cycle: indicates which cycle contains the label image (only needed if multiplexed)
-        clipping_mask_cycle: indicates which cycle contains the clipping mask image (only needed if multiplexed)
-        output_label_cycle:  "indicates in which cycle to store the result (only needed if multiplexed)"
+            image will be binarized. Needs to exist in OME-Zarr file.
+        label_image_cycle: indicates which cycle contains the label image (only needed if multiplexed).
+        clipping_mask_cycle: indicates which cycle contains the clipping mask image (only needed if multiplexed).
+        output_label_cycle:  indicates in which cycle to store the result (only needed if multiplexed).
         output_label_name: Name of the output label image.
         level: Resolution of the label image to calculate overlap.
-            Only tested for level 0
+            Only tested for level 0.
         overwrite: If True, overwrite existing label image.
     """
 
+    # update the component for the label image if multiplexed experiment
+    if label_image_cycle:
+        parts = component.rsplit("/", 1)
+        label_image_component = parts[0] + "/" + str(label_image_cycle)
+        clipping_mask_component = parts[0] + "/" + str(clipping_mask_cycle)
+        output_component = parts[0] + "/" + str(output_label_cycle)
+    else:
+        label_image_component = component
+        clipping_mask_component = component
+        output_component = component
+
     if component.endswith("/0"):
-        # update the component for the label image if multiplexed experiment
-        if label_image_cycle:
-            parts = component.rsplit("/", 1)
-            label_image_component = parts[0] + "/" + str(label_image_cycle)
-            clipping_mask_component = parts[0] + "/" + str(clipping_mask_cycle)
-            output_component = parts[0] + "/" + str(output_label_cycle)
-        else:
-            label_image_component = component
-            clipping_mask_component = component
-            output_component = component
 
         in_path = Path(input_paths[0])
 

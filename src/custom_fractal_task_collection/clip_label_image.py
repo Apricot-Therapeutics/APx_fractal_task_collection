@@ -17,13 +17,11 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, Sequence
 
-import anndata as ad
 import dask.array as da
 import fractal_tasks_core
 import numpy as np
-import pandas as pd
 import zarr
-from fractal_tasks_core.lib_write import write_table
+from typing import Optional
 from fractal_tasks_core.lib_write import prepare_label_group
 from fractal_tasks_core.lib_zattrs_utils import rescale_datasets
 from fractal_tasks_core.lib_ngff import load_NgffImageMeta
@@ -48,17 +46,19 @@ def clip_label_image(  # noqa: C901
     # Task-specific arguments:
     label_image_name: str,
     clipping_mask_name: str,
-    label_image_cycle: int,
-    clipping_mask_cycle: int,
-    output_label_cycle: int = 0,
+    label_image_cycle: Optional[int],
+    clipping_mask_cycle: Optional[int],
+    output_label_cycle: Optional[int],
     output_label_name: str,
     level: int = 0,
     overwrite: bool = True,
 ) -> None:
     """
-    Short description of thresholding_task.
+    Clips a label image with a mask.
 
-    Long description of thresholding_task.
+    Takes two label images (or a label image and a binary mask) and replaces
+    all values in the first label image with 0 where the second label image has
+    values > 0.
 
     Args:
         input_paths: Path to the parent folder of the NGFF image.
@@ -83,17 +83,18 @@ def clip_label_image(  # noqa: C901
         overwrite: If True, overwrite existing label image.
     """
 
+    # update the component for the label image if multiplexed experiment
+    if label_image_cycle:
+        parts = component.rsplit("/", 1)
+        label_image_component = parts[0] + "/" + str(label_image_cycle)
+        clipping_mask_component = parts[0] + "/" + str(clipping_mask_cycle)
+        output_component = parts[0] + "/" + str(output_label_cycle)
+    else:
+        label_image_component = component
+        clipping_mask_component = component
+        output_component = component
+
     if component.endswith("/0"):
-        # update the component for the label image if multiplexed experiment
-        if label_image_cycle:
-            parts = component.rsplit("/", 1)
-            label_image_component = parts[0] + "/" + str(label_image_cycle)
-            clipping_mask_component = parts[0] + "/" + str(clipping_mask_cycle)
-            output_component = parts[0] + "/" + str(output_label_cycle)
-        else:
-            label_image_component = component
-            clipping_mask_component = component
-            output_component = component
 
         in_path = Path(input_paths[0])
 
