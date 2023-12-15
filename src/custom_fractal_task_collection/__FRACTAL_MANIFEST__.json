@@ -6,6 +6,11 @@
       "executable": "calculate_registration_image_based_chi_squared_shift.py",
       "input_type": "zarr",
       "output_type": "zarr",
+      "meta": {
+        "cpus_per_task": 1,
+        "mem": 8000,
+        "parallelization_level": "image"
+      },
       "args_schema": {
         "title": "CalculateRegistrationImageBasedChiSquaredShift",
         "type": "object",
@@ -73,6 +78,11 @@
       "executable": "label_assignment_by_overlap.py",
       "input_type": "zarr",
       "output_type": "zarr",
+      "meta": {
+        "cpus_per_task": 4,
+        "mem": 16000,
+        "parallelization_level": "image"
+      },
       "args_schema": {
         "title": "LabelAssignmentByOverlap",
         "type": "object",
@@ -156,6 +166,11 @@
       "executable": "clip_label_image.py",
       "input_type": "zarr",
       "output_type": "zarr",
+      "meta": {
+        "cpus_per_task": 4,
+        "mem": 16000,
+        "parallelization_level": "image"
+      },
       "args_schema": {
         "title": "ClipLabelImage",
         "type": "object",
