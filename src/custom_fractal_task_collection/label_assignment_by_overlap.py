@@ -114,7 +114,7 @@ def label_assignment_by_overlap(  # noqa: C901
             label object that must be contained in parent label object to
              be considered a match.
     """
-    if parent_label_cycle:
+    if parent_label_cycle is not None:
     # update the component for the label image
         parts = component.rsplit("/", 1)
         parent_label_component = parts[0] + "/" + str(parent_label_cycle)

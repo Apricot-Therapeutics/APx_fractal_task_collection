@@ -84,7 +84,7 @@ def clip_label_image(  # noqa: C901
     """
 
     # update the component for the label image if multiplexed experiment
-    if label_image_cycle:
+    if label_image_cycle is not None:
         parts = component.rsplit("/", 1)
         label_image_component = parts[0] + "/" + str(label_image_cycle)
         clipping_mask_component = parts[0] + "/" + str(clipping_mask_cycle)
@@ -94,7 +94,7 @@ def clip_label_image(  # noqa: C901
         clipping_mask_component = component
         output_component = component
 
-    if component.endswith("/0"):
+    if component.endswith("/0") or component.endswith("/0/"):
 
         in_path = Path(input_paths[0])
 
