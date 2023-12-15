@@ -220,7 +220,6 @@
           },
           "output_label_cycle": {
             "title": "Output Label Cycle",
-            "default": 0,
             "type": "integer",
             "description": " indicates in which cycle to store the result (only needed if multiplexed)."
           },
@@ -249,13 +248,11 @@
           "metadata",
           "label_image_name",
           "clipping_mask_name",
-          "label_image_cycle",
-          "clipping_mask_cycle",
           "output_label_name"
         ],
         "additionalProperties": false
       },
-      "docs_info": "Short description of thresholding_task.\n\nLong description of thresholding_task."
+      "docs_info": "Clips a label image with a mask.\n\nTakes two label images (or a label image and a binary mask) and replaces\nall values in the first label image with 0 where the second label image has\nvalues > 0."
     }
   ],
   "has_args_schemas": true,
