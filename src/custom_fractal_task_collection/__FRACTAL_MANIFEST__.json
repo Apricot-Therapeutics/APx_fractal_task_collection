@@ -253,6 +253,139 @@
         "additionalProperties": false
       },
       "docs_info": "Clips a label image with a mask.\n\nTakes two label images (or a label image and a binary mask) and replaces\nall values in the first label image with 0 where the second label image has\nvalues > 0."
+    },
+    {
+      "name": "Segment Secondary Objects",
+      "executable": "segment_secondary_objects.py",
+      "input_type": "zarr",
+      "output_type": "zarr",
+      "meta": {
+        "cpus_per_task": 4,
+        "mem": 16000,
+        "parallelization_level": "image"
+      },
+      "args_schema": {
+        "title": "SegmentSecondaryObjects",
+        "type": "object",
+        "properties": {
+          "input_paths": {
+            "title": "Input Paths",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Path to the parent folder of the NGFF image. This task only supports a single input path. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "output_path": {
+            "title": "Output Path",
+            "type": "string",
+            "description": "This argument is not used in this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "component": {
+            "title": "Component",
+            "type": "string",
+            "description": "Path of the NGFF image, relative to `input_paths[0]`. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "metadata": {
+            "title": "Metadata",
+            "type": "object",
+            "description": "This argument is not used in this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "label_image_name": {
+            "title": "Label Image Name",
+            "type": "string",
+            "description": "Name of the label image that contains the seeds. Needs to exist in OME-Zarr file."
+          },
+          "channel": {
+            "$ref": "#/definitions/Channel",
+            "title": "Channel",
+            "description": "Name of the intensity image used for watershed. Needs to exist in OME-Zarr file."
+          },
+          "label_image_cycle": {
+            "title": "Label Image Cycle",
+            "type": "integer",
+            "description": "indicates which cycle contains the label image (only needed if multiplexed)."
+          },
+          "intensity_image_cycle": {
+            "title": "Intensity Image Cycle",
+            "type": "integer",
+            "description": "indicates which cycle contains the intensity image (only needed if multiplexed)."
+          },
+          "min_threshold": {
+            "title": "Min Threshold",
+            "type": "integer",
+            "description": "Minimum threshold for the background definition."
+          },
+          "max_threshold": {
+            "title": "Max Threshold",
+            "type": "integer",
+            "description": "Maximum threshold for the background definition."
+          },
+          "gaussian_blur": {
+            "title": "Gaussian Blur",
+            "type": "integer",
+            "description": "Sigma for gaussian blur."
+          },
+          "contrast_threshold": {
+            "title": "Contrast Threshold",
+            "default": 5,
+            "type": "integer",
+            "description": "Contrast threshold for background definition."
+          },
+          "output_label_cycle": {
+            "title": "Output Label Cycle",
+            "type": "integer",
+            "description": "indicates in which cycle to store the result (only needed if multiplexed)."
+          },
+          "output_label_name": {
+            "title": "Output Label Name",
+            "type": "string",
+            "description": "Name of the output label image."
+          },
+          "level": {
+            "title": "Level",
+            "default": 0,
+            "type": "integer",
+            "description": "Resolution of the label image to calculate overlap. Only tested for level 0."
+          },
+          "overwrite": {
+            "title": "Overwrite",
+            "default": true,
+            "type": "boolean",
+            "description": "If True, overwrite existing label image."
+          }
+        },
+        "required": [
+          "input_paths",
+          "output_path",
+          "component",
+          "metadata",
+          "label_image_name",
+          "channel",
+          "output_label_name"
+        ],
+        "additionalProperties": false,
+        "definitions": {
+          "Channel": {
+            "title": "Channel",
+            "description": "A channel which is specified by either `wavelength_id` or `label`.",
+            "type": "object",
+            "properties": {
+              "wavelength_id": {
+                "title": "Wavelength Id",
+                "type": "string",
+                "description": "Unique ID for the channel wavelength, e.g. `A01_C01`."
+              },
+              "label": {
+                "title": "Label",
+                "type": "string",
+                "description": "Name of the channel."
+              }
+            }
+          }
+        }
+      },
+      "docs_info": "Segments secondary objects based on primary labels and intensity image.\n\nTakes a primary label image and an intensity image and calculates secondary\nlabels based on watershed segmentation."
     }
   ],
   "has_args_schemas": true,

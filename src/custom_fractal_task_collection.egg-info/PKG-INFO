@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: custom-fractal-task-collection
-Version: 0.0.8
+Version: 0.0.9
 Summary: A collection of custom fractal tasks.
 Author-email: Adrian Tschan <adrian.tschan@uzh.ch>
 License: BSD-3-Clause
@@ -12,6 +12,7 @@ Requires-Dist: scikit-image
 Requires-Dist: matplotlib
 Requires-Dist: image_registration
 Requires-Dist: pytest
+Requires-Dist: mahotas
 Provides-Extra: dev
 Requires-Dist: devtools; extra == "dev"
 Requires-Dist: pytest; extra == "dev"

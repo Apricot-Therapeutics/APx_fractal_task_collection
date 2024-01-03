@@ -21,11 +21,17 @@ import dask.array as da
 import fractal_tasks_core
 import numpy as np
 import zarr
+import mahotas as mh
+from skimage.filters import gaussian
 from typing import Optional
 from fractal_tasks_core.lib_write import prepare_label_group
 from fractal_tasks_core.lib_zattrs_utils import rescale_datasets
 from fractal_tasks_core.lib_ngff import load_NgffImageMeta
 from fractal_tasks_core.lib_pyramid_creation import build_pyramid
+from fractal_tasks_core.lib_input_models import Channel
+from fractal_tasks_core.lib_channels import ChannelNotFoundError
+from fractal_tasks_core.lib_channels import OmeroChannel
+from fractal_tasks_core.lib_channels import get_channel_from_image_zarr
 
 from pydantic.decorator import validate_arguments
 
@@ -35,8 +41,45 @@ __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
 logger = logging.getLogger(__name__)
 
+def watershed(intensity_image, label_image,
+              min_threshold, max_threshold,
+              gaussian_blur, contrast_threshold):
+
+    # apply gaussian blur
+    if gaussian_blur is not None:
+        intensity_image = gaussian(intensity_image, gaussian_blur,
+                                   preserve_range=True).astype('uint16')
+
+    # get the maximum label value in the primary label image
+    max_label = np.max(np.unique(label_image[np.nonzero(label_image)]))
+
+    # get the background mask and label its regions (will later be used as background seeds)
+    background_mask = mh.thresholding.bernsen(
+        intensity_image, 5, contrast_threshold
+    )
+
+    if min_threshold is not None:
+        background_mask[intensity_image < min_threshold] = True
+
+    if max_threshold is not None:
+        background_mask[intensity_image > max_threshold] = False
+
+    background_label_image = mh.label(background_mask)[0]
+    background_label_image[background_mask] += max_label
+
+    # add background seeds to primary label image
+    labels = label_image + background_label_image
+
+    # perform watershed
+    regions = mh.cwatershed(np.invert(intensity_image), labels)
+    # remove regions that are not expansions of primary objects
+    regions[regions > max_label] = 0
+    regions = regions.astype('uint32')
+
+    return regions
+
 @validate_arguments
-def clip_label_image(  # noqa: C901
+def segment_secondary(  # noqa: C901
     *,
     # Default arguments for fractal tasks:
     input_paths: Sequence[str],
@@ -45,20 +88,23 @@ def clip_label_image(  # noqa: C901
     metadata: Dict[str, Any],
     # Task-specific arguments:
     label_image_name: str,
-    clipping_mask_name: str,
+    channel: Channel,
     label_image_cycle: Optional[int] = None,
-    clipping_mask_cycle: Optional[int] = None,
+    intensity_image_cycle: Optional[int] = None,
+    min_threshold: Optional[int] = None,
+    max_threshold: Optional[int] = None,
+    gaussian_blur: Optional[int] = None,
+    contrast_threshold: int = 5,
     output_label_cycle: Optional[int] = None,
     output_label_name: str,
     level: int = 0,
     overwrite: bool = True,
 ) -> None:
     """
-    AClips a label image with a mask.
+    Segments secondary objects based on primary labels and intensity image.
 
-    Takes two label images (or a label image and a binary mask) and replaces
-    all values in the first label image with 0 where the second label image has
-    values > 0.
+    Takes a primary label image and an intensity image and calculates secondary
+    labels based on watershed segmentation.
 
     Args:
         input_paths: Path to the parent folder of the NGFF image.
@@ -70,13 +116,17 @@ def clip_label_image(  # noqa: C901
             (standard argument for Fractal tasks, managed by Fractal server).
         metadata: This argument is not used in this task.
             (standard argument for Fractal tasks, managed by Fractal server).
-        label_image_name: Name of the label image to be clipped.
+        label_image_name: Name of the label image that contains the seeds.
             Needs to exist in OME-Zarr file.
-        clipping_mask_name: Name of the label image used as mask for clipping. This
-            image will be binarized. Needs to exist in OME-Zarr file.
+        channel: Name of the intensity image used for watershed.
+            Needs to exist in OME-Zarr file.
         label_image_cycle: indicates which cycle contains the label image (only needed if multiplexed).
-        clipping_mask_cycle: indicates which cycle contains the clipping mask image (only needed if multiplexed).
-        output_label_cycle:  indicates in which cycle to store the result (only needed if multiplexed).
+        intensity_image_cycle: indicates which cycle contains the intensity image (only needed if multiplexed).
+        min_threshold: Minimum threshold for the background definition.
+        max_threshold: Maximum threshold for the background definition.
+        gaussian_blur: Sigma for gaussian blur.
+        contrast_threshold: Contrast threshold for background definition.
+        output_label_cycle: indicates in which cycle to store the result (only needed if multiplexed).
         output_label_name: Name of the output label image.
         level: Resolution of the label image to calculate overlap.
             Only tested for level 0.
@@ -87,27 +137,39 @@ def clip_label_image(  # noqa: C901
     if label_image_cycle is not None:
         parts = component.rsplit("/", 1)
         label_image_component = parts[0] + "/" + str(label_image_cycle)
-        clipping_mask_component = parts[0] + "/" + str(clipping_mask_cycle)
+        intensity_image_component = parts[0] + "/" + str(intensity_image_cycle)
         output_component = parts[0] + "/" + str(output_label_cycle)
     else:
         label_image_component = component
-        clipping_mask_component = component
+        intensity_image_component = component
         output_component = component
 
     if component.endswith("/0") or component.endswith("/0/"):
 
         in_path = Path(input_paths[0])
+        zarrurl = (in_path.resolve() / intensity_image_component).as_posix()
 
-        # load images
+        # load primary label image
         label_image = da.from_zarr(
             f"{in_path}/{label_image_component}/labels/{label_image_name}/{level}"
         ).compute()
-        clipping_mask = da.from_zarr(
-            f"{in_path}/{clipping_mask_component}/labels/{clipping_mask_name}/{level}"
-        ).compute()
-        data_zyx = da.from_zarr(
-            f"{in_path}/{label_image_component}/labels/{label_image_name}/{level}"
-        )
+
+        # Find channel index
+        try:
+            tmp_channel: OmeroChannel = get_channel_from_image_zarr(
+                image_zarr_path=zarrurl,
+                wavelength_id=channel.wavelength_id,
+                label=channel.label,
+            )
+        except ChannelNotFoundError as e:
+            logger.warning(
+                "Channel not found, exit from the task.\n"
+                f"Original error: {str(e)}"
+            )
+            return {}
+        ind_channel = tmp_channel.index
+
+        data_zyx = da.from_zarr(f"{zarrurl}/{level}")[ind_channel]
 
         # prepare label image
         ngff_image_meta = load_NgffImageMeta(in_path.joinpath(label_image_component))
@@ -187,8 +249,11 @@ def clip_label_image(  # noqa: C901
             f"and chunks {data_zyx.chunks}"
         )
 
-        # clip the label image
-        new_label_image = np.where(clipping_mask > 0, 0, label_image)
+        # perform watershed
+        new_label_image = watershed(np.squeeze(data_zyx.compute()), np.squeeze(label_image), min_threshold=min_threshold,
+                                    max_threshold=max_threshold, gaussian_blur=gaussian_blur, contrast_threshold=contrast_threshold)
+
+        new_label_image = np.expand_dims(new_label_image, axis=0)
 
         # Compute and store 0-th level to disk
         da.array(new_label_image).to_zarr(
@@ -197,7 +262,7 @@ def clip_label_image(  # noqa: C901
         )
 
         logger.info(
-            f"Clipping done for {out}."
+            f"Secondary segmentation done for {out}."
             "now building pyramids."
         )
 
@@ -217,7 +282,7 @@ if __name__ == "__main__":
     from fractal_tasks_core.tasks._utils import run_fractal_task
 
     run_fractal_task(
-        task_function=clip_label_image,
+        task_function=segment_secondary,
         logger_name=logger.name,
     )
 

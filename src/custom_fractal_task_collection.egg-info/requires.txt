@@ -3,6 +3,7 @@ scikit-image
 matplotlib
 image_registration
 pytest
+mahotas
 
 [dev]
 devtools
