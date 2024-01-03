@@ -35,6 +35,7 @@ def assign_objects(
     """
     parent_label = np.squeeze(parent_label)
     child_label = np.squeeze(child_label)
+    # get all image regions that represent child labels
     t = pd.DataFrame(regionprops_table(child_label, parent_label,
                                        properties=[
                                        'label', 'image_intensity', 'area']))
@@ -54,6 +55,8 @@ def assign_objects(
     res_merged['overlap'] = res_merged['parent_area']/res_merged['child_area']
     # keep only parent with highest overlap
     res_merged = res_merged.groupby('child_label', as_index=False).apply(lambda x: x.loc[x.overlap == x.overlap.max()])
+    # in case of a tied overlap, keep a random parent
+    res_merged = res_merged.groupby('child_label', as_index=False).apply(lambda x: x.sample(1))
     res_merged.set_index('child_label', inplace=True)
     res_merged.loc[res_merged.overlap < overlap_threshold, 'parent_label'] = pd.NA
 
