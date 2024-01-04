@@ -222,7 +222,7 @@ def segment_secondary_objects(  # noqa: C901
     merged_features.reset_index(inplace=True)
     # save features as AnnData table
     well_name = component.split("/")[1] + component.split("/")[2]
-    observation_info = pd.DataFrame({"label": merged_features.index,
+    observation_info = pd.DataFrame({"label": merged_features.label,
                                      "well": well_name})
     feature_table = ad.AnnData(X=merged_features.drop("label", axis=1), obs=observation_info)
 

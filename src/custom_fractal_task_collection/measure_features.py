@@ -21,7 +21,7 @@ import dask.array as da
 import fractal_tasks_core
 import pandas as pd
 import skimage
-from histomicstk.features import compute_haralick_features
+from mahotas.features import haralick
 import numpy as np
 import zarr
 import anndata as ad
@@ -86,52 +86,66 @@ def measure_morphology_features(label_image):
     return morphology_features
 
 # histomicstk version, couldn't get it to install in package as dependency
+# def measure_texture_features(label_image, intensity_image):
+#     """
+#     Measure texture features for label image.
+#     """
+#
+#     texture_features = compute_haralick_features(label_image, intensity_image)
+#     texture_features['label'] = np.unique(label_image[np.nonzero(label_image)])
+#
+#     return texture_features
+
+
+def haralick_features(regionmask, intensity_image):
+    haralick_values_list = []
+    for distance in [2, 5]:
+        try:
+            haralick_values = haralick(intensity_image.astype('uint16'), distance=distance, return_mean=True, ignore_zeros=True)
+        except ValueError:
+            haralick_values = np.full(13, np.NaN, dtype=float)
+
+        haralick_values_list.extend(haralick_values)
+    return haralick_values_list
+
 def measure_texture_features(label_image, intensity_image):
     """
     Measure texture features for label image.
     """
 
-    texture_features = compute_haralick_features(label_image, intensity_image)
-    texture_features['label'] = np.unique(label_image[np.nonzero(label_image)])
+    names = ['angular-second-moment', 'contrast', 'correlation',
+             'sum-of-squares', 'inverse-diff-moment', 'sum-avg',
+             'sum-var', 'sum-entropy', 'entropy', 'diff-var',
+             'diff-entropy', 'info-measure-corr-1', 'info-measure-corr-2']
 
+    names = [f"Haralick-{name}-{distance}" for distance in [2, 5] for name in names]
+
+    texture_features = pd.DataFrame(regionprops_table(label_image, intensity_image,
+                                                      properties=['label'],
+                                                      extra_properties=[haralick_features]))
+    texture_features.set_index('label', inplace=True)
+    texture_features.columns = names
+    texture_features.reset_index(inplace=True)
     return texture_features
-
-
-#def haralick_features(regionmask, intensity_image):
-#    try:
-#        haralick_values = haralick(intensity_image.astype('uint16'), distance=1, return_mean=True, ignore_zeros=True)
-#    except ValueError:
-#        haralick_values = np.full(13, np.NaN, dtype=float)
-#    return haralick_values
-
-#def measure_texture_features(label_image, intensity_image):
-#    """
-#    Measure texture features for label image.
-#    """
-#
-#    texture_features = pd.DataFrame(regionprops_table(label_image, intensity_image,
-#                                                     properties=['label'],
-#                                                     extra_properties=[haralick_features]))
-#    return texture_features
 
 
 @validate_arguments
 def measure_features(  # noqa: C901
-    *,
-    # Default arguments for fractal tasks:
-    input_paths: Sequence[str],
-    output_path: str,
-    component: str,
-    metadata: Dict[str, Any],
-    # Task-specific arguments:
-    label_image_name: str,
-    label_image_cycle: Optional[int] = None,
-    measure_intensity: bool = False,
-    measure_morphology: bool = False,
-    measure_texture: bool = False,
-    output_table_name: str = None,
-    level: int = 0,
-    overwrite: bool = True,
+        *,
+        # Default arguments for fractal tasks:
+        input_paths: Sequence[str],
+        output_path: str,
+        component: str,
+        metadata: Dict[str, Any],
+        # Task-specific arguments:
+        label_image_name: str,
+        label_image_cycle: Optional[int] = None,
+        measure_intensity: bool = False,
+        measure_morphology: bool = False,
+        measure_texture: bool = False,
+        output_table_name: str = None,
+        level: int = 0,
+        overwrite: bool = True,
 ) -> None:
     """
     Calculate features based on label image and intensity image (optional).
@@ -181,6 +195,7 @@ def measure_features(  # noqa: C901
         logger.info(f"Calculating morphology features for {label_image_name}.")
         morphology_features = measure_morphology_features(label_image)
         morphology_features.set_index("label", inplace=True)
+        morphology_features.columns = label_image_name +"_Morphology_" + morphology_features.columns
         feature_list.append(morphology_features)
         logger.info(f"Done calculating morphology features for {label_image_name}.")
 
@@ -209,7 +224,7 @@ def measure_features(  # noqa: C901
                 current_features = measure_intensity_features(np.squeeze(label_image),
                                                               np.squeeze(data_zyx))
                 current_features.set_index("label", inplace=True)
-                current_features.columns = channel.label + "_" + current_features.columns
+                current_features.columns =  label_image_name +"_Intensity_" + current_features.columns + "_" + channel.label
                 intensity_features.append(current_features)
                 logger.info(
                     f"Done calculating intensity features for channel {channel.label}.")
@@ -220,15 +235,17 @@ def measure_features(  # noqa: C901
                 current_features = measure_texture_features(np.squeeze(label_image),
                                                             np.squeeze(data_zyx))
                 current_features.set_index("label", inplace=True)
-                current_features.columns = channel.label + "_" + current_features.columns
+                current_features.columns = label_image_name +"_Texture_" + current_features.columns + "_" + channel.label
                 texture_features.append(current_features)
                 logger.info(
                     f"Done calculating texture features for channel {channel.label}.")
 
-        intensity_features = pd.concat(intensity_features, axis=1)
-        feature_list.append(intensity_features)
-        texture_features = pd.concat(texture_features, axis=1)
-        feature_list.append(texture_features)
+        if intensity_features:
+            intensity_features = pd.concat(intensity_features, axis=1)
+            feature_list.append(intensity_features)
+        if texture_features:
+            texture_features = pd.concat(texture_features, axis=1)
+            feature_list.append(texture_features)
 
     merged_features = pd.concat(feature_list, axis=1)
     merged_features.reset_index(inplace=True)
