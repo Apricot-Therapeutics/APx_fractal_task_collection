@@ -386,6 +386,100 @@
         }
       },
       "docs_info": "Segments secondary objects based on primary labels and intensity image.\n\nTakes a primary label image and an intensity image and calculates secondary\nlabels based on watershed segmentation."
+    },
+    {
+      "name": "Measure Features",
+      "executable": "measure_features.py",
+      "input_type": "zarr",
+      "output_type": "zarr",
+      "meta": {
+        "cpus_per_task": 4,
+        "mem": 16000,
+        "parallelization_level": "image"
+      },
+      "args_schema": {
+        "title": "MeasureFeatures",
+        "type": "object",
+        "properties": {
+          "input_paths": {
+            "title": "Input Paths",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Path to the parent folder of the NGFF image. This task only supports a single input path. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "output_path": {
+            "title": "Output Path",
+            "type": "string",
+            "description": "This argument is not used in this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "component": {
+            "title": "Component",
+            "type": "string",
+            "description": "Path of the NGFF image, relative to `input_paths[0]`. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "metadata": {
+            "title": "Metadata",
+            "type": "object",
+            "description": "This argument is not used in this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "label_image_name": {
+            "title": "Label Image Name",
+            "type": "string",
+            "description": "Name of the label image that contains the seeds. Needs to exist in OME-Zarr file."
+          },
+          "label_image_cycle": {
+            "title": "Label Image Cycle",
+            "type": "integer",
+            "description": "indicates which cycle contains the label image (only needed if multiplexed)."
+          },
+          "measure_intensity": {
+            "title": "Measure Intensity",
+            "default": false,
+            "type": "boolean",
+            "description": "If True, calculate intensity features."
+          },
+          "measure_morphology": {
+            "title": "Measure Morphology",
+            "default": false,
+            "type": "boolean",
+            "description": "If True, calculate morphology features."
+          },
+          "measure_texture": {
+            "title": "Measure Texture",
+            "default": false,
+            "type": "boolean",
+            "description": "If True, calculate texture features."
+          },
+          "output_table_name": {
+            "title": "Output Table Name",
+            "type": "string",
+            "description": "Name of the feature table."
+          },
+          "level": {
+            "title": "Level",
+            "default": 0,
+            "type": "integer",
+            "description": "Resolution of the label image to calculate features. Only tested for level 0."
+          },
+          "overwrite": {
+            "title": "Overwrite",
+            "default": true,
+            "type": "boolean",
+            "description": "If True, overwrite existing label image."
+          }
+        },
+        "required": [
+          "input_paths",
+          "output_path",
+          "component",
+          "metadata",
+          "label_image_name"
+        ],
+        "additionalProperties": false
+      },
+      "docs_info": "Calculate features based on label image and intensity image (optional).\n\nTakes a label image and an optional intensity image and calculates morphology,\nintensity and texture features in 2D."
     }
   ],
   "has_args_schemas": true,

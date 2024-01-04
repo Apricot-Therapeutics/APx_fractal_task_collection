@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: custom-fractal-task-collection
-Version: 0.0.9
+Version: 0.0.10
 Summary: A collection of custom fractal tasks.
 Author-email: Adrian Tschan <adrian.tschan@uzh.ch>
 License: BSD-3-Clause
@@ -13,6 +13,9 @@ Requires-Dist: matplotlib
 Requires-Dist: image_registration
 Requires-Dist: pytest
 Requires-Dist: mahotas
+Requires-Dist: large-image
+Requires-Dist: GDAL@ https://github.com/girder/large_image_wheels/raw/wheelhouse/GDAL-3.9.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl#sha256=f24a565b7f7e7b6fe9bae55076161f9c219c9faa821d199b88abbae67215427d
+Requires-Dist: histomicstk@ git+https://github.com/adrtsc/HistomicsTK.git
 Provides-Extra: dev
 Requires-Dist: devtools; extra == "dev"
 Requires-Dist: pytest; extra == "dev"
