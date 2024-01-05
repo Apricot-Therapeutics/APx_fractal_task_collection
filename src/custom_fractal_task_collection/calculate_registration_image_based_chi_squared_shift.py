@@ -224,12 +224,20 @@ def calculate_registration_image_based_chi_squared_shift(
                 "This registration is not implemented for ROIs with "
                 "different shapes between cycles"
             )
-        #shifts = phase_cross_correlation(
-        #    np.squeeze(img_ref), np.squeeze(img_cycle_x)
-        #)[0]
+        #shifts_old = phase_cross_correlation(
+        #    np.squeeze(img_ref), np.squeeze(img_cycle_x))[0]
         x, y, a, b = image_registration.chi2_shift(np.squeeze(img_ref),
                                                    np.squeeze(img_cycle_x))
-        shifts = np.array([-int(np.round(y)), -int(np.round(x))])
+
+        '''
+        running into issues when using direct float output for fractal.
+        When rounding to integer and using integer dtype, it typically works 
+        but for some reasons fails when run over a whole 384 well plate (but
+        the well where it fails works fine when run alone). The original verison
+        works fine however. Trying to round to integer, but still use float64 
+        dtype like original version.
+        '''
+        shifts = np.array([-int(np.round(y)), -int(np.round(x))], dtype='float64')
         #shifts = np.array([-y, -x])
 
         # Registration based on scmultiplex, image-based

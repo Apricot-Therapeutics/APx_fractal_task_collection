@@ -21,7 +21,7 @@ import dask.array as da
 import fractal_tasks_core
 import pandas as pd
 import skimage
-from mahotas.features import haralick
+import mahotas as mh
 import numpy as np
 import zarr
 import anndata as ad
@@ -38,6 +38,12 @@ __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
 logger = logging.getLogger(__name__)
 
+def sum_intensity(regionmask, intensity_image):
+    return np.sum(intensity_image[regionmask])
+
+def std_intensity(regionmask, intensity_image):
+    return np.std(intensity_image[regionmask])
+
 def measure_intensity_features(label_image, intensity_image):
     """
     Measure intensity features for label image.
@@ -53,9 +59,17 @@ def measure_intensity_features(label_image, intensity_image):
                 "min_intensity",
                 "weighted_moments_hu",
             ],
+            extra_properties=[
+                sum_intensity,
+                std_intensity
+            ],
         )
     )
     return intensity_features
+
+
+def roundness(regionmask):
+    return mh.features.roundness(regionmask)
 
 
 def measure_morphology_features(label_image):
@@ -81,8 +95,12 @@ def measure_morphology_features(label_image):
             "perimeter",
             "solidity",
         ],
+        extra_properties=[
+            roundness,
+        ],
     )
     )
+    morphology_features["circularity"] = (4 * np.pi * morphology_features.area / (morphology_features.perimeter ** 2))
     return morphology_features
 
 # histomicstk version, couldn't get it to install in package as dependency
@@ -101,7 +119,11 @@ def haralick_features(regionmask, intensity_image):
     haralick_values_list = []
     for distance in [2, 5]:
         try:
-            haralick_values = haralick(intensity_image.astype('uint16'), distance=distance, return_mean=True, ignore_zeros=True)
+            haralick_values = mh.features.haralick(
+                intensity_image.astype('uint16'),
+                distance=distance,
+                return_mean=True,
+                ignore_zeros=True)
         except ValueError:
             haralick_values = np.full(13, np.NaN, dtype=float)
 
@@ -220,22 +242,26 @@ def measure_features(  # noqa: C901
 
             # intensity features
             if measure_intensity:
-                logger.info(f"Calculating intensity features for channel {channel.label}.")
-                current_features = measure_intensity_features(np.squeeze(label_image),
-                                                              np.squeeze(data_zyx))
+                logger.info(
+                    f"Calculating intensity features for channel {channel.label}.")
+                current_features = measure_intensity_features(
+                    np.squeeze(label_image),
+                    np.squeeze(data_zyx))
                 current_features.set_index("label", inplace=True)
-                current_features.columns =  label_image_name +"_Intensity_" + current_features.columns + "_" + channel.label
+                current_features.columns = label_image_name + "_Intensity_" + current_features.columns + "_" + channel.label
                 intensity_features.append(current_features)
                 logger.info(
                     f"Done calculating intensity features for channel {channel.label}.")
 
             # texture features
             if measure_texture:
-                logger.info(f"Calculating texture features for channel {channel.label}.")
-                current_features = measure_texture_features(np.squeeze(label_image),
-                                                            np.squeeze(data_zyx))
+                logger.info(
+                    f"Calculating texture features for channel {channel.label}.")
+                current_features = measure_texture_features(
+                    np.squeeze(label_image),
+                    np.squeeze(data_zyx))
                 current_features.set_index("label", inplace=True)
-                current_features.columns = label_image_name +"_Texture_" + current_features.columns + "_" + channel.label
+                current_features.columns = label_image_name + "_Texture_" + current_features.columns + "_" + channel.label
                 texture_features.append(current_features)
                 logger.info(
                     f"Done calculating texture features for channel {channel.label}.")
