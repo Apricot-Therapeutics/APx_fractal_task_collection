@@ -20,7 +20,7 @@ from typing import Any, Dict, Sequence
 import dask.array as da
 import fractal_tasks_core
 import pandas as pd
-import skimage
+from skimage.measure import regionprops_table
 import mahotas as mh
 import numpy as np
 import zarr
@@ -49,7 +49,7 @@ def measure_intensity_features(label_image, intensity_image):
     Measure intensity features for label image.
     """
     intensity_features = pd.DataFrame(
-        skimage.measure.regionprops_table(
+        regionprops_table(
             np.squeeze(label_image),
             intensity_image,
             properties=[
@@ -76,7 +76,7 @@ def measure_morphology_features(label_image):
     """
     Measure morphology features for label image.
     """
-    morphology_features = pd.DataFrame(skimage.measure.regionprops_table(
+    morphology_features = pd.DataFrame(regionprops_table(
         np.squeeze(label_image),
         properties=[
             "label",
@@ -117,10 +117,16 @@ def measure_morphology_features(label_image):
 
 def haralick_features(regionmask, intensity_image):
     haralick_values_list = []
+
+    # NOTE: Haralick features are computed on 8-bit images.
+    clip_value = np.percentile(intensity_image, 99.999)
+    clipped_img = np.clip(intensity_image, 0, clip_value).astype('uint16')
+    rescaled_img = mh.stretch(clipped_img)
+
     for distance in [2, 5]:
         try:
             haralick_values = mh.features.haralick(
-                intensity_image.astype('uint16'),
+                rescaled_img.astype('uint16'),
                 distance=distance,
                 return_mean=True,
                 ignore_zeros=True)
