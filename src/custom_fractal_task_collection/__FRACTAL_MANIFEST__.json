@@ -262,7 +262,7 @@
       "meta": {
         "cpus_per_task": 4,
         "mem": 32000,
-        "parallelization_level": "image"
+        "parallelization_level": "well"
       },
       "args_schema": {
         "title": "SegmentSecondaryObjects",
@@ -325,6 +325,11 @@
             "title": "Gaussian Blur",
             "type": "integer",
             "description": "Sigma for gaussian blur."
+          },
+          "fill_holes_area": {
+            "title": "Fill Holes Area",
+            "type": "integer",
+            "description": "Area threshold for filling holes after watershed."
           },
           "contrast_threshold": {
             "title": "Contrast Threshold",
@@ -548,7 +553,7 @@
       "meta": {
         "cpus_per_task": 4,
         "mem": 16000,
-		"parallelization_level": "well"
+        "parallelization_level": "well"
       },
       "args_schema": {
         "title": "AggregateTablesToWellLevel",

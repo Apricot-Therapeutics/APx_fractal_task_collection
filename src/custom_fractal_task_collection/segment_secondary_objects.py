@@ -23,6 +23,7 @@ import numpy as np
 import zarr
 import mahotas as mh
 from skimage.filters import gaussian
+from skimage.morphology import area_closing
 from typing import Optional
 from fractal_tasks_core.lib_write import prepare_label_group
 from fractal_tasks_core.lib_zattrs_utils import rescale_datasets
@@ -74,9 +75,8 @@ def watershed(intensity_image, label_image,
     regions = mh.cwatershed(np.invert(intensity_image), labels)
     # remove regions that are not expansions of primary objects
     regions[regions > max_label] = 0
-    regions = regions.astype('uint32')
 
-    return regions
+    return regions.astype('uint32')
 
 @validate_arguments
 def segment_secondary_objects(  # noqa: C901
@@ -94,6 +94,7 @@ def segment_secondary_objects(  # noqa: C901
     min_threshold: Optional[int] = None,
     max_threshold: Optional[int] = None,
     gaussian_blur: Optional[int] = None,
+    fill_holes_area: Optional[int] = None,
     contrast_threshold: int = 5,
     output_label_cycle: Optional[int] = None,
     output_label_name: str,
@@ -125,6 +126,7 @@ def segment_secondary_objects(  # noqa: C901
         min_threshold: Minimum threshold for the background definition.
         max_threshold: Maximum threshold for the background definition.
         gaussian_blur: Sigma for gaussian blur.
+        fill_holes_area: Area threshold for filling holes after watershed.
         contrast_threshold: Contrast threshold for background definition.
         output_label_cycle: indicates in which cycle to store the result (only needed if multiplexed).
         output_label_name: Name of the output label image.
@@ -135,147 +137,147 @@ def segment_secondary_objects(  # noqa: C901
 
     # update the component for the label image if multiplexed experiment
     if label_image_cycle is not None:
-        parts = component.rsplit("/", 1)
-        label_image_component = parts[0] + "/" + str(label_image_cycle)
-        intensity_image_component = parts[0] + "/" + str(intensity_image_cycle)
-        output_component = parts[0] + "/" + str(output_label_cycle)
+        label_image_component = component + "/" + str(label_image_cycle)
+        intensity_image_component = component + "/" + str(intensity_image_cycle)
+        output_component = component + "/" + str(output_label_cycle)
     else:
-        label_image_component = component
-        intensity_image_component = component
-        output_component = component
+        label_image_component = component + "/0"
+        intensity_image_component = component + "/0"
+        output_component = component + "/0"
 
-    if component.endswith("/0") or component.endswith("/0/"):
+    in_path = Path(input_paths[0])
+    zarrurl = (in_path.resolve() / intensity_image_component).as_posix()
 
-        in_path = Path(input_paths[0])
-        zarrurl = (in_path.resolve() / intensity_image_component).as_posix()
+    # load primary label image
+    label_image = da.from_zarr(
+        f"{in_path}/{label_image_component}/labels/{label_image_name}/{level}"
+    ).compute()
 
-        # load primary label image
-        label_image = da.from_zarr(
-            f"{in_path}/{label_image_component}/labels/{label_image_name}/{level}"
-        ).compute()
-
-        # Find channel index
-        try:
-            tmp_channel: OmeroChannel = get_channel_from_image_zarr(
-                image_zarr_path=zarrurl,
-                wavelength_id=channel.wavelength_id,
-                label=channel.label,
-            )
-        except ChannelNotFoundError as e:
-            logger.warning(
-                "Channel not found, exit from the task.\n"
-                f"Original error: {str(e)}"
-            )
-            return {}
-        ind_channel = tmp_channel.index
-
-        data_zyx = da.from_zarr(f"{zarrurl}/{level}")[ind_channel]
-
-        # prepare label image
-        ngff_image_meta = load_NgffImageMeta(in_path.joinpath(label_image_component))
-        num_levels = ngff_image_meta.num_levels
-        coarsening_xy = ngff_image_meta.coarsening_xy
-        full_res_pxl_sizes_zyx = ngff_image_meta.get_pixel_sizes_zyx(level=0)
-        actual_res_pxl_sizes_zyx = ngff_image_meta.get_pixel_sizes_zyx(level=level)
-
-
-        # Rescale datasets (only relevant for level>0)
-        if ngff_image_meta.axes_names[0] != "c":
-            raise ValueError(
-                "Cannot set `remove_channel_axis=True` for multiscale "
-                f"metadata with axes={ngff_image_meta.axes_names}. "
-                'First axis should have name "c".'
-            )
-        new_datasets = rescale_datasets(
-            datasets=[ds.dict() for ds in ngff_image_meta.datasets],
-            coarsening_xy=coarsening_xy,
-            reference_level=level,
-            remove_channel_axis=True,
+    # Find channel index
+    try:
+        tmp_channel: OmeroChannel = get_channel_from_image_zarr(
+            image_zarr_path=zarrurl,
+            wavelength_id=channel.wavelength_id,
+            label=channel.label,
         )
+    except ChannelNotFoundError as e:
+        logger.warning(
+            "Channel not found, exit from the task.\n"
+            f"Original error: {str(e)}"
+        )
+        return {}
+    ind_channel = tmp_channel.index
 
-        label_attrs = {
-            "image-label": {
+    data_zyx = da.from_zarr(f"{zarrurl}/{level}")[ind_channel]
+
+    # prepare label image
+    ngff_image_meta = load_NgffImageMeta(in_path.joinpath(label_image_component))
+    num_levels = ngff_image_meta.num_levels
+    coarsening_xy = ngff_image_meta.coarsening_xy
+    full_res_pxl_sizes_zyx = ngff_image_meta.get_pixel_sizes_zyx(level=0)
+    actual_res_pxl_sizes_zyx = ngff_image_meta.get_pixel_sizes_zyx(level=level)
+
+
+    # Rescale datasets (only relevant for level>0)
+    if ngff_image_meta.axes_names[0] != "c":
+        raise ValueError(
+            "Cannot set `remove_channel_axis=True` for multiscale "
+            f"metadata with axes={ngff_image_meta.axes_names}. "
+            'First axis should have name "c".'
+        )
+    new_datasets = rescale_datasets(
+        datasets=[ds.dict() for ds in ngff_image_meta.datasets],
+        coarsening_xy=coarsening_xy,
+        reference_level=level,
+        remove_channel_axis=True,
+    )
+
+    label_attrs = {
+        "image-label": {
+            "version": __OME_NGFF_VERSION__,
+            "source": {"image": "../../"},
+        },
+        "multiscales": [
+            {
+                "name": output_label_name,
                 "version": __OME_NGFF_VERSION__,
-                "source": {"image": "../../"},
-            },
-            "multiscales": [
-                {
-                    "name": output_label_name,
-                    "version": __OME_NGFF_VERSION__,
-                    "axes": [
-                        ax.dict()
-                        for ax in ngff_image_meta.multiscale.axes
-                        if ax.type != "channel"
-                    ],
-                    "datasets": new_datasets,
-                }
-            ],
-        }
+                "axes": [
+                    ax.dict()
+                    for ax in ngff_image_meta.multiscale.axes
+                    if ax.type != "channel"
+                ],
+                "datasets": new_datasets,
+            }
+        ],
+    }
 
-        image_group = zarr.group(in_path.joinpath(output_component))
-        label_group = prepare_label_group(
-            image_group,
-            output_label_name,
-            overwrite=overwrite,
-            label_attrs=label_attrs,
-            logger=logger,
-        )
+    image_group = zarr.group(in_path.joinpath(output_component))
+    label_group = prepare_label_group(
+        image_group,
+        output_label_name,
+        overwrite=overwrite,
+        label_attrs=label_attrs,
+        logger=logger,
+    )
 
-        logger.info(
-            f"Helper function `prepare_label_group` returned {label_group=}"
-        )
-        out = f"{output_path}/{output_component}/labels/{output_label_name}/0"
-        logger.info(f"Output label path: {out}")
-        store = zarr.storage.FSStore(str(out))
-        label_dtype = np.uint32
+    logger.info(
+        f"Helper function `prepare_label_group` returned {label_group=}"
+    )
+    out = f"{output_path}/{output_component}/labels/{output_label_name}/0"
+    logger.info(f"Output label path: {out}")
+    store = zarr.storage.FSStore(str(out))
+    label_dtype = np.uint32
 
-        shape = data_zyx.shape
-        if len(shape) == 2:
-            shape = (1, *shape)
-        chunks = data_zyx.chunksize
-        if len(chunks) == 2:
-            chunks = (1, *chunks)
-        mask_zarr = zarr.create(
-            shape=shape,
-            chunks=chunks,
-            dtype=label_dtype,
-            store=store,
-            overwrite=False,
-            dimension_separator="/",
-        )
+    shape = data_zyx.shape
+    if len(shape) == 2:
+        shape = (1, *shape)
+    chunks = data_zyx.chunksize
+    if len(chunks) == 2:
+        chunks = (1, *chunks)
+    mask_zarr = zarr.create(
+        shape=shape,
+        chunks=chunks,
+        dtype=label_dtype,
+        store=store,
+        overwrite=False,
+        dimension_separator="/",
+    )
 
-        logger.info(
-            f"mask will have shape {data_zyx.shape} "
-            f"and chunks {data_zyx.chunks}"
-        )
+    logger.info(
+        f"mask will have shape {data_zyx.shape} "
+        f"and chunks {data_zyx.chunks}"
+    )
 
-        # perform watershed
-        new_label_image = watershed(np.squeeze(data_zyx.compute()), np.squeeze(label_image), min_threshold=min_threshold,
-                                    max_threshold=max_threshold, gaussian_blur=gaussian_blur, contrast_threshold=contrast_threshold)
+    # perform watershed
+    new_label_image = watershed(np.squeeze(data_zyx.compute()), np.squeeze(label_image), min_threshold=min_threshold,
+                                max_threshold=max_threshold, gaussian_blur=gaussian_blur, contrast_threshold=contrast_threshold)
 
-        new_label_image = np.expand_dims(new_label_image, axis=0)
+    # fill holes in label image
+    if fill_holes_area is not None:
+        new_label_image = area_closing(new_label_image, area_threshold=fill_holes_area)
 
-        # Compute and store 0-th level to disk
-        da.array(new_label_image).to_zarr(
-            url=mask_zarr,
-            compute=True,
-        )
+    new_label_image = np.expand_dims(new_label_image, axis=0)
 
-        logger.info(
-            f"Secondary segmentation done for {out}."
-            "now building pyramids."
-        )
+    # Compute and store 0-th level to disk
+    da.array(new_label_image).to_zarr(
+        url=mask_zarr,
+        compute=True,
+    )
 
-        # Starting from on-disk highest-resolution data, build and write to disk a
-        # pyramid of coarser levels
-        build_pyramid(
-            zarrurl=f"{output_path}/{output_component}/labels/{output_label_name}",
-            overwrite=overwrite,
-            num_levels=num_levels,
-            coarsening_xy=coarsening_xy,
-        )
-    else:
-        return{}
+    logger.info(
+        f"Secondary segmentation done for {out}."
+        "now building pyramids."
+    )
+
+    # Starting from on-disk highest-resolution data, build and write to disk a
+    # pyramid of coarser levels
+    build_pyramid(
+        zarrurl=f"{output_path}/{output_component}/labels/{output_label_name}",
+        overwrite=overwrite,
+        num_levels=num_levels,
+        coarsening_xy=coarsening_xy,
+    )
+
 
 
 if __name__ == "__main__":
