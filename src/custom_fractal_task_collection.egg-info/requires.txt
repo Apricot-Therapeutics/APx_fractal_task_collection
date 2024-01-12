@@ -4,6 +4,7 @@ matplotlib
 image_registration
 pytest
 mahotas
+basicpy@ git+https://github.com/peng-lab/BaSiCPy.git@dev
 
 [dev]
 devtools

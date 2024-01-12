@@ -480,6 +480,130 @@
         "additionalProperties": false
       },
       "docs_info": "Calculate features based on label image and intensity image (optional).\n\nTakes a label image and an optional intensity image and calculates morphology,\nintensity and texture features in 2D."
+    },
+    {
+      "name": "Calculate Illumination Profiles",
+      "executable": "calculate_illumination_profiles.py",
+      "input_type": "zarr",
+      "output_type": "zarr",
+      "meta": {
+        "cpus_per_task": 4,
+        "mem": 16000
+      },
+      "args_schema": {
+        "title": "CalculateIlluminationProfiles",
+        "type": "object",
+        "properties": {
+          "input_paths": {
+            "title": "Input Paths",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of input paths where the image data is stored as OME-Zarrs. Should point to the parent folder containing one or many OME-Zarr files, not the actual OME-Zarr file. Example: `[\"/some/path/\"]`. This task only supports a single input path. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "output_path": {
+            "title": "Output Path",
+            "type": "string",
+            "description": "Path were the output of this task is stored. Examples: `\"/some/path/\"` => puts the new OME-Zarr file in the same folder as the input OME-Zarr file; `\"/some/new_path\"` => puts the new OME-Zarr file into a new folder at `/some/new_path`. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "metadata": {
+            "title": "Metadata",
+            "type": "object",
+            "description": "This parameter is not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "illumination_profiles_folder": {
+            "title": "Illumination Profiles Folder",
+            "type": "string",
+            "description": "Path to folder where illumination profiles will be saved."
+          },
+          "n_images": {
+            "title": "N Images",
+            "default": 150,
+            "type": "integer",
+            "description": "Number of images to sample for illumination correction."
+          },
+          "overwrite": {
+            "title": "Overwrite",
+            "default": false,
+            "type": "boolean",
+            "description": "If True, overwrite existing illumination profiles."
+          }
+        },
+        "required": [
+          "input_paths",
+          "output_path",
+          "metadata",
+          "illumination_profiles_folder"
+        ],
+        "additionalProperties": false
+      },
+      "docs_info": "Calculates illumination correction profiles based on a random sample\nof images of for each channel."
+    },
+    {
+      "name": "Aggregate Tables to Well Level",
+      "executable": "aggregate_tables_to_well_level.py",
+      "input_type": "zarr",
+      "output_type": "zarr",
+      "meta": {
+        "cpus_per_task": 4,
+        "mem": 16000,
+		"parallelization_level": "well"
+      },
+      "args_schema": {
+        "title": "AggregateTablesToWellLevel",
+        "type": "object",
+        "properties": {
+          "input_paths": {
+            "title": "Input Paths",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Path to the parent folder of the NGFF image. This task only supports a single input path. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "output_path": {
+            "title": "Output Path",
+            "type": "string",
+            "description": "This argument is not used in this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "component": {
+            "title": "Component",
+            "type": "string",
+            "description": "Path of the NGFF image, relative to `input_paths[0]`. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "metadata": {
+            "title": "Metadata",
+            "type": "object",
+            "description": "This argument is not used in this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "input_table_name": {
+            "title": "Input Table Name",
+            "type": "string",
+            "description": "Name of the feature table."
+          },
+          "output_table_name": {
+            "title": "Output Table Name",
+            "type": "string",
+            "description": "Name of the aggregated feature table."
+          },
+          "overwrite": {
+            "title": "Overwrite",
+            "default": true,
+            "type": "boolean",
+            "description": "If True, overwrite existing label image."
+          }
+        },
+        "required": [
+          "input_paths",
+          "output_path",
+          "component",
+          "metadata",
+          "input_table_name"
+        ],
+        "additionalProperties": false
+      },
+      "docs_info": "Aggregate acquisition (image) based features to the well level."
     }
   ],
   "has_args_schemas": true,
