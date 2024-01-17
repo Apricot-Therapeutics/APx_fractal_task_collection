@@ -1,4 +1,3 @@
-"""
 # Copyright 2022 (C) Friedrich Miescher Institute for Biomedical Research and
 # University of Zurich
 #
@@ -7,11 +6,13 @@
 # Marco Franzon <marco.franzon@exact-lab.it>
 # Joel Lüthi  <joel.luethi@fmi.ch>
 #
-# This file is part of Fractal and was originally developed by eXact lab S.r.l.
+# Adapted by:
+# Adrian Tschan <adrian.tschan@uzh.ch>
+#
+# This file is based on Fractal code originally developed by eXact lab S.r.l.
 # <exact-lab.it> under contract with Liberali Lab from the Friedrich Miescher
 # Institute for Biomedical Research and Pelkmans Lab from the University of
 # Zurich.
-"""
 
 import logging
 from pathlib import Path

@@ -3,15 +3,15 @@
 #
 # Original authors:
 # Tommaso Comparin <tommaso.comparin@exact-lab.it>
-# Joel Lüthi <joel.luethi@uzh.ch>
+# Marco Franzon <marco.franzon@exact-lab.it>
 #
-# This file is part of Fractal and was originally developed by eXact lab S.r.l.
+# Adapted by:
+# Adrian Tschan <adrian.tschan@uzh.ch>
+#
+# This file is based on Fractal code originally developed by eXact lab S.r.l.
 # <exact-lab.it> under contract with Liberali Lab from the Friedrich Miescher
 # Institute for Biomedical Research and Pelkmans Lab from the University of
 # Zurich.
-"""
-Calculates translation for image-based registration
-"""
 import logging
 from pathlib import Path
 from typing import Any
@@ -23,7 +23,6 @@ import numpy as np
 import pandas as pd
 import zarr
 from pydantic.decorator import validate_arguments
-#from skimage.registration import phase_cross_correlation
 import image_registration
 
 from fractal_tasks_core.lib_channels import get_channel_from_image_zarr

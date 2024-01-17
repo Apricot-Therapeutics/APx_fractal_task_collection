@@ -609,6 +609,71 @@
         "additionalProperties": false
       },
       "docs_info": "Aggregate acquisition (image) based features to the well level."
+    },
+    {
+      "name": "Apply BaSiCPy Illumination Model",
+      "executable": "apply_basicpy_illumination_model.py",
+      "input_type": "zarr",
+      "output_type": "zarr",
+      "meta": {
+        "cpus_per_task": 1,
+        "mem": 4000,
+        "parallelization_level": "image"
+      },
+      "args_schema": {
+        "title": "ApplyBasicpyIlluminationModel",
+        "type": "object",
+        "properties": {
+          "input_paths": {
+            "title": "Input Paths",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of input paths where the image data is stored as OME-Zarrs. Should point to the parent folder containing one or many OME-Zarr files, not the actual OME-Zarr file. Example: `[\"/some/path/\"]`. This task only supports a single input path. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "output_path": {
+            "title": "Output Path",
+            "type": "string",
+            "description": "Path were the output of this task is stored. Examples: `\"/some/path/\"` => puts the new OME-Zarr file in the same folder as the input OME-Zarr file; `\"/some/new_path\"` => puts the new OME-Zarr file into a new folder at `/some/new_path`. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "component": {
+            "title": "Component",
+            "type": "string",
+            "description": "Path to the OME-Zarr image in the OME-Zarr plate that is processed. Example: `\"some_plate.zarr/B/03/0\"`. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "metadata": {
+            "title": "Metadata",
+            "type": "object",
+            "description": "This parameter is not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "illumination_profiles_folder": {
+            "title": "Illumination Profiles Folder",
+            "type": "string",
+            "description": "Path of folder of illumination profiles."
+          },
+          "overwrite_input": {
+            "title": "Overwrite Input",
+            "default": true,
+            "type": "boolean",
+            "description": "If `True`, the results of this task will overwrite the input image data. In the current version, `overwrite_input=False` is not implemented."
+          },
+          "new_component": {
+            "title": "New Component",
+            "type": "string",
+            "description": "Not implemented yet. This is not implemented well in Fractal server at the moment, it's unclear how a user would specify fitting new components. If the results shall not overwrite the input data and the output path is the same as the input path, a new component needs to be provided. Example: `myplate_new_name.zarr/B/03/0/`."
+          }
+        },
+        "required": [
+          "input_paths",
+          "output_path",
+          "component",
+          "metadata",
+          "illumination_profiles_folder"
+        ],
+        "additionalProperties": false
+      },
+      "docs_info": "Applies illumination correction to the images in the OME-Zarr."
     }
   ],
   "has_args_schemas": true,

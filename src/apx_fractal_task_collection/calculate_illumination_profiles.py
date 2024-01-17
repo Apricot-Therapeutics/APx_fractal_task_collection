@@ -1,6 +1,3 @@
-"""
-Calculcates illumination correction profiles based on a random sample of images
-"""
 import logging
 import random
 import time
