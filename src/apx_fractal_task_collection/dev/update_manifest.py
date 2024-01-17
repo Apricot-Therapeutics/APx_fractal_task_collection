@@ -17,7 +17,7 @@ from fractal_tasks_core.dev.lib_args_schemas import (
 from fractal_tasks_core.dev.lib_task_docs import create_docs_info
 
 
-PACKAGE = "custom_fractal_task_collection"
+PACKAGE = "apx_fractal_task_collection"
 
 
 if __name__ == "__main__":

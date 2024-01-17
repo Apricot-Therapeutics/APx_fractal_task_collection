@@ -1,6 +1,6 @@
 # Project metadata (see https://peps.python.org/pep-0621)
 [project]
-name = "custom-fractal-task-collection"
+name = "apx-fractal-task-collection"
 version = "0.0.23"
 description = "A collection of custom fractal tasks."
 readme = "README.md"
@@ -29,7 +29,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["custom_fractal_task_collection"]
+include = ["apx_fractal_task_collection"]
 
 # Always include the __FRACTAL_MANIFEST__.json file in the package
 [tool.setuptools.package-data]

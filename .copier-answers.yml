@@ -3,8 +3,8 @@ _commit: v0.1.0
 _src_path: gh:fractal-analytics-platform/fractal-tasks-template
 author_email: adrian.tschan@uzh.ch
 author_name: Adrian Tschan
-package_name: custom_fractal_task_collection
-project_name: custom-fractal-task-collection
+package_name: apx_fractal_task_collection
+project_name: apx-fractal-task-collection
 project_short_description: A collection of custom fractal tasks.
 project_url: ''
 

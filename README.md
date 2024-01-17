@@ -1,4 +1,4 @@
-# custom-fractal-task-collection
+# apx-fractal-task-collection
 
 A collection of custom fractal tasks.
 
@@ -20,9 +20,9 @@ deactivate
 ```
 2. You can install your package locally as in:
 ```console
-# Install only custom_fractal_task_collection:
+# Install only apx_fractal_task_collection:
 python -m pip install -e .
-# Install both custom_fractal_task_collection and development dependencies (e.g. pytest):
+# Install both apx_fractal_task_collection and development dependencies (e.g. pytest):
 python -m pip install -e ".[dev]"
 ```
 
@@ -31,14 +31,14 @@ python -m pip install -e ".[dev]"
 4. The template already includes a sample task ("Thresholding Task"). Whenever
 you change its input parameters or docstring, re-run
 ```console
-python src/custom_fractal_task_collection/dev/update_manifest.py
-git add src/custom_fractal_task_collection/__FRACTAL_MANIFEST__.json
+python src/apx_fractal_task_collection/dev/update_manifest.py
+git add src/apx_fractal_task_collection/__FRACTAL_MANIFEST__.json
 git commit -m'Update `__FRACTAL_MANIFEST__.json`'
 git push origin main
 ```
 
 5. If you add a new task, you should also add a new item to the `task_list`
-property in `src/custom_fractal_task_collection/__FRACTAL_MANIFEST__.json`. A minimal example
+property in `src/apx_fractal_task_collection/__FRACTAL_MANIFEST__.json`. A minimal example
 may look like
 ```json
     {
