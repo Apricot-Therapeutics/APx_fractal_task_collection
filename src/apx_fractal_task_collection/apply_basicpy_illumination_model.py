@@ -265,7 +265,7 @@ def apply_basicpy_illumination_model(
                 img_stack=data_czyx[region].compute(),
                 flatfield=basic.flatfield,
                 darkfield=basic.darkfield,
-                baseline=int(basic.baseline.mean())
+                baseline=int(np.median(basic.baseline))
             )
             # Write to disk
             da.array(corrected_fov).to_zarr(

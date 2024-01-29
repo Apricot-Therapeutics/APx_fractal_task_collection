@@ -1,10 +1,17 @@
+# Original authors:
+# Adrian Tschan <adrian.tschan@uzh.ch>
+#
+# This file is part of the Apricot Therapeutics Fractal Task Collection, which
+# is developed by Apricot Therapeutics AG and intended to be used with the
+# Fractal platform originally developed by eXact lab S.r.l.
+# <exact-lab.it> under contract with Liberali Lab from the Friedrich Miescher
+# Institute for Biomedical Research and Pelkmans Lab from the University of
+# Zurich.
+
 import logging
 import random
-import time
-import warnings
 from pathlib import Path
 from typing import Any
-from typing import Optional
 from typing import Sequence
 
 import anndata as ad

@@ -1,17 +1,12 @@
-"""
-# Copyright 2022 (C) Friedrich Miescher Institute for Biomedical Research and
-# University of Zurich
-#
 # Original authors:
-# Tommaso Comparin <tommaso.comparin@exact-lab.it>
-# Marco Franzon <marco.franzon@exact-lab.it>
-# Joel Lüthi  <joel.luethi@fmi.ch>
+# Adrian Tschan <adrian.tschan@uzh.ch>
 #
-# This file is part of Fractal and was originally developed by eXact lab S.r.l.
+# This file is part of the Apricot Therapeutics Fractal Task Collection, which
+# is developed by Apricot Therapeutics AG and intended to be used with the
+# Fractal platform originally developed by eXact lab S.r.l.
 # <exact-lab.it> under contract with Liberali Lab from the Friedrich Miescher
 # Institute for Biomedical Research and Pelkmans Lab from the University of
 # Zurich.
-"""
 
 import logging
 from pathlib import Path
