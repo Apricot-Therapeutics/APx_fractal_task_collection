@@ -73,7 +73,7 @@ def aggregate_tables_to_well_level(  # noqa: C901
     ]
 
     # concatenate feature tables
-    well_table = ad.concat(feature_tables, axis=1)
+    well_table = ad.concat(feature_tables, axis=1, merge="same")
     well_table.var_names_make_unique(join="trash")
 
     vars_to_keep = [v for v in well_table.var_names if not "trash" in v]
