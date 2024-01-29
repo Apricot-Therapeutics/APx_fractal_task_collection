@@ -177,7 +177,9 @@ def calculate_illumination_profiles(
 
         # save illumination correction model
         logger.info(f"Now saving illumination correction model for channel {channel}.")
-        filename = illumination_profiles_folder + f"/{channel}"
+        illum_path = Path(illumination_profiles_folder)
+        illum_path.mkdir(parents=True, exist_ok=True)
+        filename = illum_path.joinpath(channel)
         basic.save_model(model_dir=filename, overwrite=overwrite)
 
 if __name__ == "__main__":
