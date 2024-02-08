@@ -231,7 +231,7 @@ def create_ome_zarr_multiplex_IC6000(
     for ind_in_path, in_path_str in enumerate(input_paths):
         acquisition = str(ind_in_path)
         in_path = Path(in_path_str)
-        xml_path = list(Path(in_path_str).glob("*.xdce"))[0]
+        xml_path = list(in_path.glob("*.xdce"))[0]
         dict_acquisitions[acquisition] = {}
 
         plate = parse_platename(xml_path)
@@ -383,7 +383,7 @@ def create_ome_zarr_multiplex_IC6000(
         )
 
         wells = [
-            parse_filename(os.path.basename(fn))["well"] for fn in plate_images
+            parse_filename(os.path.basename(fn))["well"].replace(f"{plate}_", '') for fn in plate_images
         ]
         wells = sorted(list(set(wells)))
         logger.info(f"{wells=}")
@@ -391,7 +391,7 @@ def create_ome_zarr_multiplex_IC6000(
         # Verify that all wells have all channels
         actual_channels = dict_acquisitions[acquisition]["actual_channels"]
         for well in wells:
-            patterns = [f"{well[0]} - {well[1:]}(*.{image_extension}"]
+            patterns = [f"*{well[0]} - {well[1:]}(*.{image_extension}"]
             if image_glob_patterns:
                 patterns.extend(image_glob_patterns)
             well_images = glob_with_multiple_patterns(
