@@ -899,6 +899,191 @@
         "additionalProperties": false
       },
       "docs_info": "Convert IC6000 output (png, tif) to zarr file.\n\nThis task is run after Create OME-Zarr structure IC6000\nand populates the empty OME-Zarr files that were prepared."
+    },
+    {
+      "name": "Multiplexed Pixel Clustering",
+      "executable": "multiplexed_pixel_clustering.py",
+      "input_type": "zarr",
+      "output_type": "zarr",
+      "meta": {
+        "cpus_per_task": 4,
+        "mem": 60000
+      },
+      "args_schema": {
+        "title": "MultiplexedPixelClustering",
+        "type": "object",
+        "properties": {
+          "input_paths": {
+            "title": "Input Paths",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Path to the parent folder of the NGFF image. This task only supports a single input path. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "output_path": {
+            "title": "Output Path",
+            "type": "string",
+            "description": "This argument is not used in this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "metadata": {
+            "title": "Metadata",
+            "type": "object",
+            "description": "This argument is not used in this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "label_image_name": {
+            "title": "Label Image Name",
+            "type": "string",
+            "description": "Name of label image to use. Only pixels that are part of a label will be considered for clustering."
+          },
+          "channels_to_use": {
+            "title": "Channels To Use",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of channel labels to use for clustering. If None, all channels are used."
+          },
+          "channels_to_exclude": {
+            "title": "Channels To Exclude",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of channel labels to exclude from clustering. If None, no channels are excluded."
+          },
+          "well_names": {
+            "title": "Well Names",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Missing description"
+          },
+          "som_shape": {
+            "title": "Som Shape",
+            "default": [
+              20,
+              20
+            ],
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Shape of the self-organizing map (SOM) to use for clustering."
+          },
+          "phenograph_neighbours": {
+            "title": "Phenograph Neighbours",
+            "default": 15,
+            "type": "integer",
+            "description": "Number of nearest neighbors to use in first step of graph construction."
+          },
+          "enforce_equal_object_count": {
+            "title": "Enforce Equal Object Count",
+            "default": false,
+            "type": "boolean",
+            "description": "If True, the same number of objects from the label images will be used to extract pixels for clustering."
+          },
+          "coords": {
+            "title": "Coords",
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Image coordinates to use. If None, the whole well will be used. Format: [y_start, y_end, x_start, x_end]."
+          },
+          "level": {
+            "title": "Level",
+            "default": 0,
+            "type": "integer",
+            "description": "pyramid level to use."
+          },
+          "output_table_name": {
+            "title": "Output Table Name",
+            "type": "string",
+            "description": "Name of output table."
+          },
+          "output_label_name": {
+            "title": "Output Label Name",
+            "type": "string",
+            "description": "Name of the output label image which will map the multiplexed pixel clusters"
+          },
+          "overwrite": {
+            "title": "Overwrite",
+            "default": true,
+            "type": "boolean",
+            "description": "If True, overwrite existing output table."
+          }
+        },
+        "required": [
+          "input_paths",
+          "output_path",
+          "metadata",
+          "label_image_name"
+        ],
+        "additionalProperties": false
+      },
+      "docs_info": "Perform multiplexed cell unit (MCU) analysis on a label image. Inspired by\nGabriele Gut et al., Multiplexed protein maps link subcellular\norganization to cellular states. Science (2018)\nDOI: 10.1126/science.aar7042"
+    },
+    {
+      "name": "Compress OME-Zarr for Visualization",
+      "executable": "compress_zarr_for_visualization.py",
+      "input_type": "zarr",
+      "output_type": "zarr",
+      "meta": {
+        "cpus_per_task": 1,
+        "mem": 5000,
+        "parallelization_level": "well"
+      },
+      "args_schema": {
+        "title": "CompressZarrForVisualization",
+        "type": "object",
+        "properties": {
+          "input_paths": {
+            "title": "Input Paths",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Path to the parent folder of the NGFF image. This task only supports a single input path. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "output_path": {
+            "title": "Output Path",
+            "type": "string",
+            "description": "This argument is not used in this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "component": {
+            "title": "Component",
+            "type": "string",
+            "description": "Missing description"
+          },
+          "metadata": {
+            "title": "Metadata",
+            "type": "object",
+            "description": "This argument is not used in this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "output_zarr_path": {
+            "title": "Output Zarr Path",
+            "type": "string",
+            "description": "Path to the output zarr file. Should have been previously created by the \"Copy OME_Zarr\" Fractal task."
+          },
+          "overwrite": {
+            "title": "Overwrite",
+            "default": false,
+            "type": "boolean",
+            "description": "Whether to overwrite existing pyramid levels."
+          }
+        },
+        "required": [
+          "input_paths",
+          "output_path",
+          "component",
+          "metadata",
+          "output_zarr_path"
+        ],
+        "additionalProperties": false
+      },
+      "docs_info": "Convert all images in a zarr file to a lower bit depth and compress them\nto allow for smoother visualization in napari."
     }
   ],
   "has_args_schemas": true,
