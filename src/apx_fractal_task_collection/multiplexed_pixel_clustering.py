@@ -23,7 +23,15 @@ from minisom import MiniSom
 from pathlib import Path
 from typing import Any, Dict, Sequence
 
-from sklearn.preprocessing import FunctionTransformer, StandardScaler
+from sklearn.preprocessing import (StandardScaler,
+                                   PowerTransformer,
+                                   FunctionTransformer,
+                                   QuantileTransformer)
+from fractal_tasks_core.lib_write import prepare_label_group
+from fractal_tasks_core.lib_channels import OmeroChannel
+from fractal_tasks_core.lib_zattrs_utils import rescale_datasets
+from fractal_tasks_core.lib_ngff import load_NgffImageMeta
+from fractal_tasks_core.lib_pyramid_creation import build_pyramid
 from fractal_tasks_core.lib_write import write_table
 from fractal_tasks_core.lib_channels import get_channel_from_image_zarr
 from fractal_tasks_core.lib_channels import get_omero_channel_list
@@ -41,7 +49,8 @@ def get_image_from_zarr(zarr_path: str, well_name: str,
     """
     Get image from zarr file.
     Args:
-        image_zarr_path: path to zarr file to use (well folder).
+        zarr_path: path to zarr file to use.
+        well_name: name of the well to use.
         coords: Image coordinates to use.
                 Format: [y_start, y_end, x_start, x_end].
         level: pyramid level to use.
@@ -69,15 +78,22 @@ def get_image_from_zarr(zarr_path: str, well_name: str,
                 wavelength_id=None,
                 label=channel.label
             )
-            logger.info(
-                f"loading channel: {channel.label} from \n"
-                f"well {well_name} (coordinates {coords}) at level {level}")
 
             channel_names.append(channel.label)
-            img.append(da.from_zarr(
+            current_img = da.from_zarr(
                 well_zarr_path.joinpath(f"{img_path}/{level}"))[
                        tmp_channel.index, 0, coords[0]:coords[1],
-                       coords[2]:coords[3]].compute())
+                       coords[2]:coords[3]]
+            img.append(current_img.compute())
+
+            # extremely clumsy way to get the actual shape of the image
+            actual_shape = [coords[0],
+                            current_img.shape[0]+coords[0],
+                            coords[2],
+                            current_img.shape[1]+coords[2]]
+            logger.info(
+                f"loaded channel: {channel.label} from well {well_name} \n"
+                f"from coordinates {actual_shape} at level {level}")
 
 
     return np.squeeze(np.stack(img, axis=0)), channel_names
@@ -106,13 +122,15 @@ def get_label_from_zarr(zarr_path: str, well_name: str, label_name: str,
 
     for img_path in img_paths:
         try:
-            label = da.from_zarr(well_zarr_path.joinpath(
-                f"{img_path}/labels/{label_name}/{level}"))[0,
-                    coords[0]:coords[1], coords[2]:coords[3]].compute()
+            label_path = f"{img_path}/labels/{label_name}/{level}"
+            label = da.from_zarr(
+                well_zarr_path.joinpath(label_path))[
+                    0,coords[0]:coords[1], coords[2]:coords[3]].compute()
+            actual_img_path = img_path
         except:
             continue
 
-    return label
+    return label, actual_img_path
 
 
 def get_mpps(intensity_image: np.array, labels: np.array, channel_names: list,
@@ -148,7 +166,59 @@ def get_mpps(intensity_image: np.array, labels: np.array, channel_names: list,
     return mpps.set_index(['well', 'y', 'x', 'label'])
 
 
-def preprocess_mpps(mpps: pd.DataFrame):
+def filter_mpps(mpps: pd.DataFrame,
+                channels_to_use: list = None,
+                channels_to_exclude: list = None):
+    """
+    Filter multiplexed pixel profiles.
+    Args:
+        mpps: multiplexed pixel profiles as pandas dataframe.
+        channels_to_use: list of channel labels to use
+        channels_to_exclude: list of channel labels to exclude
+
+    Returns: filtered multiplexed pixel profiles as pandas dataframe where
+    pixels that are above 0.999 quantile in one channel or below 0.33 quantile
+    across all channels are removed
+
+    """
+
+    if channels_to_use is not None:
+        mpps_filtered = mpps[channels_to_use]
+    elif channels_to_exclude is not None:
+        mpps_filtered = mpps.drop(columns=channels_to_exclude)
+
+    # identify pixels that have intensity < 0.1
+    # quantile gray values across all channels that should be
+    # used for clustering
+
+    quantile_threshold = 0.1
+    mpps['low_quantile_filter'] = mpps_filtered.apply(
+        lambda col: col < col.quantile(quantile_threshold), axis=0).all(axis=1)
+    mpps.set_index('low_quantile_filter', append=True, inplace=True)
+
+    # identify pixels that have intensity < 0.999
+    # quantile gray values across all channels that should be
+    # used for clustering
+    #quantile_threshold = 0.999
+    #mpps['high_quantile_filter'] = mpps_filtered.apply(
+    #    lambda col: col < col.quantile(quantile_threshold), axis=0).all(axis=1)
+    #mpps.set_index('high_quantile_filter', append=True, inplace=True)
+
+    # remove pixels for which one of the filters is true
+    #mpps_filtered = mpps.loc[
+    #    (mpps.index.get_level_values('high_quantile_filter').values) &
+    #    (mpps.index.get_level_values('low_quantile_filter').values)]
+
+    mpps_filtered = mpps.loc[
+        ~mpps.index.get_level_values('low_quantile_filter').values]
+
+    #mpps_filtered.reset_index(level=(-2, -1), drop=True, inplace=True)
+    mpps_filtered.reset_index(level=(-1), drop=True, inplace=True)
+
+    return mpps_filtered
+
+
+def scale_mpps(mpps: pd.DataFrame):
     """
     Preprocess multiplexed pixel profiles.
     Args:
@@ -158,23 +228,21 @@ def preprocess_mpps(mpps: pd.DataFrame):
 
     """
 
-    # rescale MPPS to [0, 1] where 1 corresponds to the 98th quantile
     def quantile_scale(x):
         return (x - x.min(axis=0)) / (
-                    np.quantile(x, 0.999, axis=0) - x.min(axis=0))
+                np.quantile(x, 0.99, axis=0) - x.min(axis=0))
 
     transformer = FunctionTransformer(quantile_scale)
-    mpps_scaled = transformer.fit_transform(mpps)
-    mpps_scaled[mpps_scaled > 1] = 1
+    mpps_scaled = pd.DataFrame(transformer.fit_transform(mpps),
+                               columns=mpps.columns,
+                               index=mpps.index)
 
-    # remove rows where all values are > 0.1
-    #mpps_scaled = mpps_scaled[~(mpps_scaled < 0.1).all(axis=1)]
 
     return mpps_scaled
 
 
 def get_image_from_mpps(mpps: pd.DataFrame, well_name: str,
-                        coords: list, column: str):
+                        shape: list, column: str):
     """
     Get label map of multiplexed pixel profiles.
 
@@ -183,6 +251,7 @@ def get_image_from_mpps(mpps: pd.DataFrame, well_name: str,
         well_name: name of well.
         coords: Image coordinates to use.
                 Format: [y_start, y_end, x_start, x_end].
+        shape: shape of label map.
         column: column to use for image.
 
     Returns: numpy array of shape (coords[0]:coords[1], coords[2]:coords[3]).
@@ -190,10 +259,12 @@ def get_image_from_mpps(mpps: pd.DataFrame, well_name: str,
     """
     mpps = mpps.reset_index()
     mpps = mpps.loc[mpps.well == well_name]
-    mpps_array = np.zeros((coords[1] - coords[0], coords[3] - coords[2]),
-                          dtype='uint16')
-    mpps_array[mpps['y'] - coords[0], mpps['x'] - coords[2]] = mpps[
-        column].values
+    mpps_array = np.zeros(shape, dtype='uint32')
+    mpps_array[
+        0,
+        mpps['well_x'],
+        mpps['well_y']
+    ] = mpps[column].values
 
     return mpps_array
 
@@ -204,16 +275,19 @@ def multiplexed_pixel_clustering(  # noqa: C901
         # Default arguments for fractal tasks:
         input_paths: Sequence[str],
         output_path: str,
-        component: str,
         metadata: Dict[str, Any],
         # Task-specific arguments:
         label_image_name: str,
         channels_to_use: Sequence[str] = None,
         channels_to_exclude: Sequence[str] = None,
-        wells_names: Sequence[str] = None,
+        well_names: Sequence[str] = None,
+        som_shape: Sequence[int] = (20, 20),
+        phenograph_neighbours: int = 15,
+        enforce_equal_object_count: bool = False,
         coords: Sequence[int] = None,
         level: int = 0,
         output_table_name: str = None,
+        output_label_name: str = None,
         overwrite: bool = True,
 ) -> None:
     """
@@ -229,39 +303,54 @@ def multiplexed_pixel_clustering(  # noqa: C901
             (standard argument for Fractal tasks, managed by Fractal server).
         output_path: This argument is not used in this task.
             (standard argument for Fractal tasks, managed by Fractal server).
-        component: Path of the NGFF image, relative to `input_paths[0]`.
-            (standard argument for Fractal tasks, managed by Fractal server).
         metadata: This argument is not used in this task.
             (standard argument for Fractal tasks, managed by Fractal server).
-        label_image_name: Name of label image to use.
+        label_image_name: Name of label image to use. Only pixels that are part
+            of a label will be considered for clustering.
         channels_to_use: List of channel labels to use for clustering.
                 If None, all channels are used.
         channels_to_exclude: List of channel labels to exclude from clustering.
                 If None, no channels are excluded.
         wells_names: List of wells to use for pixel clustering.
+        som_shape: Shape of the self-organizing map (SOM) to use for clustering.
+        phenograph_neighbours: Number of nearest neighbors to use in first
+                step of graph construction.
+        enforce_equal_object_count: If True, the same number of objects from
+            the label images will be used to extract pixels for clustering.
         coords: Image coordinates to use. If None, the whole well will be used.
                 Format: [y_start, y_end, x_start, x_end].
         level: pyramid level to use.
         output_table_name: Name of output table.
+        output_label_name: Name of the output label image which will map the
+                multiplexed pixel clusters
         overwrite: If True, overwrite existing output table.
     """
 
-    zarr_path = Path(input_paths[0])
+    in_path = Path(input_paths[0])
+    list_plates = list(Path(in_path).glob("*.zarr"))
+    zarr_path = list_plates[0]
     mpps_list = []
+
+    # if coords is None, use the whole well:
+    if coords is None:
+        coords = [0, None, 0, None]
+
+
     for well_name in well_names:
         img, channel_names = get_image_from_zarr(zarr_path=zarr_path,
                                                  well_name=well_name,
                                                  level=level,
                                                  coords=coords)
 
-        label = get_label_from_zarr(zarr_path=zarr_path,
-                                    well_name=well_name,
-                                    label_name='nuclei',
-                                    level=level,
-                                    coords=coords)
+        label, label_path = get_label_from_zarr(zarr_path=zarr_path,
+                                                well_name=well_name,
+                                                label_name=label_image_name,
+                                                level=level,
+                                                coords=coords)
 
-        # calculate multiplexed pixel profiles
-        mpps_list.append(get_mpps(img, label,
+        # calculate multiplexed pixel profiles (label is cast to uint16
+        # to save memory)
+        mpps_list.append(get_mpps(img, label.astype('uint16'),
                                   channel_names=channel_names,
                                   well_name=well_name))
 
@@ -277,19 +366,33 @@ def multiplexed_pixel_clustering(  # noqa: C901
                    inplace=True, append=True)
     mpps.index.rename(names=new_index, inplace=True)
 
+    if enforce_equal_object_count:
+        # enforce that the same number of cells are used per well
+        n_cells = mpps.reset_index().groupby(['well'])['label'].nunique()
+        min_cells = n_cells.min()
+        mpps = mpps.reset_index().groupby('well', as_index=False).apply(
+            lambda x: x.loc[x['label'].isin(
+                np.random.choice(x['label'].unique(),
+                                 min_cells,
+                                 replace=False))])
+        mpps.set_index(new_index, inplace=True)
+        logger.info(f"Using {min_cells} randomly sampled objects per well.")
+
+    # quantile filter mpps
+    mpps = filter_mpps(mpps, channels_to_use, channels_to_exclude)
+
     # only use the specified channels for clustering
     if channels_to_use is not None:
         mpps_filtered = mpps[channels_to_use]
     elif channels_to_exclude is not None:
         mpps_filtered = mpps.drop(columns=channels_to_exclude)
 
-    # preprocess multiplexed pixel profiles
-    mpps_scaled = preprocess_mpps(mpps_filtered)
+    # scale mpps
+    mpps_scaled = scale_mpps(mpps_filtered)
 
     # train SOM
     logger.info("Training SOM")
     som_data = np.array(mpps_scaled)
-    som_shape = (50, 50)
     som = MiniSom(som_shape[0], som_shape[1], som_data.shape[1],
                   sigma=0.3, learning_rate=0.1,
                   neighborhood_function='gaussian', random_seed=10)
@@ -312,7 +415,9 @@ def multiplexed_pixel_clustering(  # noqa: C901
 
     # cluster with PhenoGraph using jaccard distance
     logger.info("Clustering with PhenoGraph.")
-    pheno_labels, graph, Q = cluster(mpps_scaled_agg, k=15, n_jobs=8)
+    pheno_labels, graph, Q = cluster(mpps_scaled_agg,
+                                     k=phenograph_neighbours,
+                                     n_jobs=8)
 
     # assign cluster labels
     mpps_scaled_agg['pheno_cluster'] = pheno_labels + 1
@@ -348,24 +453,142 @@ def multiplexed_pixel_clustering(  # noqa: C901
                            else False for c in mpps.columns]
     varm = {'used_for_clustering': np.array(used_for_clustering)}
 
-    mpps2 = ad.AnnData(X=mpps.reset_index(drop=True),
-                       obs=obs,
-                       varm=varm,
-                       layers={
+    mpps_ad = ad.AnnData(X=mpps.reset_index(drop=True),
+                         obs=obs,
+                         varm=varm,
+                         layers={
                            'z-scored': np.array(mpps_normalized.reset_index(
                                drop=True))
-                       },
-                       dtype='uint16')
+                         },
+                         dtype='uint16')
+
 
     # save results
     image_group = zarr.group(f"{zarr_path}")
     write_table(
         image_group,
         output_table_name,
-        mpps2,
+        mpps_ad,
         overwrite=overwrite,
         logger=logger,
     )
+
+    # save MCU label map to labels
+    # prepare label image
+    well_zarr_path = zarr_path.joinpath(
+        f"{well_names[0][0]}/{well_names[0][1:]}")
+    label_component = well_zarr_path.joinpath(label_path)
+    data_zyx = da.from_zarr(
+                label_component.joinpath(f"labels/{label_image_name}/{level}"))
+
+    ngff_image_meta = load_NgffImageMeta(label_component)
+    num_levels = ngff_image_meta.num_levels
+    coarsening_xy = ngff_image_meta.coarsening_xy
+    full_res_pxl_sizes_zyx = ngff_image_meta.get_pixel_sizes_zyx(level=0)
+    actual_res_pxl_sizes_zyx = ngff_image_meta.get_pixel_sizes_zyx(level=level)
+
+    # Rescale datasets (only relevant for level>0)
+    if ngff_image_meta.axes_names[0] != "c":
+        raise ValueError(
+            "Cannot set `remove_channel_axis=True` for multiscale "
+            f"metadata with axes={ngff_image_meta.axes_names}. "
+            'First axis should have name "c".'
+        )
+    new_datasets = rescale_datasets(
+        datasets=[ds.dict() for ds in ngff_image_meta.datasets],
+        coarsening_xy=coarsening_xy,
+        reference_level=level,
+        remove_channel_axis=True,
+    )
+
+    label_attrs = {
+        "image-label": {
+            "version": __OME_NGFF_VERSION__,
+            "source": {"image": "../../"},
+        },
+        "multiscales": [
+            {
+                "name": output_label_name,
+                "version": __OME_NGFF_VERSION__,
+                "axes": [
+                    ax.dict()
+                    for ax in ngff_image_meta.multiscale.axes
+                    if ax.type != "channel"
+                ],
+                "datasets": new_datasets,
+            }
+        ],
+    }
+
+    label_dtype = np.uint32
+
+    shape = data_zyx.shape
+    if len(shape) == 2:
+        shape = (1, *shape)
+    chunks = data_zyx.chunksize
+    if len(chunks) == 2:
+        chunks = (1, *chunks)
+
+    # Compute and store 0-th level to disk
+    for well_name in well_names:
+        # get the label map for multiplexed units
+        mcu_labels = get_image_from_mpps(mpps,
+                                         well_name=well_name,
+                                         shape=shape,
+                                         column='pheno_cluster')
+
+        well_zarr_path = zarr_path.joinpath(
+            f"{well_name[0]}/{well_name[1:]}")
+        label_component = well_zarr_path.joinpath(label_path)
+
+        image_group = zarr.group(label_component)
+        label_group = prepare_label_group(
+            image_group,
+            output_label_name,
+            overwrite=overwrite,
+            label_attrs=label_attrs,
+            logger=logger,
+        )
+
+        logger.info(
+            f"Helper function `prepare_label_group` returned {label_group=}"
+        )
+        out = f"{label_component}/labels/{output_label_name}/0"
+        logger.info(f"Output label path: {out}")
+        store = zarr.storage.FSStore(str(out))
+
+        label_zarr = zarr.create(
+            shape=shape,
+            chunks=chunks,
+            dtype=label_dtype,
+            store=store,
+            overwrite=False,
+            dimension_separator="/",
+        )
+
+        logger.info(
+            f"label will have shape {data_zyx.shape} "
+            f"and chunks {data_zyx.chunks}"
+        )
+
+        da.array(mcu_labels).to_zarr(
+            url=label_zarr,
+            compute=True,
+        )
+
+        logger.info(
+            f"Saved Multiplexed Pixel Map for {out}."
+            "now building pyramids."
+        )
+
+        # Starting from on-disk highest-resolution data, build and write to
+        # disk a pyramid of coarser levels
+        build_pyramid(
+            zarrurl=f"{label_component}/labels/{output_label_name}",
+            overwrite=overwrite,
+            num_levels=num_levels,
+            coarsening_xy=coarsening_xy,
+        )
 
 
 if __name__ == "__main__":
