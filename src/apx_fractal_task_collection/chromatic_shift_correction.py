@@ -68,7 +68,7 @@ def get_channel_image_from_zarr(zarrurl, channel_label):
                     da.from_zarr(img_zarr_path.joinpath('0'))[ind_channel]
 
                 img.append(data_zyx)
-     return np.stack(img), tmp_channel.wavelength_id
+    return np.stack(img), tmp_channel.wavelength_id
 
 
 def correct_background(image_stack):

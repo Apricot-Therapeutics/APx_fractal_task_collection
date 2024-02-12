@@ -1154,7 +1154,7 @@
         ],
         "additionalProperties": false
       },
-      "docs_info": "Correct chromatic shift based on reference images (for example fluorescnet\nbeads) and apply it to all images."
+      "docs_info": "Convert a channel of an OME-Zarr image to a label image."
     },
     {
       "name": "Filter Label by Size",
@@ -1165,7 +1165,72 @@
         "cpus_per_task": 1,
         "mem": 1000,
         "parallelization_level": "well"
-      }
+      },
+      "args_schema": {
+        "title": "FilterLabelBySize",
+        "type": "object",
+        "properties": {
+          "input_paths": {
+            "title": "Input Paths",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of input paths where the image data is stored as OME-Zarrs. Should point to the parent folder containing one or many OME-Zarr files, not the actual OME-Zarr file. Example: `[\"/some/path/\"]`. This task only supports a single input path. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "output_path": {
+            "title": "Output Path",
+            "type": "string",
+            "description": "Path were the output of this task is stored. Examples: `\"/some/path/\"` => puts the new OME-Zarr file in the same folder as the input OME-Zarr file; `\"/some/new_path\"` => puts the new OME-Zarr file into a new folder at `/some/new_path`. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "metadata": {
+            "title": "Metadata",
+            "type": "object",
+            "description": "This parameter is not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "component": {
+            "title": "Component",
+            "type": "string",
+            "description": "Path to the OME-Zarr image in the OME-Zarr plate that is processed. Example: `\"some_plate.zarr/B/03/0\"` (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "label_name": {
+            "title": "Label Name",
+            "type": "string",
+            "description": "Name of the label image in the OME-Zarr file."
+          },
+          "output_label_name": {
+            "title": "Output Label Name",
+            "type": "string",
+            "description": "Name of the output label image. If None, the input label image is overwritten."
+          },
+          "min_size": {
+            "title": "Min Size",
+            "type": "integer",
+            "description": "Minimum size of objects to keep. If None, no minimum size filter is applied."
+          },
+          "max_size": {
+            "title": "Max Size",
+            "type": "integer",
+            "description": "Maximum size of objects to keep. If None, no maximum size filter is applied."
+          },
+          "overwrite": {
+            "title": "Overwrite",
+            "default": false,
+            "type": "boolean",
+            "description": "Missing description"
+          }
+        },
+        "required": [
+          "input_paths",
+          "output_path",
+          "metadata",
+          "component",
+          "label_name",
+          "output_label_name"
+        ],
+        "additionalProperties": false
+      },
+      "docs_info": "Filter objects in a label image by size."
     },
     {
       "name": "Chromatic Shift Correction",
@@ -1176,7 +1241,59 @@
         "cpus_per_task": 1,
         "mem": 10000,
         "parallelization_level": "image"
-      }
+      },
+      "args_schema": {
+        "title": "ChromaticShiftCorrection",
+        "type": "object",
+        "properties": {
+          "input_paths": {
+            "title": "Input Paths",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of input paths where the image data is stored as OME-Zarrs. Should point to the parent folder containing one or many OME-Zarr files, not the actual OME-Zarr file. Example: `[\"/some/path/\"]`. This task only supports a single input path. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "output_path": {
+            "title": "Output Path",
+            "type": "string",
+            "description": "Path were the output of this task is stored. Examples: `\"/some/path/\"` => puts the new OME-Zarr file in the same folder as the input OME-Zarr file; `\"/some/new_path\"` => puts the new OME-Zarr file into a new folder at `/some/new_path`. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "metadata": {
+            "title": "Metadata",
+            "type": "object",
+            "description": "This parameter is not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "component": {
+            "title": "Component",
+            "type": "string",
+            "description": "Path to the OME-Zarr image in the OME-Zarr plate that is processed. Example: `\"some_plate.zarr/B/03/0\"` (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "correction_channel_labels": {
+            "title": "Correction Channel Labels",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of channel labels that contain images used for chromatic shift correction. (This can include or exclude the reference channel.)"
+          },
+          "reference_channel_label": {
+            "title": "Reference Channel Label",
+            "type": "string",
+            "description": "Label of the channel that is used as reference. (This channel is not corrected.)"
+          }
+        },
+        "required": [
+          "input_paths",
+          "output_path",
+          "metadata",
+          "component",
+          "correction_channel_labels",
+          "reference_channel_label"
+        ],
+        "additionalProperties": false
+      },
+      "docs_info": "Correct chromatic shift based on reference images (for example fluorescnet\nbeads) and apply it to all images."
     }
   ],
   "has_args_schemas": true,
