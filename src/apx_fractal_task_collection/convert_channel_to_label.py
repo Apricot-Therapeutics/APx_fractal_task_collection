@@ -84,8 +84,7 @@ def convert_channel_to_label(
 ) -> None:
 
     """
-    Correct chromatic shift based on reference images (for example fluorescnet
-    beads) and apply it to all images.
+    Convert a channel of an OME-Zarr image to a label image.
 
     Args:
         input_paths: List of input paths where the image data is stored as
@@ -123,6 +122,9 @@ def convert_channel_to_label(
     label_url = well_url.joinpath(str(output_cycle),
                                   'labels',
                                   output_label_name)
+
+    logger.info(f"Converting channel '{channel_label}' to "
+                f"label image '{output_label_name}'.")
 
     # Rescale datasets (only relevant for level>0)
     if ngff_image_meta.axes_names[0] != "c":
@@ -182,6 +184,7 @@ def convert_channel_to_label(
     img.to_zarr(
         url=label_zarr,
         compute=True,
+        overwrite=overwrite,
     )
 
     # Starting from on-disk highest-resolution data, build and write to disk a

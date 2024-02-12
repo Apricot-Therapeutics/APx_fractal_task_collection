@@ -1084,6 +1084,99 @@
         "additionalProperties": false
       },
       "docs_info": "Convert all images in a zarr file to a lower bit depth and compress them\nto allow for smoother visualization in napari."
+    },
+    {
+      "name": "Convert Channel to Label",
+      "executable": "convert_channel_to_label.py",
+      "input_type": "zarr",
+      "output_type": "zarr",
+      "meta": {
+        "cpus_per_task": 1,
+        "mem": 10000,
+        "parallelization_level": "well"
+      },
+      "args_schema": {
+        "title": "ConvertChannelToLabel",
+        "type": "object",
+        "properties": {
+          "input_paths": {
+            "title": "Input Paths",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of input paths where the image data is stored as OME-Zarrs. Should point to the parent folder containing one or many OME-Zarr files, not the actual OME-Zarr file. Example: `[\"/some/path/\"]`. This task only supports a single input path. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "output_path": {
+            "title": "Output Path",
+            "type": "string",
+            "description": "Path were the output of this task is stored. Examples: `\"/some/path/\"` => puts the new OME-Zarr file in the same folder as the input OME-Zarr file; `\"/some/new_path\"` => puts the new OME-Zarr file into a new folder at `/some/new_path`. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "component": {
+            "title": "Component",
+            "type": "string",
+            "description": "Missing description"
+          },
+          "metadata": {
+            "title": "Metadata",
+            "type": "object",
+            "description": "This parameter is not used by this task. (standard argument for Fractal tasks, managed by Fractal server). component: Path to the OME-Zarr image in the OME-Zarr plate that is processed. Example: `\"some_plate.zarr/B/03/0\"`"
+          },
+          "channel_label": {
+            "title": "Channel Label",
+            "type": "string",
+            "description": "Label of the channel to convert to a label image."
+          },
+          "output_label_name": {
+            "title": "Output Label Name",
+            "type": "string",
+            "description": "Name of the label to be created."
+          },
+          "output_cycle": {
+            "title": "Output Cycle",
+            "type": "integer",
+            "description": "Cycle in which to store the new label image. If not provided, the label image is saved in the first cycle."
+          },
+          "overwrite": {
+            "title": "Overwrite",
+            "default": false,
+            "type": "boolean",
+            "description": "If True, overwrite existing label image with same name."
+          }
+        },
+        "required": [
+          "input_paths",
+          "output_path",
+          "component",
+          "metadata",
+          "channel_label",
+          "output_label_name"
+        ],
+        "additionalProperties": false
+      },
+      "docs_info": "Correct chromatic shift based on reference images (for example fluorescnet\nbeads) and apply it to all images."
+    },
+    {
+      "name": "Filter Label by Size",
+      "executable": "filter_label_by_size.py",
+      "input_type": "zarr",
+      "output_type": "zarr",
+      "meta": {
+        "cpus_per_task": 1,
+        "mem": 1000,
+        "parallelization_level": "well"
+      }
+    },
+    {
+      "name": "Chromatic Shift Correction",
+      "executable": "chromatic_shift_correction.py",
+      "input_type": "zarr",
+      "output_type": "zarr",
+      "meta": {
+        "cpus_per_task": 1,
+        "mem": 10000,
+        "parallelization_level": "image"
+      }
     }
   ],
   "has_args_schemas": true,

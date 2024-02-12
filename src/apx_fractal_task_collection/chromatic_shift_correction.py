@@ -13,17 +13,13 @@ import zarr
 import numpy as np
 import SimpleITK as sitk
 import dask.array as da
-import cv2
 import anndata as ad
 
-from pathlib import Path
 from typing import Any
 from typing import Sequence
-from skimage import io
 from skimage import exposure
 from pathlib import Path
 from scipy.ndimage import gaussian_filter
-from natsort import natsorted
 from pydantic.decorator import validate_arguments
 
 from fractal_tasks_core.lib_channels import get_omero_channel_list
@@ -134,12 +130,10 @@ def chromatic_shift_correction(
     input_paths: Sequence[str],
     output_path: str,
     metadata: dict[str, Any],
+    component: str,
     # Task-specific arguments
-    correction_channel_label: str,
-    correction_image_folder: str,
-    correction_channel_labels: str,
-    reference_channel_label: str,
-    overwrite: bool = False,
+    correction_channel_labels: Sequence[str],
+    reference_channel_label: str
 ) -> None:
 
     """
@@ -159,13 +153,14 @@ def chromatic_shift_correction(
             (standard argument for Fractal tasks, managed by Fractal server).
         metadata: This parameter is not used by this task.
             (standard argument for Fractal tasks, managed by Fractal server).
-        correction_image_folder: Path to folder where the correction images are
-            stored.
-        correction_channels: List of channel names in the correction
-            image folder (excluding the reference channel).
-        reference_channel: Name of the reference channel in reference image
-            files.
-        overwrite: If True, overwrite existing illumination profiles.
+        component: Path to the OME-Zarr image in the OME-Zarr plate that is
+            processed. Example: `"some_plate.zarr/B/03/0"`
+            (standard argument for Fractal tasks, managed by Fractal server).
+        correction_channel_labels: List of channel labels that contain
+            images used for chromatic shift correction. (This can include
+            or exclude the reference channel.)
+        reference_channel_label: Label of the channel that is used as
+            reference. (This channel is not corrected.)
     """
     logger.info(f"Correcting chromatic shift based on reference images.")
     in_path = Path(input_paths[0])
@@ -289,14 +284,12 @@ def chromatic_shift_correction(
             chunksize=data_czyx.chunksize,
         )
 
-    return {}
-
 
 if __name__ == "__main__":
     from fractal_tasks_core.tasks._utils import run_fractal_task
 
     run_fractal_task(
-        task_function=calculate_illumination_profiles,
+        task_function=chromatic_shift_correction,
         logger_name=logger.name,
     )
 

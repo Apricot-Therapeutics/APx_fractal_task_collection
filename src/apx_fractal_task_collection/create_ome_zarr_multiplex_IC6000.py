@@ -67,6 +67,12 @@ def parse_filename(filename: str) -> dict[str, str]:
 
     # Remove extension and folder from filename
     filename = Path(filename).with_suffix("").name
+    # Remove plate prefix
+    filename_split = filename.split("_")
+    if len(filename_split) > 1:
+        filename = filename_split[-1]
+    else:
+        filename = filename_split[0]
 
     output = {}
     output["well"] = filename.split("(")[0].split(" - ")[0] + \
@@ -383,7 +389,7 @@ def create_ome_zarr_multiplex_IC6000(
         )
 
         wells = [
-            parse_filename(os.path.basename(fn))["well"].replace(f"{plate}_", '') for fn in plate_images
+            parse_filename(os.path.basename(fn))["well"] for fn in plate_images
         ]
         wells = sorted(list(set(wells)))
         logger.info(f"{wells=}")
