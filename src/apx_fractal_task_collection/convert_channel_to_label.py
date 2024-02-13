@@ -176,14 +176,14 @@ def convert_channel_to_label(
         chunks=img.chunksize,
         dtype=label_dtype,
         store=store,
-        overwrite=False,
+        overwrite=overwrite,
         dimension_separator="/",
     )
 
     # Write to disk
     img.to_zarr(
         url=label_zarr,
-        compute=True,
+        compute=overwrite,
         overwrite=overwrite,
     )
 

@@ -155,7 +155,7 @@ def filter_label_by_size(
 
         # Write to disk
         da.array(label_img).to_zarr(
-            url=out_path,
+            url=out_zarr,
             compute=True,
             overwrite=overwrite
         )
@@ -217,20 +217,21 @@ def filter_label_by_size(
         )
 
         label_url = img_zarr_path.joinpath(f'labels/{output_label_name}/0')
+        store = zarr.storage.FSStore(img_zarr_path.joinpath(f'labels/{output_label_name}/0').as_posix())
         label_dtype = np.uint32
 
         label_zarr = zarr.create(
             shape=data_zyx.shape,
             chunks=data_zyx.chunksize,
             dtype=label_dtype,
-            store=label_url,
+            store=store,
             overwrite=overwrite,
             dimension_separator="/",
         )
 
         # Write to disk
         da.array(label_img).to_zarr(
-            url=label_url,
+            url=label_zarr,
             compute=True,
             overwrite=overwrite
         )
