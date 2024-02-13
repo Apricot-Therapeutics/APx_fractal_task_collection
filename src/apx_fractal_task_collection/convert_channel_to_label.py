@@ -185,7 +185,7 @@ def convert_channel_to_label(
     )
 
     # Write to disk
-    da.array(img).to_zarr(
+    da.array(relabeled_img).to_zarr(
         url=label_zarr,
         compute=overwrite,
         overwrite=overwrite,
