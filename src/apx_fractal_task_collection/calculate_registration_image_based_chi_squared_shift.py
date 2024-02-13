@@ -12,6 +12,7 @@
 # <exact-lab.it> under contract with Liberali Lab from the Friedrich Miescher
 # Institute for Biomedical Research and Pelkmans Lab from the University of
 # Zurich.
+
 import logging
 from pathlib import Path
 from typing import Any
@@ -39,6 +40,23 @@ from fractal_tasks_core.lib_regions_of_interest import load_region
 from fractal_tasks_core.lib_write import write_table
 
 logger = logging.getLogger(__name__)
+
+def convert_to_8bit(img):
+    '''
+    Convert an image to 8-bit.
+
+    Args:
+        img: The image to convert.
+
+    Returns:
+        The image converted to 8-bit.
+    '''
+
+    img = (img - img.min()) / (np.quantile(img, 0.999) - img.min())*255
+    img[img>255] = 255
+    img = img.astype(np.uint8)
+
+    return img
 
 
 @validate_arguments
@@ -213,6 +231,10 @@ def calculate_registration_image_based_chi_squared_shift(
             region=convert_indices_to_regions(list_indices_cycle_x[i_ROI]),
             compute=compute,
         )
+
+        # convert the images to 8 bit to save memory
+        img_ref = convert_to_8bit(img_ref)
+        img_cycle_x = convert_to_8bit(img_cycle_x)
 
         ##############
         #  Calculate the transformation
