@@ -121,7 +121,7 @@ def convert_channel_to_label(
     img = get_channel_image_from_zarr(well_url, channel_label)
 
     # relabel in case the segmentation was created by FOV
-    img = label(img)
+    relabeled_img = label(img)
 
     label_url = well_url.joinpath(str(output_cycle),
                                   'labels',
@@ -185,7 +185,7 @@ def convert_channel_to_label(
     )
 
     # Write to disk
-    img.to_zarr(
+    da.array(img).to_zarr(
         url=label_zarr,
         compute=overwrite,
         overwrite=overwrite,
