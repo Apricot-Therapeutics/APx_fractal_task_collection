@@ -18,6 +18,7 @@ from typing import Sequence
 from typing import Optional
 from skimage.morphology import remove_small_objects
 from pathlib import Path
+from skimage.morphology import label
 from pydantic.decorator import validate_arguments
 
 import fractal_tasks_core
@@ -136,6 +137,9 @@ def filter_label_by_size(
     if max_size is not None:
         logger.info(f"Removing objects larger than {max_size} pixels")
         label_img = remove_large_objects(label_img, max_size=max_size)
+
+    # relabel to preserve consecutive labels
+    label_img = label(label_img)
 
     if output_label_name == label_name or output_label_name is None:
 
