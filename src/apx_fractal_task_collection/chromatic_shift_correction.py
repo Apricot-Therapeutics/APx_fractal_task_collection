@@ -37,7 +37,9 @@ logger = logging.getLogger(__name__)
 
 def get_channel_image_from_zarr(zarrurl, channel_label):
     '''
-    Get the image data for a specific channel from an OME-Zarr file.
+    Get the image data for a specific channel from an OME-Zarr file. This
+    function collects all images across all wells and returns them as a single
+    stack.
 
     Args:
         zarrurl: Path to the OME-Zarr file.
@@ -164,22 +166,21 @@ def chromatic_shift_correction(
     """
     logger.info(f"Correcting chromatic shift based on reference images.")
     in_path = Path(input_paths[0])
-    zarrurl = in_path.joinpath(in_path.joinpath(component)).parents[2]
-    img_url = zarrurl.joinpath(component)
+    zarrurl = in_path.joinpath(in_path.joinpath(component))
 
-    img_group = zarr.open(img_url.joinpath('0'))
+    img_group = zarr.open(zarrurl.joinpath('0'))
     # make sure that reference channel is not in correction channels
     correction_channel_labels = [c for c in correction_channel_labels if
                            reference_channel_label not in c]
 
      # Read attributes from NGFF metadata
-    ngff_image_meta = load_NgffImageMeta(img_url)
+    ngff_image_meta = load_NgffImageMeta(zarrurl)
     num_levels = ngff_image_meta.num_levels
     coarsening_xy = ngff_image_meta.coarsening_xy
     full_res_pxl_sizes_zyx = ngff_image_meta.get_pixel_sizes_zyx(level=0)
 
     # Read FOV ROIs
-    FOV_ROI_table = ad.read_zarr(f"{img_url}/tables/FOV_ROI_table")
+    FOV_ROI_table = ad.read_zarr(f"{zarrurl}/tables/FOV_ROI_table")
 
     # Create list of indices for 3D FOVs spanning the entire Z direction
     list_indices = convert_ROI_table_to_indices(
@@ -209,14 +210,14 @@ def chromatic_shift_correction(
 
     # get reference images
     ref_images, ref_wavelength_id = \
-        get_channel_image_from_zarr(zarrurl, reference_channel_label)
+        get_channel_image_from_zarr(zarrurl.parents[2], reference_channel_label)
 
     # get transformation maps
     transformation_maps = {}
     for corr_channel in correction_channel_labels:
         ROI_maps = {}
         channel_images, wavelength_id = \
-            get_channel_image_from_zarr(zarrurl, corr_channel)
+            get_channel_image_from_zarr(zarrurl.parents[2], corr_channel)
         for i_ROI, indices in enumerate(list_indices):
             # Define region
             s_z, e_z, s_y, e_y, s_x, e_x = indices[:]
@@ -236,18 +237,18 @@ def chromatic_shift_correction(
         transformation_maps[wavelength_id] = ROI_maps
 
     # apply transformation maps to all images
-    channel_list = get_omero_channel_list(image_zarr_path=img_url)
+    channel_list = get_omero_channel_list(image_zarr_path=zarrurl)
     channel_list = [c for c in channel_list if
                     c.wavelength_id != ref_wavelength_id]
     for channel in channel_list:
         tmp_channel: OmeroChannel = get_channel_from_image_zarr(
-            image_zarr_path=img_url,
+            image_zarr_path=zarrurl,
             wavelength_id=None,
             label=channel.label
         )
         ind_channel = tmp_channel.index
         data_czyx = \
-            da.from_zarr(img_url.joinpath('0'))
+            da.from_zarr(zarrurl.joinpath('0'))
 
         for i_ROI, indices in enumerate(list_indices):
             # Define region
@@ -277,7 +278,7 @@ def chromatic_shift_correction(
         # Starting from on-disk highest-resolution data, build and write
         # to disk a pyramid of coarser levels
         build_pyramid(
-            zarrurl=img_url,
+            zarrurl=zarrurl,
             overwrite=True,
             num_levels=num_levels,
             coarsening_xy=coarsening_xy,
