@@ -171,7 +171,10 @@ def calculate_illumination_profiles(
         # calculate illumination correction profile
         logger.info(f"Now calculating illumination correction for channel {channel}.")
         basic = BaSiC(get_darkfield=True, smoothness_flatfield=1)
-        basic.fit(np.squeeze(ROI_data))
+        if np.shape(ROI_data)[0] == 1:
+            basic.fit(ROI_data[0, :, :, :])
+        else:
+            basic.fit(np.squeeze(ROI_data))
         logger.info(
             f"Finished calculating illumination correction for channel {channel}.")
 
