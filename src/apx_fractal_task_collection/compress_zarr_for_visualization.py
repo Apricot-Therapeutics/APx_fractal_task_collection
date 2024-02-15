@@ -147,8 +147,6 @@ def compress_zarr_for_visualization(  # noqa: C901
         metadata: Dict[str, Any],
         # Task-specific arguments:
         output_zarr_path: str,
-        #n_levels: int = 2,
-        #coarsening_xy: int = 2,
         overwrite: bool = False
 ) -> None:
     """
@@ -185,11 +183,11 @@ def compress_zarr_for_visualization(  # noqa: C901
                       "multiscales" in zarr_group[group].attrs]
 
     ## prepare meta data
-    #ngff_image_meta = load_NgffImageMeta(zarr_path.joinpath(img_group_keys[0]))
-    #num_levels = ngff_image_meta.num_levels
-    #coarsening_xy = ngff_image_meta.coarsening_xy
-    num_levels = 2
-    coarsening_xy = 4
+    ngff_image_meta = load_NgffImageMeta(zarr_path.joinpath(img_group_keys[0]))
+    num_levels = ngff_image_meta.num_levels
+    coarsening_xy = ngff_image_meta.coarsening_xy
+    #num_levels = 2
+    #coarsening_xy = 4
 
 
     # for each img_group, load the first pyramid level and compress it

@@ -254,6 +254,7 @@ def IC6000_to_ome_zarr(
                 f"  wavelength_id: {wavelength_id},\n"
                 f"  patterns: {patterns}"
             )
+
         # Loop over 3D FOV ROIs
         for indices in fov_indices:
             s_z, e_z, s_y, e_y, s_x, e_x = indices[:]
