@@ -112,16 +112,11 @@ def measure_morphology_features(label_image):
 
 def haralick_features(regionmask, intensity_image):
     haralick_values_list = []
-
-    # NOTE: Haralick features are computed on 8-bit images.
-    clip_value = np.percentile(intensity_image, 99.999)
-    clipped_img = np.clip(intensity_image, 0, clip_value).astype('uint16')
-    rescaled_img = mh.stretch(clipped_img)
-
+    masked_image = np.where(regionmask > 0, intensity_image, 0)
     for distance in [2, 5]:
         try:
             haralick_values = mh.features.haralick(
-                rescaled_img.astype('uint16'),
+                masked_image.astype('uint8'),
                 distance=distance,
                 return_mean=True,
                 ignore_zeros=True)
@@ -131,10 +126,16 @@ def haralick_features(regionmask, intensity_image):
         haralick_values_list.extend(haralick_values)
     return haralick_values_list
 
+
 def measure_texture_features(label_image, intensity_image):
     """
     Measure texture features for label image.
     """
+
+    # NOTE: Haralick features are computed on 8-bit images.
+    clip_value = np.percentile(intensity_image, 99.999)
+    clipped_img = np.clip(intensity_image, 0, clip_value).astype('uint16')
+    rescaled_img = mh.stretch(clipped_img)
 
     names = ['angular-second-moment', 'contrast', 'correlation',
              'sum-of-squares', 'inverse-diff-moment', 'sum-avg',
@@ -143,7 +144,7 @@ def measure_texture_features(label_image, intensity_image):
 
     names = [f"Haralick-{name}-{distance}" for distance in [2, 5] for name in names]
 
-    texture_features = pd.DataFrame(regionprops_table(label_image, intensity_image,
+    texture_features = pd.DataFrame(regionprops_table(label_image, rescaled_img,
                                                       properties=['label'],
                                                       extra_properties=[haralick_features]))
     texture_features.set_index('label', inplace=True)
