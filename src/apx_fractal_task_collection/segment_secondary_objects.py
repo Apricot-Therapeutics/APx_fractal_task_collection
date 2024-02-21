@@ -21,6 +21,7 @@ import dask.array as da
 import fractal_tasks_core
 import numpy as np
 import zarr
+import anndata as ad
 import mahotas as mh
 from skimage.filters import gaussian
 from skimage.morphology import area_closing
@@ -33,6 +34,10 @@ from fractal_tasks_core.lib_input_models import Channel
 from fractal_tasks_core.lib_channels import ChannelNotFoundError
 from fractal_tasks_core.lib_channels import OmeroChannel
 from fractal_tasks_core.lib_channels import get_channel_from_image_zarr
+from fractal_tasks_core.lib_regions_of_interest import check_valid_ROI_indices
+from fractal_tasks_core.lib_regions_of_interest import (
+    convert_ROI_table_to_indices,
+)
 
 from pydantic.decorator import validate_arguments
 
@@ -54,7 +59,8 @@ def watershed(intensity_image, label_image,
     # get the maximum label value in the primary label image
     max_label = np.max(np.unique(label_image[np.nonzero(label_image)]))
 
-    # get the background mask and label its regions (will later be used as background seeds)
+    # get the background mask and label its regions
+    # (will later be used as background seeds)
     background_mask = mh.thresholding.bernsen(
         intensity_image, 5, contrast_threshold
     )
@@ -91,6 +97,7 @@ def segment_secondary_objects(  # noqa: C901
     channel: Channel,
     label_image_cycle: Optional[int] = None,
     intensity_image_cycle: Optional[int] = None,
+    ROI_table_name: str,
     min_threshold: Optional[int] = None,
     max_threshold: Optional[int] = None,
     gaussian_blur: Optional[int] = None,
@@ -121,14 +128,18 @@ def segment_secondary_objects(  # noqa: C901
             Needs to exist in OME-Zarr file.
         channel: Name of the intensity image used for watershed.
             Needs to exist in OME-Zarr file.
-        label_image_cycle: indicates which cycle contains the label image (only needed if multiplexed).
-        intensity_image_cycle: indicates which cycle contains the intensity image (only needed if multiplexed).
+        label_image_cycle: indicates which cycle contains the label image
+            (only needed if multiplexed).
+        intensity_image_cycle: indicates which cycle contains the intensity
+            image (only needed if multiplexed).
+        ROI_table_name: Name of the table containing the ROIs.
         min_threshold: Minimum threshold for the background definition.
         max_threshold: Maximum threshold for the background definition.
         gaussian_blur: Sigma for gaussian blur.
         fill_holes_area: Area threshold for filling holes after watershed.
         contrast_threshold: Contrast threshold for background definition.
-        output_label_cycle: indicates in which cycle to store the result (only needed if multiplexed).
+        output_label_cycle: indicates in which cycle to store the result
+            (only needed if multiplexed).
         output_label_name: Name of the output label image.
         level: Resolution of the label image to calculate overlap.
             Only tested for level 0.
@@ -138,7 +149,8 @@ def segment_secondary_objects(  # noqa: C901
     # update the component for the label image if multiplexed experiment
     if label_image_cycle is not None:
         label_image_component = component + "/" + str(label_image_cycle)
-        intensity_image_component = component + "/" + str(intensity_image_cycle)
+        intensity_image_component = component + "/" + \
+                                    str(intensity_image_cycle)
         output_component = component + "/" + str(output_label_cycle)
     else:
         label_image_component = component + "/0"
@@ -151,7 +163,7 @@ def segment_secondary_objects(  # noqa: C901
     # load primary label image
     label_image = da.from_zarr(
         f"{in_path}/{label_image_component}/labels/{label_image_name}/{level}"
-    ).compute()
+    )
 
     # Find channel index
     try:
@@ -248,21 +260,57 @@ def segment_secondary_objects(  # noqa: C901
         f"and chunks {data_zyx.chunks}"
     )
 
-    # perform watershed
-    new_label_image = watershed(np.squeeze(data_zyx.compute()), np.squeeze(label_image), min_threshold=min_threshold,
-                                max_threshold=max_threshold, gaussian_blur=gaussian_blur, contrast_threshold=contrast_threshold)
-
-    # fill holes in label image
-    if fill_holes_area is not None:
-        new_label_image = area_closing(new_label_image, area_threshold=fill_holes_area)
-
-    new_label_image = np.expand_dims(new_label_image, axis=0)
-
-    # Compute and store 0-th level to disk
-    da.array(new_label_image).to_zarr(
-        url=mask_zarr,
-        compute=True,
+    # load ROI table
+    ROI_table = ad.read_zarr(in_path.joinpath(label_image_component, "tables",
+                                              ROI_table_name))
+    # Create list of indices for 3D FOVs spanning the entire Z direction
+    list_indices = convert_ROI_table_to_indices(
+        ROI_table,
+        level=0,
+        coarsening_xy=coarsening_xy,
+        full_res_pxl_sizes_zyx=full_res_pxl_sizes_zyx,
     )
+    check_valid_ROI_indices(list_indices, "registered_well_ROI_table")
+    num_ROIs = len(list_indices)
+
+    # Loop over the list of indices and perform the secondary segmentation
+    for i_ROI, indices in enumerate(list_indices):
+
+        # Define region
+        s_z, e_z, s_y, e_y, s_x, e_x = indices[:]
+        region = (
+            slice(s_z, e_z),
+            slice(s_y, e_y),
+            slice(s_x, e_x),
+        )
+        logger.info(
+            f"Now processing ROI {i_ROI + 1}/{num_ROIs} from ROI table"
+            f" {ROI_table_name}."
+        )
+
+        # perform watershed
+        new_label_image = watershed(
+            np.squeeze(data_zyx[region].compute()),
+            np.squeeze(label_image[region].compute()),
+            min_threshold=min_threshold,
+            max_threshold=max_threshold,
+            gaussian_blur=gaussian_blur,
+            contrast_threshold=contrast_threshold)
+
+        # fill holes in label image
+        if fill_holes_area is not None:
+            new_label_image = area_closing(new_label_image,
+                                           area_threshold=fill_holes_area)
+
+        new_label_image = np.expand_dims(new_label_image, axis=0)
+
+        # Compute and store 0-th level to disk
+        da.array(new_label_image).to_zarr(
+            url=mask_zarr,
+            region=region,
+            compute=True,
+        )
+
 
     logger.info(
         f"Secondary segmentation done for {out}."
