@@ -508,11 +508,9 @@ def measure_features(  # noqa: C901
     obs.set_index('label', inplace=True)
 
     # save features as AnnData table
-    feature_table = ad.AnnData(X=merged_features.values,
+    feature_table = ad.AnnData(X=merged_features.reset_index(drop=True),
                                obs=obs,
-                               var=merged_features.columns.to_frame(),
                                dtype='float32')
-
 
     # Write to zarr group
     image_group = zarr.group(f"{in_path}/{component}")

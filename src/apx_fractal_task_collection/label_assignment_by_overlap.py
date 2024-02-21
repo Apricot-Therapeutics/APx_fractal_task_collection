@@ -166,8 +166,11 @@ def label_assignment_by_overlap(  # noqa: C901
             columns={'parent_label': f'{parent_label_image}_label',
                      'overlap': f'{child_label_image}_{parent_label_image}_overlap'},
         inplace=True)
+        # convert label index to string (otherwise merging with Anndata will fail)
+        assignments.index = assignments.index.astype('str')
         # merge with child feature obs data
-        merged_data = child_features.obs.merge(assignments, left_on='label',
+        merged_data = child_features.obs.merge(assignments,
+                                               left_index=True,
                                                right_index=True,
                                                how='left')
         merged_data[f'{parent_label_image}_label'] = merged_data[f'{parent_label_image}_label'].astype('Int32')

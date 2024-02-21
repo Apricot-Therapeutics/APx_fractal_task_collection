@@ -159,6 +159,8 @@ def test_label_assignment_by_overlap(test_data_dir):
         measure_intensity=True,
         measure_morphology=True,
         measure_texture=True,
+        ROI_table_name='FOV_ROI_table',
+        calculate_internal_borders=True,
         output_table_name='feature_table',
         level=0,
         overwrite=True
@@ -175,7 +177,7 @@ def test_label_assignment_by_overlap(test_data_dir):
         child_label_cycle=0,
         child_table_name='feature_table',
         level=0,
-        overlap_threshold=0.95,
+        overlap_threshold=0.6,
     )
 
 
@@ -192,6 +194,8 @@ def test_aggregate_tables_to_well_level(test_data_dir):
         measure_intensity=True,
         measure_morphology=True,
         measure_texture=True,
+        ROI_table_name='FOV_ROI_table',
+        calculate_internal_borders=True,
         output_table_name='feature_table',
         level=0,
         overwrite=True
@@ -207,6 +211,8 @@ def test_aggregate_tables_to_well_level(test_data_dir):
         measure_intensity=True,
         measure_morphology=True,
         measure_texture=True,
+        ROI_table_name='FOV_ROI_table',
+        calculate_internal_borders=True,
         output_table_name='feature_table',
         level=0,
         overwrite=True
@@ -222,6 +228,8 @@ def test_aggregate_tables_to_well_level(test_data_dir):
         measure_intensity=True,
         measure_morphology=True,
         measure_texture=True,
+        ROI_table_name='FOV_ROI_table',
+        calculate_internal_borders=True,
         output_table_name='feature_table',
         level=0,
         overwrite=True
