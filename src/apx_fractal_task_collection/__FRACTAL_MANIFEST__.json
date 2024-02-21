@@ -311,6 +311,11 @@
             "type": "integer",
             "description": "indicates which cycle contains the intensity image (only needed if multiplexed)."
           },
+          "ROI_table_name": {
+            "title": "Roi Table Name",
+            "type": "string",
+            "description": "Name of the table containing the ROIs."
+          },
           "min_threshold": {
             "title": "Min Threshold",
             "type": "integer",
@@ -367,6 +372,7 @@
           "metadata",
           "label_image_name",
           "channel",
+          "ROI_table_name",
           "output_label_name"
         ],
         "additionalProperties": false,
@@ -457,6 +463,17 @@
             "type": "boolean",
             "description": "If True, calculate texture features."
           },
+          "ROI_table_name": {
+            "title": "Roi Table Name",
+            "type": "string",
+            "description": "Name of the ROI table to process."
+          },
+          "calculate_internal_borders": {
+            "title": "Calculate Internal Borders",
+            "default": false,
+            "type": "boolean",
+            "description": "For a typical experiment this should not be selected. If True, calculate internal borders (whether an object touches or overlaps with a FOV border). This is only useful if you registered by well and want to remove objects that are on the border of a FOV. IMPORTANT: This only removes objects that are on the border of FOVs in cycle 1 of a multiplexed experiment."
+          },
           "output_table_name": {
             "title": "Output Table Name",
             "type": "string",
@@ -484,7 +501,7 @@
         ],
         "additionalProperties": false
       },
-      "docs_info": "Calculate features based on label image and intensity image (optional).\n\nTakes a label image and an optional intensity image and calculates morphology,\nintensity and texture features in 2D."
+      "docs_info": "Calculate features based on label image and intensity image (optional).\n\nTakes a label image and an optional intensity image and calculates\nmorphology, intensity and texture features in 2D."
     },
     {
       "name": "Calculate Illumination Profiles",

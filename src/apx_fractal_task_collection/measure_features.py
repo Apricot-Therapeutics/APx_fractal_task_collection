@@ -271,6 +271,7 @@ def measure_features(  # noqa: C901
         measure_morphology: bool = False,
         measure_texture: bool = False,
         ROI_table_name: str = None,
+        calculate_internal_borders: bool = False,
         output_table_name: str = None,
         level: int = 0,
         overwrite: bool = True,

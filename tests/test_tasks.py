@@ -50,6 +50,8 @@ def test_measure_features(test_data_dir):
         measure_intensity=True,
         measure_morphology=True,
         measure_texture=True,
+        ROI_table_name='FOV_ROI_table',
+        calculate_internal_borders=True,
         output_table_name='feature_table',
         level=0,
         overwrite=True
@@ -83,6 +85,7 @@ def test_segment_secondary_objects(test_data_dir):
         channel=Channel(label='0_DAPI', wavelength_id=None),
         label_image_cycle=0,
         intensity_image_cycle=0,
+        ROI_table_name='FOV_ROI_table',
         min_threshold=10,
         max_threshold=20,
         gaussian_blur=2,
