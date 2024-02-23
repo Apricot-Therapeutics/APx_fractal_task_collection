@@ -21,7 +21,7 @@ from natsort import natsorted
 from phenograph import cluster
 from minisom import MiniSom
 from pathlib import Path
-from typing import Any, Dict, Sequence
+from typing import Any, Dict, Sequence, Optional
 
 from sklearn.preprocessing import (StandardScaler,
                                    PowerTransformer,
@@ -278,16 +278,16 @@ def multiplexed_pixel_clustering(  # noqa: C901
         metadata: Dict[str, Any],
         # Task-specific arguments:
         label_image_name: str,
-        channels_to_use: Sequence[str] = None,
-        channels_to_exclude: Sequence[str] = None,
-        well_names: Sequence[str] = None,
+        channels_to_use: Optional[list[str]] = None,
+        channels_to_exclude: Optional[list[str]] = None,
+        well_names: Sequence[str],
         som_shape: Sequence[int] = (20, 20),
         phenograph_neighbours: int = 15,
         enforce_equal_object_count: bool = False,
-        coords: Sequence[int] = None,
+        coords: Optional[list[int]] = None,
         level: int = 0,
-        output_table_name: str = None,
-        output_label_name: str = None,
+        output_table_name: str,
+        output_label_name: str,
         overwrite: bool = True,
 ) -> None:
     """
