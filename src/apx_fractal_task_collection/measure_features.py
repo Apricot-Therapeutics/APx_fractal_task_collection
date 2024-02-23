@@ -270,9 +270,9 @@ def measure_features(  # noqa: C901
         measure_intensity: bool = False,
         measure_morphology: bool = False,
         measure_texture: bool = False,
-        ROI_table_name: str = None,
+        ROI_table_name: str,
         calculate_internal_borders: bool = False,
-        output_table_name: str = None,
+        output_table_name: str,
         level: int = 0,
         overwrite: bool = True,
 ) -> None:
