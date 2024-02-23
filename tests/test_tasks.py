@@ -406,10 +406,5 @@ def test_stitch_fovs_with_overlap(test_data_dir):
         component="test_plate.zarr/C/03/0",
         metadata={},
         overlap=0.1,
-        filter_sigma=10,
-        safety_pad=250
+        filter_sigma=10
     )
-
-
-
-

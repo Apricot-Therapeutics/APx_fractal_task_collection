@@ -10,31 +10,20 @@
 
 import logging
 import itertools
-import time
-import warnings
 import subprocess
 from pathlib import Path
 import tempfile
 from typing import Any
-from typing import Optional
 from typing import Sequence
 
-import anndata as ad
 import dask.array as da
 import numpy as np
-import zarr
-from basicpy import BaSiC
 from skimage import io
 from pydantic.decorator import validate_arguments
 
-from fractal_tasks_core.lib_channels import get_omero_channel_list
-from fractal_tasks_core.lib_channels import OmeroChannel
+
 from fractal_tasks_core.lib_ngff import load_NgffImageMeta
 from fractal_tasks_core.lib_pyramid_creation import build_pyramid
-from fractal_tasks_core.lib_regions_of_interest import check_valid_ROI_indices
-from fractal_tasks_core.lib_regions_of_interest import (
-    convert_ROI_table_to_indices,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +37,7 @@ def stitch_fovs_with_overlap(
     metadata: dict[str, Any],
     # Task-specific arguments
     overlap: float = 0.1,
-    filter_sigma: float = 10,
-    safety_pad: int = 250,
+    filter_sigma: float = 10
 ) -> None:
 
     """
@@ -93,49 +81,56 @@ def stitch_fovs_with_overlap(
     width = data_czyx.blocks.shape[-1]
 
     data_czyx_out = []
+    with tempfile.TemporaryDirectory() as tmpdirname:
 
-    for data_zyx in data_czyx:
-        with tempfile.TemporaryDirectory() as tmpdirname:
+        logger.info(f'created temporary directory {tmpdirname}')
+        tmpdir = Path(tmpdirname)
 
-            logger.info(f'created temporary directory {tmpdirname}')
-            tmpdir = Path(tmpdirname)
-
-            logger.info("Saving FOVs to temporary directory")
+        for i_c, data_zyx in enumerate(data_czyx):
+            logger.info(f"Saving FOVs of channel index {i_c} to "
+                        f"temporary directory")
             for i, inds in enumerate(
                     itertools.product(*map(range, data_zyx.blocks.shape))):
                 chunk = data_zyx.blocks[inds]
                 io.imsave(
-                    tmpdir.joinpath(f'chunk_{i:03d}.tif'),
+                    tmpdir.joinpath(f'chunk_F{i:03d}_C{i_c:02d}.tif'),
                     np.squeeze(chunk.compute()))
-                logger.info(f"Saved chunk {i} of shape "
-                            f"{np.squeeze(chunk).shape} to "
-                            f"{tmpdir.joinpath(f'chunk_{i:03d}.tif')}")
+                logger.info(
+                    f"Saved chunk {i} of shape "
+                    f"{np.squeeze(chunk).shape} to "
+                    f"{tmpdir.joinpath(f'chunk_F{i:03d}_C{i_c:02d}.tif')}")
 
-            logger.info("Running ASHLAR to stitch FOVs")
-            ashlar_path = f"fileseries|{tmpdir}|pattern=chunk_.tif|" \
-                          f"overlap={overlap}|width={width}|" \
-                          f"height={height}|pixel_size={pixel_size_yx}"
-            ashlar_path = ashlar_path.replace("chunk_", "chunk_{series:3}")
-            ashlar_args = f"--output={tmpdir.joinpath('ashlar_output.tif')} " \
-                          f"--filter-sigma={filter_sigma}"
+        logger.info("Running ASHLAR to stitch FOVs")
+        ashlar_path = f"fileseries|{tmpdir}|pattern=chunk_.tif|" \
+                      f"overlap={overlap}|width={width}|" \
+                      f"height={height}|pixel_size={pixel_size_yx}"
+        ashlar_path = ashlar_path.replace("chunk_",
+                                          "chunk_F{series:3}_C{channel:2}")
+        ashlar_args = \
+            f"--output=" \
+            f"{tmpdir.joinpath('ashlar_output_{cycle}_{channel}.tif')} " \
+            f"--filter-sigma={filter_sigma}"
 
-            logger.info(f"Running ASHLAR with path: {ashlar_path}")
-            subprocess.call(f". /etc/profile.d/lmod.sh;"
-                            f" module load openjdk/11.0.2/gcc;"
-                            f" ashlar '{ashlar_path}' {ashlar_args}",
-                            shell=True)
+        logger.info(f"Running ASHLAR with path: {ashlar_path}")
+        subprocess.call(f". /etc/profile.d/lmod.sh;"
+                        f" module load openjdk/11.0.2/gcc;"
+                        f" ashlar '{ashlar_path}' {ashlar_args}",
+                        shell=True)
 
+        for i_c, data_zyx in enumerate(data_czyx):
             logger.info("Reading stitched FOV")
-            stitched_img = io.imread(tmpdir.joinpath('ashlar_output.tif'))
+            stitched_img = io.imread(
+                tmpdir.joinpath(f'ashlar_output_0_{i_c}.tif'))
             logger.info(f"Stitched image has shape {stitched_img.shape}")
 
-            logger.info("Padding stitched image")
+            logger.info(f"Padding stitched image to match original image size "
+                        f"({data_zyx.shape})")
 
-            to_pad_x = data_zyx.shape[2] - stitched_img.shape[1] + safety_pad
-            to_pad_y = data_zyx.shape[1] - stitched_img.shape[0] + safety_pad
+            to_pad_x = data_zyx.shape[2] - stitched_img.shape[1]
+            to_pad_y = data_zyx.shape[1] - stitched_img.shape[0]
             stitched_img = np.pad(stitched_img,
                                   ((0, to_pad_y), (0, to_pad_x)),
-                                   mode='constant',
+                                  mode='constant',
                                   constant_values=0)
 
             stitched_img = np.expand_dims(stitched_img, axis=0)
@@ -147,12 +142,14 @@ def stitch_fovs_with_overlap(
 
     logger.info("Saving stitched image to disk")
     data_czyx_out = np.stack(data_czyx_out)
+    data_czyx_out = da.from_array(data_czyx_out, chunks=data_czyx.chunksize)
+
     # Write to disk
-    da.array(data_czyx_out).to_zarr(
+    data_czyx_out.to_zarr(
         url=zarrurl.joinpath('0'),
         compute=True,
         overwrite=True,
-        chunksize=data_czyx.chunksize,
+        dimension_separator="/"
     )
 
     logger.info("build pyramids")
@@ -163,26 +160,6 @@ def stitch_fovs_with_overlap(
         num_levels=num_levels,
         coarsening_xy=coarsening_xy,
     )
-
-    logger.info("Updating well_ROI_table")
-    # Update the well_ROI_table
-    well_ROI_table = ad.read_zarr(zarrurl.joinpath('tables/well_ROI_table'))
-    data = well_ROI_table.to_df()
-    new_len_x = data_czyx_out.shape[-1] * pixel_size_yx
-    new_len_y = data_czyx_out.shape[-2] * pixel_size_yx
-
-    logger.info(f"Updated len_x_micrometer "
-                f"({int(data['len_x_micrometer'].values[0])} ->"
-                f" {int(new_len_x)}) "
-                f"and len_y_micrometer "
-                f"({int(data['len_y_micrometer'].values[0])} ->"
-                f" {int(new_len_y)})")
-
-    data['len_x_micrometer'] = new_len_x
-    data['len_y_micrometer'] = new_len_y
-
-    well_ROI_table.X = data
-    well_ROI_table.write_zarr(zarrurl.joinpath('tables/well_ROI_table'))
 
 
 if __name__ == "__main__":
