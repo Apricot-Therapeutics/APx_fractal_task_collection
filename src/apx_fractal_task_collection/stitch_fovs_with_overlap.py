@@ -20,6 +20,7 @@ import dask.array as da
 import numpy as np
 from skimage import io
 from pydantic.decorator import validate_arguments
+from ashlar.scripts import ashlar
 
 
 from fractal_tasks_core.lib_ngff import load_NgffImageMeta
@@ -106,17 +107,20 @@ def stitch_fovs_with_overlap(
                       f"height={height}|pixel_size={pixel_size_yx}"
         ashlar_path = ashlar_path.replace("chunk_",
                                           "chunk_F{series:3}_C{channel:2}")
+        #ashlar_args = \
+        #    f"--output=" \
+        #    f"{tmpdir.joinpath('ashlar_output_{cycle}_{channel}.tif')} " \
+        #    f"--filter-sigma={filter_sigma}"
         ashlar_args = \
-            f"--output=" \
-            f"{tmpdir.joinpath('ashlar_output_{cycle}_{channel}.tif')} " \
-            f"--filter-sigma={filter_sigma}"
+            [f"--output={tmpdir.joinpath('ashlar_output_{cycle}_{channel}.tif')}",
+             f"--filter-sigma={filter_sigma}"]
 
         logger.info(f"Running ASHLAR with path: {ashlar_path}")
-        subprocess.call(f". /etc/profile.d/lmod.sh;"
-                        f" module load openjdk/11.0.2/gcc;"
-                        f" ashlar '{ashlar_path}' {ashlar_args}",
-                        shell=True)
-
+        #subprocess.call(f". /etc/profile.d/lmod.sh;"
+        #                f" module load openjdk/11.0.2/gcc;"
+        #                f" ashlar '{ashlar_path}' {ashlar_args}",
+        #                shell=True)
+        ashlar.main(["test", ashlar_path] + ashlar_args)
         for i_c, data_zyx in enumerate(data_czyx):
             logger.info("Reading stitched FOV")
             stitched_img = io.imread(
