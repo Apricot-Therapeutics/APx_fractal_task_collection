@@ -1,0 +1,49 @@
+{
+  "title": "StitchFovsWithOverlap",
+  "type": "object",
+  "properties": {
+    "input_paths": {
+      "title": "Input Paths",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of input paths where the image data is stored as OME-Zarrs. Should point to the parent folder containing one or many OME-Zarr files, not the actual OME-Zarr file. Example: `[\"/some/path/\"]`. This task only supports a single input path. (standard argument for Fractal tasks, managed by Fractal server)."
+    },
+    "output_path": {
+      "title": "Output Path",
+      "type": "string",
+      "description": "Path were the output of this task is stored. Examples: `\"/some/path/\"` => puts the new OME-Zarr file in the same folder as the input OME-Zarr file; `\"/some/new_path\"` => puts the new OME-Zarr file into a new folder at `/some/new_path`. (standard argument for Fractal tasks, managed by Fractal server)."
+    },
+    "component": {
+      "title": "Component",
+      "type": "string",
+      "description": "Path to the OME-Zarr image in the OME-Zarr plate that is processed. Example: `\"some_plate.zarr/B/03/0\"`. (standard argument for Fractal tasks, managed by Fractal server)."
+    },
+    "metadata": {
+      "title": "Metadata",
+      "type": "object",
+      "description": "This parameter is not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
+    },
+    "overlap": {
+      "title": "Overlap",
+      "default": 0.1,
+      "type": "number",
+      "description": "The overlap between FOVs in percent (0-1)."
+    },
+    "filter_sigma": {
+      "title": "Filter Sigma",
+      "default": 10,
+      "type": "number",
+      "description": "The sigma of the Gaussian filter used to filter the FOVs for stitching. Can help to improve the stitching performance."
+    }
+  },
+  "required": [
+    "input_paths",
+    "output_path",
+    "component",
+    "metadata"
+  ],
+  "additionalProperties": false
+}
+
