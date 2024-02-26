@@ -488,16 +488,16 @@ def measure_features(  # noqa: C901
                                                     full_res_pxl_sizes_zyx[-1])
 
             ROI_obs = pd.DataFrame(
-                {"ROI": ROI_table.obs.index[i_ROI],
+                {"label": merged_roi_features['label'],
+                 "well_name": well_name,
+                 "ROI": ROI_table.obs.index[i_ROI],
                  "is_border_internal": borders_internal.values,
-                 "is_border_external": borders_external.values,
-                 "label": merged_roi_features['label'],
-                 "well_name": well_name})
+                 "is_border_external": borders_external.values})
         else:
-            ROI_obs = pd.DataFrame({"ROI": ROI_table.obs.index[i_ROI],
-                                    "is_border": borders_external.values,
-                                    "label": merged_roi_features['label'],
-                                    "well_name": well_name})
+            ROI_obs = pd.DataFrame({"label": merged_roi_features['label'],
+                                    "well_name": well_name,
+                                    "ROI": ROI_table.obs.index[i_ROI],
+                                    "is_border": borders_external.values})
 
         obs_list.append(ROI_obs)
 
@@ -505,7 +505,7 @@ def measure_features(  # noqa: C901
     merged_features = pd.concat(feature_list, axis=0)
 
     merged_features.set_index('label', inplace=True)
-    obs.set_index('label', inplace=True)
+    #obs.set_index('label', inplace=True)
 
     # save features as AnnData table
     feature_table = ad.AnnData(X=merged_features.reset_index(drop=True),
