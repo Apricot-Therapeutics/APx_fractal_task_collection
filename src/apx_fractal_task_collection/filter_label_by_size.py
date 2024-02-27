@@ -86,7 +86,7 @@ def filter_label_by_size(
     component: str,
     # Task-specific arguments
     label_name: str,
-    output_label_name: str,
+    output_label_name: Optional[str] = None,
     min_size: Optional[int] = None,
     max_size: Optional[int] = None,
     overwrite: bool = False,
@@ -172,6 +172,7 @@ def filter_label_by_size(
             overwrite=overwrite,
             num_levels=num_levels,
             coarsening_xy=coarsening_xy,
+            aggregation_function=np.max,
         )
 
     else:

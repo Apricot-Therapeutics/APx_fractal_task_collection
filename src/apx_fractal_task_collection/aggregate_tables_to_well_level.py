@@ -10,11 +10,11 @@
 
 import logging
 from typing import Any, Dict, Sequence
+import warnings
 
 import fractal_tasks_core
 import zarr
 import anndata as ad
-from typing import Optional
 from fractal_tasks_core.lib_write import write_table
 from pydantic.decorator import validate_arguments
 
@@ -34,7 +34,8 @@ def aggregate_tables_to_well_level(  # noqa: C901
         metadata: Dict[str, Any],
         # Task-specific arguments:
         input_table_name: str,
-        output_table_name: Optional[str] = None,
+        output_table_name: str,
+        output_component: str = 'image',
         overwrite: bool = True
 
 ) -> None:
@@ -53,11 +54,16 @@ def aggregate_tables_to_well_level(  # noqa: C901
             (standard argument for Fractal tasks, managed by Fractal server).
         input_table_name: Name of the feature table.
         output_table_name: Name of the aggregated feature table.
+        output_component: In which component to store the aggregated feature
+            table. Can take values "image" (the table will be saved in the 
+            first image/acquisition (0) folder) or "well" (the table will be 
+            saved in the well folder).
         overwrite: If True, overwrite existing feature table.
     """
 
     logger.info(
-        f"Aggregating features from feature table {input_table_name} to well level.")
+        f"Aggregating features from feature table"
+        f" {input_table_name} to well level.")
 
     # collect paths to all feature tables
     in_path = input_paths[0]
@@ -85,12 +91,19 @@ def aggregate_tables_to_well_level(  # noqa: C901
 
     well_table = well_table[:, vars_to_keep]
 
+    if output_component == "well":
+        out_zarr_path = f"{output_path}/{component}"
+    elif output_component == "image":
+        out_zarr_path = f"{output_path}/{component}/{image_paths[0]}"
+    else:
+        warnings.warn(f"Unknown output component {output_component}."
+                      f" Please choose between 'image' and 'well'.")
+        pass
 
-    well_zarr_path = f"{output_path}/{component}"
-    well_group = zarr.open_group(well_zarr_path, mode="r+")
+    out_group = zarr.open_group(out_zarr_path, mode="r+")
     # Write to zarr group
     write_table(
-        well_group,
+        out_group,
         output_table_name,
         well_table,
         overwrite=overwrite,

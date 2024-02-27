@@ -51,38 +51,43 @@ def watershed(intensity_image, label_image,
               min_threshold, max_threshold,
               gaussian_blur, contrast_threshold):
 
-    # apply gaussian blur
-    if gaussian_blur is not None:
-        intensity_image = gaussian(intensity_image, gaussian_blur,
-                                   preserve_range=True).astype('uint16')
+    # if there are no labels, return a zero array
+    if np.max(label_image) == 0:
+        return np.zeros(label_image.shape, dtype='uint32')
 
-    # get the maximum label value in the primary label image
-    max_label = np.max(np.unique(label_image[np.nonzero(label_image)]))
+    else:
+        # apply gaussian blur
+        if gaussian_blur is not None:
+            intensity_image = gaussian(intensity_image, gaussian_blur,
+                                       preserve_range=True).astype('uint16')
 
-    # get the background mask and label its regions
-    # (will later be used as background seeds)
-    background_mask = mh.thresholding.bernsen(
-        intensity_image, 5, contrast_threshold
-    )
+        # get the maximum label value in the primary label image
+        max_label = np.max(np.unique(label_image[np.nonzero(label_image)]))
 
-    if min_threshold is not None:
-        background_mask[intensity_image < min_threshold] = True
+        # get the background mask and label its regions
+        # (will later be used as background seeds)
+        background_mask = mh.thresholding.bernsen(
+            intensity_image, 5, contrast_threshold
+        )
 
-    if max_threshold is not None:
-        background_mask[intensity_image > max_threshold] = False
+        if min_threshold is not None:
+            background_mask[intensity_image < min_threshold] = True
 
-    background_label_image = mh.label(background_mask)[0]
-    background_label_image[background_mask] += max_label
+        if max_threshold is not None:
+            background_mask[intensity_image > max_threshold] = False
 
-    # add background seeds to primary label image
-    labels = label_image + background_label_image
+        background_label_image = mh.label(background_mask)[0]
+        background_label_image[background_mask] += max_label
 
-    # perform watershed
-    regions = mh.cwatershed(np.invert(intensity_image), labels)
-    # remove regions that are not expansions of primary objects
-    regions[regions > max_label] = 0
+        # add background seeds to primary label image
+        labels = label_image + background_label_image
 
-    return regions.astype('uint32')
+        # perform watershed
+        regions = mh.cwatershed(np.invert(intensity_image), labels)
+        # remove regions that are not expansions of primary objects
+        regions[regions > max_label] = 0
+
+        return regions.astype('uint32')
 
 @validate_arguments
 def segment_secondary_objects(  # noqa: C901

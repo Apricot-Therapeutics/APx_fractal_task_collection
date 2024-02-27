@@ -611,6 +611,12 @@
             "type": "string",
             "description": "Name of the aggregated feature table."
           },
+          "output_component": {
+            "title": "Output Component",
+            "default": "image",
+            "type": "string",
+            "description": "In which component to store the aggregated feature table. Can take values \"image\" (the table will be saved in the first image/acquisition (0) folder) or \"well\" (the table will be saved in the well folder)."
+          },
           "overwrite": {
             "title": "Overwrite",
             "default": true,
@@ -623,7 +629,8 @@
           "output_path",
           "component",
           "metadata",
-          "input_table_name"
+          "input_table_name",
+          "output_table_name"
         ],
         "additionalProperties": false
       },
@@ -1247,8 +1254,7 @@
           "output_path",
           "metadata",
           "component",
-          "label_name",
-          "output_label_name"
+          "label_name"
         ],
         "additionalProperties": false
       },

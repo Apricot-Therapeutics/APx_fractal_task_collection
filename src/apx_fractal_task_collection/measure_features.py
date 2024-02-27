@@ -506,6 +506,7 @@ def measure_features(  # noqa: C901
 
     merged_features.set_index('label', inplace=True)
     #obs.set_index('label', inplace=True)
+    obs.index = np.arange(0, len(obs))
 
     # save features as AnnData table
     feature_table = ad.AnnData(X=merged_features.reset_index(drop=True),
