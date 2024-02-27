@@ -438,7 +438,17 @@
           "label_image_name": {
             "title": "Label Image Name",
             "type": "string",
-            "description": "Name of the label image that contains the seeds. Needs to exist in OME-Zarr file."
+            "description": "Name of the label image that contains the seeds. Needs to exist in OME-Zarr file. ROI_table_name: Name of the ROI table to process. output_table_name: Name of the feature table."
+          },
+          "ROI_table_name": {
+            "title": "Roi Table Name",
+            "type": "string",
+            "description": "Missing description"
+          },
+          "output_table_name": {
+            "title": "Output Table Name",
+            "type": "string",
+            "description": "Missing description"
           },
           "label_image_cycle": {
             "title": "Label Image Cycle",
@@ -463,21 +473,11 @@
             "type": "boolean",
             "description": "If True, calculate texture features."
           },
-          "ROI_table_name": {
-            "title": "Roi Table Name",
-            "type": "string",
-            "description": "Name of the ROI table to process."
-          },
           "calculate_internal_borders": {
             "title": "Calculate Internal Borders",
             "default": false,
             "type": "boolean",
-            "description": "For a typical experiment this should not be selected. If True, calculate internal borders (whether an object touches or overlaps with a FOV border). This is only useful if you registered by well and want to remove objects that are on the border of a FOV. IMPORTANT: This only removes objects that are on the border of FOVs in cycle 1 of a multiplexed experiment."
-          },
-          "output_table_name": {
-            "title": "Output Table Name",
-            "type": "string",
-            "description": "Name of the feature table."
+            "description": "For a typical experiment this should not be selected. If True, calculate internal borders (whether an object touches or overlaps with a FOV border). This is only useful if you registered by well and want to remove objects that are on the border of a FOV. IMPORTANT: This only catches objects that are on the border of FOVs in cycle 1 of a multiplexed experiment."
           },
           "level": {
             "title": "Level",
@@ -489,7 +489,7 @@
             "title": "Overwrite",
             "default": true,
             "type": "boolean",
-            "description": "If True, overwrite existing label image."
+            "description": "If True, overwrite existing feature table."
           }
         },
         "required": [
@@ -615,7 +615,7 @@
             "title": "Overwrite",
             "default": true,
             "type": "boolean",
-            "description": "If True, overwrite existing label image."
+            "description": "If True, overwrite existing feature table."
           }
         },
         "required": [

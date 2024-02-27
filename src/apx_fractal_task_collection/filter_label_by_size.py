@@ -247,7 +247,8 @@ def filter_label_by_size(
             zarrurl=label_url.parent,
             overwrite=overwrite,
             num_levels=num_levels,
-            coarsening_xy=coarsening_xy
+            coarsening_xy=coarsening_xy,
+            aggregation_function=np.max,
         )
 
 if __name__ == "__main__":

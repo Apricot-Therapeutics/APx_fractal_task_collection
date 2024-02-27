@@ -53,7 +53,7 @@ def aggregate_tables_to_well_level(  # noqa: C901
             (standard argument for Fractal tasks, managed by Fractal server).
         input_table_name: Name of the feature table.
         output_table_name: Name of the aggregated feature table.
-        overwrite: If True, overwrite existing label image.
+        overwrite: If True, overwrite existing feature table.
     """
 
     logger.info(

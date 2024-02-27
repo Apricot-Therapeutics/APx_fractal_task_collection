@@ -266,13 +266,13 @@ def measure_features(  # noqa: C901
         metadata: Dict[str, Any],
         # Task-specific arguments:
         label_image_name: str,
+		ROI_table_name: str,
+		output_table_name: str,
         label_image_cycle: Optional[int] = None,
         measure_intensity: bool = False,
         measure_morphology: bool = False,
         measure_texture: bool = False,
-        ROI_table_name: str,
         calculate_internal_borders: bool = False,
-        output_table_name: str,
         level: int = 0,
         overwrite: bool = True,
 ) -> None:
@@ -294,23 +294,23 @@ def measure_features(  # noqa: C901
             (standard argument for Fractal tasks, managed by Fractal server).
         label_image_name: Name of the label image that contains the seeds.
             Needs to exist in OME-Zarr file.
+		ROI_table_name: Name of the ROI table to process.
+		output_table_name: Name of the feature table.
         label_image_cycle: indicates which cycle contains the label image
             (only needed if multiplexed).
         measure_intensity: If True, calculate intensity features.
         measure_morphology: If True, calculate morphology features.
         measure_texture: If True, calculate texture features.
-        ROI_table_name: Name of the ROI table to process.
         calculate_internal_borders: For a typical experiment this should
             not be selected. If True, calculate internal borders (whether
             an object touches or overlaps with a FOV border). This
             is only useful if you registered by well and want to remove
             objects that are on the border of a FOV. IMPORTANT: This only
-            removes objects that are on the border of FOVs in cycle 1 of a
+            catches objects that are on the border of FOVs in cycle 1 of a
             multiplexed experiment.
-        output_table_name: Name of the feature table.
         level: Resolution of the label image to calculate features.
             Only tested for level 0.
-        overwrite: If True, overwrite existing label image.
+        overwrite: If True, overwrite existing feature table.
     """
 
     # update the component for the label image if multiplexed experiment
@@ -323,7 +323,7 @@ def measure_features(  # noqa: C901
     in_path = Path(input_paths[0])
     # get some meta data
     ngff_image_meta = load_NgffImageMeta(in_path.joinpath(component))
-    full_res_pxl_sizes_zyx = ngff_image_meta.get_pixel_sizes_zyx(level=0)
+    full_res_pxl_sizes_zyx = ngff_image_meta.get_pixel_sizes_zyx(level=level)
     coarsening_xy = ngff_image_meta.coarsening_xy
 
     # load ROI table
@@ -338,7 +338,7 @@ def measure_features(  # noqa: C901
     # Create list of indices for 3D FOVs spanning the entire Z direction
     list_indices = convert_ROI_table_to_indices(
         ROI_table,
-        level=0,
+        level=level,
         coarsening_xy=coarsening_xy,
         full_res_pxl_sizes_zyx=full_res_pxl_sizes_zyx,
     )

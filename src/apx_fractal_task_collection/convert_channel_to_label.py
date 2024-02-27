@@ -197,7 +197,8 @@ def convert_channel_to_label(
         zarrurl=label_url,
         overwrite=overwrite,
         num_levels=num_levels,
-        coarsening_xy=coarsening_xy
+        coarsening_xy=coarsening_xy,
+        aggregation_function=np.max,
     )
 
 

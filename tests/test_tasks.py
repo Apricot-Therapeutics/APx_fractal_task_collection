@@ -22,8 +22,8 @@ from apx_fractal_task_collection.create_ome_zarr_multiplex_IC6000 import create_
 from apx_fractal_task_collection.IC6000_to_ome_zarr import IC6000_to_ome_zarr
 from apx_fractal_task_collection.multiplexed_pixel_clustering import multiplexed_pixel_clustering
 from apx_fractal_task_collection.stitch_fovs_with_overlap import stitch_fovs_with_overlap
-
-
+#from apx_fractal_task_collection.ashlar_stitching_and_registration import ashlar_stitching_and_registration
+from apx_fractal_task_collection.ashlar_stitching_and_registration_pure import ashlar_stitching_and_registration
 
 WELL_COMPONENT = "hcs_ngff.zarr/A/2"
 IMAGE_COMPONENT = "hcs_ngff.zarr/A/2/0"
@@ -408,3 +408,65 @@ def test_stitch_fovs_with_overlap(test_data_dir):
         overlap=0.1,
         filter_sigma=10
     )
+
+
+def test_ashlar_stitching_and_registration(test_data_dir):
+
+    create_ome_zarr_multiplex_IC6000(
+        input_paths=[
+            Path(test_data_dir).joinpath("IC6000_data/cycle_0").as_posix(),
+            Path(test_data_dir).joinpath("IC6000_data/cycle_1").as_posix()],
+        output_path=Path(test_data_dir).joinpath("IC6000_data").as_posix(),
+        metadata={},
+        allowed_channels={'0': [OmeroChannel(label='0_DAPI',
+                                             wavelength_id='UV - DAPI'),
+                                OmeroChannel(label='0_GFP',
+                                             wavelength_id='Blue - FITC'),
+                                OmeroChannel(label='0_RFP',
+                                             wavelength_id='Green - dsRed'),
+                                OmeroChannel(label='0_FR',
+                                             wavelength_id='Red - Cy5')],
+                          '1': [OmeroChannel(label='1_DAPI',
+                                             wavelength_id='UV - DAPI'),
+                                OmeroChannel(label='1_GFP',
+                                             wavelength_id='Blue - FITC'),
+                                OmeroChannel(label='1_RFP',
+                                             wavelength_id='Green - dsRed'),
+                                OmeroChannel(label='1_FR',
+                                             wavelength_id='Red - Cy5')
+                                ]
+                          },
+        image_glob_patterns=None,
+        num_levels=5,
+        coarsening_xy=2,
+        image_extension='tif',
+        overwrite=True
+    )
+
+    IC6000_to_ome_zarr(
+        input_paths=[Path(test_data_dir).joinpath("IC6000_data").as_posix()],
+        output_path=Path(test_data_dir).joinpath("IC6000_data").as_posix(),
+        component="test_plate.zarr/C/03/0",
+        metadata={
+            'original_paths': [
+                Path(test_data_dir).joinpath("IC6000_data",
+                                             "cycle_0").as_posix(),
+                Path(test_data_dir).joinpath("IC6000_data",
+                                             "cycle_1").as_posix()
+            ],
+            'image_extension': 'tif',
+            'image_glob_patterns': None,
+        },
+        overwrite=True
+    )
+    ashlar_stitching_and_registration(
+        input_paths=[Path(test_data_dir).joinpath("IC6000_data").as_posix()],
+        output_path=Path(test_data_dir).joinpath("IC6000_data").as_posix(),
+        component="test_plate.zarr/C/03/0",
+        metadata={},
+        overlap=0.1,
+        filter_sigma=10,
+        ref_channel_id = 'UV - DAPI',
+        ref_cycle=0
+    )
+

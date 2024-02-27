@@ -209,6 +209,7 @@ def clip_label_image(  # noqa: C901
             overwrite=overwrite,
             num_levels=num_levels,
             coarsening_xy=coarsening_xy,
+            aggregation_function=np.max,
         )
     else:
         return{}
