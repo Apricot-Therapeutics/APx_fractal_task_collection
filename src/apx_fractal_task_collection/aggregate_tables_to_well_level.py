@@ -24,6 +24,22 @@ __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
 logger = logging.getLogger(__name__)
 
+def concat_features(feature_tables):
+
+    well_table = ad.concat(feature_tables, axis=1, merge="same")
+    well_table.var_names_make_unique(join="trash")
+
+    vars_to_keep = [v for v in well_table.var_names if not "trash" in v]
+    morphology = [v for v in vars_to_keep if "Morphology" in v]
+    intensity = [v for v in vars_to_keep if "Intensity" in v]
+    texture = [v for v in vars_to_keep if "Texture" in v]
+
+    vars_to_keep = morphology + intensity + texture
+
+    feature_table = well_table[:, vars_to_keep]
+
+    return feature_table
+
 @validate_arguments
 def aggregate_tables_to_well_level(  # noqa: C901
         *,
@@ -35,6 +51,7 @@ def aggregate_tables_to_well_level(  # noqa: C901
         # Task-specific arguments:
         input_table_name: str,
         output_table_name: str,
+        tables_to_merge: Sequence[str],
         output_component: str = 'image',
         overwrite: bool = True
 
@@ -54,6 +71,10 @@ def aggregate_tables_to_well_level(  # noqa: C901
             (standard argument for Fractal tasks, managed by Fractal server).
         input_table_name: Name of the feature table.
         output_table_name: Name of the aggregated feature table.
+        tables_to_merge: List of feature tables to merge into the main
+            feature table. For example, if the input feature table is the table
+            for cells, tables to merge could include nuclei and cytoplasm.
+            Only use this option if you ran Label Assignment by Overlap first.
         output_component: In which component to store the aggregated feature
             table. Can take values "image" (the table will be saved in the 
             first image/acquisition (0) folder) or "well" (the table will be 
@@ -78,18 +99,7 @@ def aggregate_tables_to_well_level(  # noqa: C901
         ) for image in image_paths
     ]
 
-    # concatenate feature tables
-    well_table = ad.concat(feature_tables, axis=1, merge="same")
-    well_table.var_names_make_unique(join="trash")
-
-    vars_to_keep = [v for v in well_table.var_names if not "trash" in v]
-    morphology = [v for v in vars_to_keep if "Morphology" in v]
-    intensity = [v for v in vars_to_keep if "Intensity" in v]
-    texture = [v for v in vars_to_keep if "Texture" in v]
-
-    vars_to_keep = morphology + intensity + texture
-
-    well_table = well_table[:, vars_to_keep]
+    well_table = concat_features(feature_tables)
 
     if output_component == "well":
         out_zarr_path = f"{output_path}/{component}"
