@@ -8,7 +8,7 @@ from ome_zarr.writer import (write_image,
                              write_plate_metadata,
                              write_well_metadata)
 
-from fractal_tasks_core.lib_write import write_table
+from fractal_tasks_core.tables import write_table
 import anndata as ad
 import pandas as pd
 from skimage.data import binary_blobs

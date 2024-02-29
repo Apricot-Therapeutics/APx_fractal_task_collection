@@ -20,7 +20,7 @@ import pandas as pd
 import zarr
 from typing import Optional
 from skimage.measure import regionprops_table
-from fractal_tasks_core.lib_write import write_table
+from fractal_tasks_core.tables import write_table
 
 from pydantic.decorator import validate_arguments
 
@@ -177,9 +177,19 @@ def label_assignment_by_overlap(  # noqa: C901
 
         child_features.obs = merged_data
 
+        # read original attributes of child table
+        child_table_group = zarr.open_group(
+            f"{in_path}/{child_label_component}/tables/{child_table_name}",
+            mode='r')
+        orig_attrs = child_table_group.attrs.asdict()
+
         image_group = zarr.group(f"{in_path}/{component}")
-        write_table(image_group, child_table_name,
-                    child_features, overwrite=True)
+        write_table(image_group,
+                    child_table_name,
+                    child_features,
+                    overwrite=True,
+                    table_attrs=orig_attrs,
+                    )
     else:
         pass
 

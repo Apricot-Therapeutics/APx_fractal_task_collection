@@ -22,12 +22,12 @@ import pandas as pd
 import zarr
 from pydantic.decorator import validate_arguments
 
-from fractal_tasks_core.lib_channels import get_omero_channel_list
-from fractal_tasks_core.lib_channels import OmeroChannel
-from fractal_tasks_core.lib_ngff import load_NgffImageMeta
-from fractal_tasks_core.lib_channels import get_channel_from_image_zarr
-from fractal_tasks_core.lib_regions_of_interest import check_valid_ROI_indices
-from fractal_tasks_core.lib_regions_of_interest import (
+from fractal_tasks_core.channels import get_omero_channel_list
+from fractal_tasks_core.channels import OmeroChannel
+from fractal_tasks_core.ngff import load_NgffImageMeta
+from fractal_tasks_core.channels import get_channel_from_image_zarr
+from fractal_tasks_core.roi import check_valid_ROI_indices
+from fractal_tasks_core.roi import (
     convert_ROI_table_to_indices,
 )
 

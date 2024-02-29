@@ -26,16 +26,16 @@ import mahotas as mh
 from skimage.filters import gaussian
 from skimage.morphology import area_closing
 from typing import Optional
-from fractal_tasks_core.lib_write import prepare_label_group
-from fractal_tasks_core.lib_zattrs_utils import rescale_datasets
-from fractal_tasks_core.lib_ngff import load_NgffImageMeta
-from fractal_tasks_core.lib_pyramid_creation import build_pyramid
-from fractal_tasks_core.lib_input_models import Channel
-from fractal_tasks_core.lib_channels import ChannelNotFoundError
-from fractal_tasks_core.lib_channels import OmeroChannel
-from fractal_tasks_core.lib_channels import get_channel_from_image_zarr
-from fractal_tasks_core.lib_regions_of_interest import check_valid_ROI_indices
-from fractal_tasks_core.lib_regions_of_interest import (
+from fractal_tasks_core.labels import prepare_label_group
+from fractal_tasks_core.utils import rescale_datasets
+from fractal_tasks_core.ngff import load_NgffImageMeta
+from fractal_tasks_core.pyramids import build_pyramid
+from fractal_tasks_core.channels import ChannelInputModel
+from fractal_tasks_core.channels import ChannelNotFoundError
+from fractal_tasks_core.channels import OmeroChannel
+from fractal_tasks_core.channels import get_channel_from_image_zarr
+from fractal_tasks_core.roi import check_valid_ROI_indices
+from fractal_tasks_core.roi import (
     convert_ROI_table_to_indices,
 )
 
@@ -99,7 +99,7 @@ def segment_secondary_objects(  # noqa: C901
     metadata: Dict[str, Any],
     # Task-specific arguments:
     label_image_name: str,
-    channel: Channel,
+    channel: ChannelInputModel,
     label_image_cycle: Optional[int] = None,
     intensity_image_cycle: Optional[int] = None,
     ROI_table_name: str,
