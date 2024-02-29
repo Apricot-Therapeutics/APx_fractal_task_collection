@@ -297,7 +297,7 @@
             "description": "Name of the label image that contains the seeds. Needs to exist in OME-Zarr file."
           },
           "channel": {
-            "$ref": "#/definitions/Channel",
+            "$ref": "#/definitions/ChannelInputModel",
             "title": "Channel",
             "description": "Name of the intensity image used for watershed. Needs to exist in OME-Zarr file."
           },
@@ -377,8 +377,8 @@
         ],
         "additionalProperties": false,
         "definitions": {
-          "Channel": {
-            "title": "Channel",
+          "ChannelInputModel": {
+            "title": "ChannelInputModel",
             "description": "A channel which is specified by either `wavelength_id` or `label`.",
             "type": "object",
             "properties": {
@@ -1384,6 +1384,6 @@
       "docs_info": "Stitches FOVs with overlap using ASHLAR (https://github.com/labsyspharm/ashlar)."
     }
   ],
-  "has_args_schemas": true,
-  "args_schema_version": "pydantic_v1"
+  "args_schema_version": "pydantic_v1",
+  "has_args_schemas": true
 }

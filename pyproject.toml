@@ -11,7 +11,7 @@ authors = [
 
 # Required Python version and dependencies
 requires-python = ">=3.8"
-dependencies = ["fractal-tasks-core==0.13.1", "scikit-image", "matplotlib", "image_registration", "pytest", "mahotas",
+dependencies = ["fractal-tasks-core==0.14.2", "scikit-image", "matplotlib", "image_registration", "pytest", "mahotas",
                 "basicpy@git+https://github.com/peng-lab/BaSiCPy.git@dev", 'minisom', 'phenograph', 'scikit-learn',
                 "jax==0.4.23", "jaxlib==0.4.23", "SimpleITK-SimpleElastix", "ome-zarr", "ashlar"]
                 #"large-image"

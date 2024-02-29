@@ -27,14 +27,14 @@ from sklearn.preprocessing import (StandardScaler,
                                    PowerTransformer,
                                    FunctionTransformer,
                                    QuantileTransformer)
-from fractal_tasks_core.lib_write import prepare_label_group
-from fractal_tasks_core.lib_channels import OmeroChannel
-from fractal_tasks_core.lib_zattrs_utils import rescale_datasets
-from fractal_tasks_core.lib_ngff import load_NgffImageMeta
-from fractal_tasks_core.lib_pyramid_creation import build_pyramid
-from fractal_tasks_core.lib_write import write_table
-from fractal_tasks_core.lib_channels import get_channel_from_image_zarr
-from fractal_tasks_core.lib_channels import get_omero_channel_list
+from fractal_tasks_core.labels import prepare_label_group
+from fractal_tasks_core.channels import OmeroChannel
+from fractal_tasks_core.utils import rescale_datasets
+from fractal_tasks_core.ngff import load_NgffImageMeta
+from fractal_tasks_core.pyramids import build_pyramid
+from fractal_tasks_core.tables import write_table
+from fractal_tasks_core.channels import get_channel_from_image_zarr
+from fractal_tasks_core.channels import get_omero_channel_list
 from pydantic.decorator import validate_arguments
 
 
@@ -470,7 +470,11 @@ def multiplexed_pixel_clustering(  # noqa: C901
         output_table_name,
         mpps_ad,
         overwrite=overwrite,
-        logger=logger,
+        table_attrs={"type": "feature_table",
+                     "region": {
+                         "path": f"../../{label_path}/"
+                                 f"labels/{output_label_name}"},
+                     "instance_key": "label"}
     )
 
     # save MCU label map to labels

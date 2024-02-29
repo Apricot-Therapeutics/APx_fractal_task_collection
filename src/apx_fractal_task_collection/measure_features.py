@@ -21,14 +21,14 @@ import numpy as np
 import zarr
 import anndata as ad
 from typing import Optional
-from fractal_tasks_core.lib_channels import get_omero_channel_list
-from fractal_tasks_core.lib_ngff import load_NgffImageMeta
-from fractal_tasks_core.lib_write import write_table
-from fractal_tasks_core.lib_channels import OmeroChannel
-from fractal_tasks_core.lib_channels import get_channel_from_image_zarr
+from fractal_tasks_core.channels import get_omero_channel_list
+from fractal_tasks_core.ngff import load_NgffImageMeta
+from fractal_tasks_core.tables import write_table
+from fractal_tasks_core.channels import OmeroChannel
+from fractal_tasks_core.channels import get_channel_from_image_zarr
 from pydantic.decorator import validate_arguments
-from fractal_tasks_core.lib_regions_of_interest import check_valid_ROI_indices
-from fractal_tasks_core.lib_regions_of_interest import (
+from fractal_tasks_core.roi import check_valid_ROI_indices
+from fractal_tasks_core.roi import (
     convert_ROI_table_to_indices,
 )
 
@@ -520,7 +520,11 @@ def measure_features(  # noqa: C901
         output_table_name,
         feature_table,
         overwrite=overwrite,
-        logger=logger,
+        table_attrs={"type": "feature_table",
+                     "region": {
+                         "path": f"../../{label_image_cycle}/"
+                                 f"labels/{label_image_name}"},
+                     "instance_key": "label"}
     )
 
 

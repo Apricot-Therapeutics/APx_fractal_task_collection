@@ -23,10 +23,10 @@ import fractal_tasks_core
 import numpy as np
 import zarr
 from typing import Optional
-from fractal_tasks_core.lib_write import prepare_label_group
-from fractal_tasks_core.lib_zattrs_utils import rescale_datasets
-from fractal_tasks_core.lib_ngff import load_NgffImageMeta
-from fractal_tasks_core.lib_pyramid_creation import build_pyramid
+from fractal_tasks_core.labels import prepare_label_group
+from fractal_tasks_core.utils import rescale_datasets
+from fractal_tasks_core.ngff import load_NgffImageMeta
+from fractal_tasks_core.pyramids import build_pyramid
 
 from pydantic.decorator import validate_arguments
 

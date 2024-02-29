@@ -15,7 +15,7 @@ import warnings
 import fractal_tasks_core
 import zarr
 import anndata as ad
-from fractal_tasks_core.lib_write import write_table
+from fractal_tasks_core.tables import write_table
 from pydantic.decorator import validate_arguments
 
 
@@ -51,7 +51,6 @@ def aggregate_tables_to_well_level(  # noqa: C901
         # Task-specific arguments:
         input_table_name: str,
         output_table_name: str,
-        tables_to_merge: Sequence[str],
         output_component: str = 'image',
         overwrite: bool = True
 
@@ -111,13 +110,25 @@ def aggregate_tables_to_well_level(  # noqa: C901
         pass
 
     out_group = zarr.open_group(out_zarr_path, mode="r+")
+
+    # get original table attributes
+    table_group = zarr.open_group(
+        f"{in_path}/{component}/0/tables/{input_table_name}",
+        mode='r')
+    orig_attrs = table_group.attrs.asdict()
+
+    if output_component == "well":
+        # update orig_attrs
+        orig_attrs["region"]["path"] = \
+            orig_attrs["region"]["path"].replace("../../", "../")
+
     # Write to zarr group
     write_table(
         out_group,
         output_table_name,
         well_table,
         overwrite=overwrite,
-        logger=logger,
+        table_attrs=orig_attrs,
     )
 
 

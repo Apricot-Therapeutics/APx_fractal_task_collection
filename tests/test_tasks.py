@@ -1,10 +1,11 @@
 import shutil
 from pathlib import Path
+import os
 
 import pytest
 from devtools import debug
-from fractal_tasks_core.lib_input_models import Channel
-from fractal_tasks_core.lib_channels import OmeroChannel
+from fractal_tasks_core.channels import ChannelInputModel
+from fractal_tasks_core.channels import OmeroChannel
 from fractal_tasks_core.tasks.copy_ome_zarr import copy_ome_zarr
 
 from apx_fractal_task_collection.measure_features import measure_features
@@ -36,6 +37,21 @@ def test_data_dir(tmp_path: Path) -> str:
     source_dir = (Path(__file__).parent / "data").as_posix()
     dest_dir = (tmp_path / "data").as_posix()
     debug(source_dir, dest_dir)
+    shutil.copytree(source_dir, dest_dir)
+    return dest_dir
+
+@pytest.fixture(scope="function")
+def fixed_test_data_dir() -> str:
+    """
+    Copy a test-data folder into a temporary folder.
+    """
+    source_dir = Path('/data/homes/atschan/PhD/Code/Python/apx_fractal_task_collection/tests/data').as_posix()
+    dest_dir = Path('/data/active/atschan/apx_fractal_task_collection/tests/data').as_posix()
+    debug(source_dir, dest_dir)
+    try:
+        shutil.rmtree(dest_dir)
+    except:
+        pass
     shutil.copytree(source_dir, dest_dir)
     return dest_dir
 
@@ -83,7 +99,7 @@ def test_segment_secondary_objects(test_data_dir):
         component=WELL_COMPONENT,
         metadata={},
         label_image_name='Label A',
-        channel=Channel(label='0_DAPI', wavelength_id=None),
+        channel=ChannelInputModel(label='0_DAPI', wavelength_id=None),
         label_image_cycle=0,
         intensity_image_cycle=0,
         ROI_table_name='FOV_ROI_table',
@@ -256,6 +272,9 @@ def test_chromatic_shift_correction(test_data_dir):
         correction_channel_labels=['0_DAPI', '0_GFP'],
         reference_channel_label='0_DAPI'
     )
+
+    Path(os.getcwd()).joinpath("TransformParameters.0.txt").unlink(
+        missing_ok=True)
 
 
 def test_compress_zarr_for_visualization(test_data_dir):
