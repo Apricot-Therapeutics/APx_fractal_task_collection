@@ -169,7 +169,7 @@
       "meta": {
         "cpus_per_task": 4,
         "mem": 16000,
-        "parallelization_level": "image"
+        "parallelization_level": "well"
       },
       "args_schema": {
         "title": "ClipLabelImage",

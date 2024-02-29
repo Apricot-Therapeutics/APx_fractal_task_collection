@@ -79,7 +79,7 @@ def test_clip_label_image(test_data_dir):
     clip_label_image(
         input_paths=[test_data_dir],
         output_path=test_data_dir,
-        component=IMAGE_COMPONENT,
+        component=WELL_COMPONENT,
         metadata={},
         label_image_name='Label A',
         clipping_mask_name='Label D',
