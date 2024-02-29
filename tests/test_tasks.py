@@ -1,5 +1,6 @@
 import shutil
 from pathlib import Path
+import os
 
 import pytest
 from devtools import debug
@@ -271,6 +272,9 @@ def test_chromatic_shift_correction(test_data_dir):
         correction_channel_labels=['0_DAPI', '0_GFP'],
         reference_channel_label='0_DAPI'
     )
+
+    Path(os.getcwd()).joinpath("TransformParameters.0.txt").unlink(
+        missing_ok=True)
 
 
 def test_compress_zarr_for_visualization(test_data_dir):
