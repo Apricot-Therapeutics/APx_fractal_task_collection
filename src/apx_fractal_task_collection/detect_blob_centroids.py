@@ -100,10 +100,8 @@ def detect_blob_centroids(  # noqa: C901
     overwrite: bool = True,
 ) -> None:
     """
-    Segments secondary objects based on primary labels and intensity image.
-
-    Takes a primary label image and an intensity image and calculates secondary
-    labels based on watershed segmentation.
+    Detects blob centroids in an intensity image and stores the result as a
+    label image..
 
     Args:
         input_paths: Path to the parent folder of the NGFF image.
@@ -117,7 +115,7 @@ def detect_blob_centroids(  # noqa: C901
             (standard argument for Fractal tasks, managed by Fractal server).
         label_image_name: Name of the label image that contains the seeds.
             Needs to exist in OME-Zarr file.
-        channel: Name of the intensity image used for watershed.
+        channel: Name of the intensity image used to detect blobs.
             Needs to exist in OME-Zarr file.
         ROI_table_name: Name of the table containing the ROIs.
         output_label_cycle: indicates in which acquisition to store the result.

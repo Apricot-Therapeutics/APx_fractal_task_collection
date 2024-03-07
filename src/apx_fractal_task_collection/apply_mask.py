@@ -54,7 +54,7 @@ def apply_mask(  # noqa: C901
     overwrite: bool = True,
 ) -> None:
     """
-    Clips a label image with a mask.
+    Applies a mask to a label image.
 
     Takes two label images (or a label image and a binary mask) and replaces
     all values in the first label image with 0 where the second label image has
