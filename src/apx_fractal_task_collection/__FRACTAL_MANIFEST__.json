@@ -1522,6 +1522,12 @@
             "type": "integer",
             "description": "Resolution of the label image to calculate overlap. Only tested for level 0."
           },
+          "relabeling": {
+            "title": "Relabeling",
+            "default": true,
+            "type": "boolean",
+            "description": "If True, relabel the label image to keep unique label across all ROIs"
+          },
           "overwrite": {
             "title": "Overwrite",
             "default": true,

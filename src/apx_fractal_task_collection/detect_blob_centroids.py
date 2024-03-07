@@ -97,6 +97,7 @@ def detect_blob_centroids(  # noqa: C901
     output_label_cycle: int,
     output_label_name: str,
     level: int = 0,
+    relabeling: bool = True,
     overwrite: bool = True,
 ) -> None:
     """
@@ -123,6 +124,8 @@ def detect_blob_centroids(  # noqa: C901
         output_label_name: Name of the output label image.
         level: Resolution of the label image to calculate overlap.
             Only tested for level 0.
+        relabeling: If True, relabel the label image to keep unique label
+            across all ROIs
         overwrite: If True, overwrite existing label image.
     """
 
@@ -226,6 +229,10 @@ def detect_blob_centroids(  # noqa: C901
     check_valid_ROI_indices(list_indices, "registered_well_ROI_table")
     num_ROIs = len(list_indices)
 
+    # Counters for relabeling
+    if relabeling:
+        num_labels_tot = 0
+
     # Loop over the list of indices and perform the secondary segmentation
     for i_ROI, indices in enumerate(list_indices):
 
@@ -249,6 +256,23 @@ def detect_blob_centroids(  # noqa: C901
             num_sigma=num_sigma,
             threshold=threshold,
         )
+
+        # Shift labels and update relabeling counters
+        if relabeling:
+            num_labels_roi = np.max(new_label_image)
+            new_label_image[new_label_image > 0] += num_labels_tot
+            num_labels_tot += num_labels_roi
+
+            # Write some logs
+            logger.info(f"ROI {indices}, {num_labels_roi=}, {num_labels_tot=}")
+
+            # Check that total number of labels is under control
+            if num_labels_tot > np.iinfo(label_dtype).max:
+                raise ValueError(
+                    "ERROR in re-labeling:"
+                    f"Reached {num_labels_tot} labels, "
+                    f"but dtype={label_dtype}"
+                )
 
 
         # Compute and store 0-th level to disk

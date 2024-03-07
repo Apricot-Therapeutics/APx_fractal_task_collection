@@ -142,6 +142,7 @@ def test_detect_blob_centroids(test_data_dir):
         output_label_cycle=0,
         output_label_name='blobs_centroids',
         level=0,
+        relabeling=True,
         overwrite=True
     )
 
