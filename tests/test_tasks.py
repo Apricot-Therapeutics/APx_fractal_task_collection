@@ -23,6 +23,8 @@ from apx_fractal_task_collection.create_ome_zarr_multiplex_IC6000 import create_
 from apx_fractal_task_collection.IC6000_to_ome_zarr import IC6000_to_ome_zarr
 from apx_fractal_task_collection.multiplexed_pixel_clustering import multiplexed_pixel_clustering
 from apx_fractal_task_collection.stitch_fovs_with_overlap import stitch_fovs_with_overlap
+from apx_fractal_task_collection.detect_blob_centroids import detect_blob_centroids
+from apx_fractal_task_collection.apply_mask import apply_mask
 #from apx_fractal_task_collection.ashlar_stitching_and_registration import ashlar_stitching_and_registration
 #from apx_fractal_task_collection.ashlar_stitching_and_registration_pure import ashlar_stitching_and_registration
 
@@ -89,6 +91,21 @@ def test_clip_label_image(test_data_dir):
     )
 
 
+def test_apply_mask(test_data_dir):
+    apply_mask(
+        input_paths=[test_data_dir],
+        output_path=test_data_dir,
+        component=WELL_COMPONENT,
+        metadata={},
+        label_image_name='Label A',
+        mask_label_name='Label D',
+        output_label_cycle=0,
+        output_label_name='masked_label',
+        level=0,
+        overwrite=True
+    )
+
+
 def test_segment_secondary_objects(test_data_dir):
     segment_secondary_objects(
         input_paths=[test_data_dir],
@@ -105,6 +122,25 @@ def test_segment_secondary_objects(test_data_dir):
         contrast_threshold=5,
         output_label_cycle=0,
         output_label_name='watershed_result',
+        level=0,
+        overwrite=True
+    )
+
+
+def test_detect_blob_centroids(test_data_dir):
+    detect_blob_centroids(
+        input_paths=[test_data_dir],
+        output_path=test_data_dir,
+        component=WELL_COMPONENT,
+        metadata={},
+        channel=ChannelInputModel(label='0_DAPI', wavelength_id=None),
+        ROI_table_name='FOV_ROI_table',
+        min_sigma=1,
+        max_sigma=10,
+        num_sigma=1,
+        threshold=0.002,
+        output_label_cycle=0,
+        output_label_name='blobs_centroids',
         level=0,
         overwrite=True
     )

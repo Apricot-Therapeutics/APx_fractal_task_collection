@@ -7,6 +7,9 @@
 # Marco Franzon <marco.franzon@exact-lab.it>
 # Joel Lüthi  <joel.luethi@fmi.ch>
 #
+# Adapted by:
+# Adrian Tschan <adrian.tschan@uzh.ch>
+#
 # This file is part of Fractal and was originally developed by eXact lab S.r.l.
 # <exact-lab.it> under contract with Liberali Lab from the Friedrich Miescher
 # Institute for Biomedical Research and Pelkmans Lab from the University of
