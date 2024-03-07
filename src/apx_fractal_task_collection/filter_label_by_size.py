@@ -21,6 +21,9 @@ from pathlib import Path
 from skimage.morphology import label
 from pydantic.decorator import validate_arguments
 
+
+from apx_fractal_task_collection.utils import get_label_image_from_well
+
 import fractal_tasks_core
 from fractal_tasks_core.utils import rescale_datasets
 from fractal_tasks_core.labels import prepare_label_group
@@ -48,32 +51,6 @@ def remove_large_objects(img, max_size):
     img = np.where(img_temp == 0, img, 0)
 
     return img
-
-
-def get_label_image_from_zarr(zarrurl, label_name):
-    '''
-    Get the image data for a specific channel from an OME-Zarr file.
-
-    Args:
-        zarrurl: Path to the OME-Zarr file.
-        channel_label: Label of the channel to extract.
-
-    Returns:
-        The image data for the specified channel as dask array
-    '''
-
-    well_group = zarr.open_group(zarrurl, mode="r+")
-    for image in well_group.attrs['well']['images']:
-        try:
-            img_zarr_path = zarrurl.joinpath(zarrurl, image['path'])
-            data_zyx = da.from_zarr(
-                img_zarr_path.joinpath(f'labels/{label_name}/0'))
-            break
-        except:
-            continue
-
-    return data_zyx, img_zarr_path
-
 
 
 @validate_arguments
@@ -123,8 +100,8 @@ def filter_label_by_size(
     in_path = Path(input_paths[0])
     zarrurl = in_path.joinpath(component)
 
-    data_zyx, img_zarr_path = get_label_image_from_zarr(
-        zarrurl, label_name)
+    data_zyx, img_zarr_path = get_label_image_from_well(
+        zarrurl, label_name, level=0)
 
     ngff_image_meta = load_NgffImageMeta(img_zarr_path)
     num_levels = ngff_image_meta.num_levels

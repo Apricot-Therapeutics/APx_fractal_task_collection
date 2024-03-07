@@ -21,6 +21,8 @@ from pathlib import Path
 from skimage.morphology import label
 from pydantic.decorator import validate_arguments
 
+from apx_fractal_task_collection.utils import get_channel_image_from_well
+
 import fractal_tasks_core
 from fractal_tasks_core.channels import get_omero_channel_list
 from fractal_tasks_core.utils import rescale_datasets
@@ -36,37 +38,6 @@ logger = logging.getLogger(__name__)
 
 __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
-def get_channel_image_from_zarr(zarrurl, channel_label):
-    '''
-    Get the image data for a specific channel from an OME-Zarr file.
-
-    Args:
-        zarrurl: Path to the OME-Zarr file.
-        channel_label: Label of the channel to extract.
-
-    Returns:
-        The image data for the specified channel as dask array
-    '''
-
-
-    well_group = zarr.open(zarrurl, mode='r')
-    for image in well_group.attrs['well']['images']:
-        img_zarr_path = zarrurl.joinpath(zarrurl, image['path'])
-        channel_list = get_omero_channel_list(
-            image_zarr_path=img_zarr_path)
-
-        if channel_label in [c.label for c in channel_list]:
-            tmp_channel: OmeroChannel = get_channel_from_image_zarr(
-                image_zarr_path=img_zarr_path,
-                wavelength_id=None,
-                label=channel_label
-            )
-
-            ind_channel = tmp_channel.index
-            data_zyx = \
-                da.from_zarr(img_zarr_path.joinpath('0'))[ind_channel]
-
-            return data_zyx
 
 
 @validate_arguments
@@ -80,7 +51,7 @@ def convert_channel_to_label(
     # Task-specific arguments
     channel_label: str,
     output_label_name: str,
-    output_cycle: Optional[int] = None,
+    output_cycle: int,
     overwrite: bool = False,
 ) -> None:
 
@@ -104,21 +75,18 @@ def convert_channel_to_label(
             processed. Example: `"some_plate.zarr/B/03/0"`
         channel_label: Label of the channel to convert to a label image.
         output_label_name: Name of the label to be created.
-        output_cycle: Cycle in which to store the new label image. If not
-            provided, the label image is saved in the first cycle.
+        output_cycle: Acquisition in which to store the new label image.
         overwrite: If True, overwrite existing label image with same name.
     """
     input_path = Path(input_paths[0])
     well_url = input_path.joinpath(component)
 
-    if output_cycle is None:
-        output_cycle = 0
 
     ngff_image_meta = load_NgffImageMeta(well_url.joinpath(str(output_cycle)))
     num_levels = ngff_image_meta.num_levels
     coarsening_xy = ngff_image_meta.coarsening_xy
 
-    img = get_channel_image_from_zarr(well_url, channel_label)
+    img, img_path = get_channel_image_from_well(well_url, channel_label, level=0)
 
     # relabel in case the segmentation was created by FOV
     relabeled_img = label(img)

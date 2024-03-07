@@ -81,7 +81,7 @@
       "meta": {
         "cpus_per_task": 4,
         "mem": 16000,
-        "parallelization_level": "image"
+        "parallelization_level": "well"
       },
       "args_schema": {
         "title": "LabelAssignmentByOverlap",
@@ -119,16 +119,6 @@
             "title": "Child Label Image",
             "type": "string",
             "description": "Name of the child label image. Needs to exist in OME-Zarr file."
-          },
-          "parent_label_cycle": {
-            "title": "Parent Label Cycle",
-            "type": "integer",
-            "description": "indicates which cycle contains the parent label image (only needed if multiplexed)."
-          },
-          "child_label_cycle": {
-            "title": "Child Label Cycle",
-            "type": "integer",
-            "description": "indicates which cycle contains the child label image (only needed if multiplexed)."
           },
           "child_table_name": {
             "title": "Child Table Name",
@@ -208,31 +198,21 @@
             "type": "string",
             "description": "Name of the label image used as mask for clipping. This image will be binarized. Needs to exist in OME-Zarr file."
           },
-          "label_image_cycle": {
-            "title": "Label Image Cycle",
-            "type": "integer",
-            "description": "indicates which cycle contains the label image (only needed if multiplexed)."
-          },
-          "clipping_mask_cycle": {
-            "title": "Clipping Mask Cycle",
-            "type": "integer",
-            "description": "indicates which cycle contains the clipping mask image (only needed if multiplexed)."
-          },
-          "output_label_cycle": {
-            "title": "Output Label Cycle",
-            "type": "integer",
-            "description": " indicates in which cycle to store the result (only needed if multiplexed)."
-          },
           "output_label_name": {
             "title": "Output Label Name",
             "type": "string",
             "description": "Name of the output label image."
           },
+          "output_label_cycle": {
+            "title": "Output Label Cycle",
+            "type": "integer",
+            "description": " indicates in which cycle to store the result."
+          },
           "level": {
             "title": "Level",
             "default": 0,
             "type": "integer",
-            "description": "Resolution of the label image to calculate overlap. Only tested for level 0."
+            "description": "Resolution of the label image. Only tested for level 0."
           },
           "overwrite": {
             "title": "Overwrite",
@@ -248,7 +228,8 @@
           "metadata",
           "label_image_name",
           "clipping_mask_name",
-          "output_label_name"
+          "output_label_name",
+          "output_label_cycle"
         ],
         "additionalProperties": false
       },
@@ -301,16 +282,6 @@
             "title": "Channel",
             "description": "Name of the intensity image used for watershed. Needs to exist in OME-Zarr file."
           },
-          "label_image_cycle": {
-            "title": "Label Image Cycle",
-            "type": "integer",
-            "description": "indicates which cycle contains the label image (only needed if multiplexed)."
-          },
-          "intensity_image_cycle": {
-            "title": "Intensity Image Cycle",
-            "type": "integer",
-            "description": "indicates which cycle contains the intensity image (only needed if multiplexed)."
-          },
           "ROI_table_name": {
             "title": "Roi Table Name",
             "type": "string",
@@ -345,7 +316,7 @@
           "output_label_cycle": {
             "title": "Output Label Cycle",
             "type": "integer",
-            "description": "indicates in which cycle to store the result (only needed if multiplexed)."
+            "description": "indicates in which acquisition to store the result."
           },
           "output_label_name": {
             "title": "Output Label Name",
@@ -373,6 +344,7 @@
           "label_image_name",
           "channel",
           "ROI_table_name",
+          "output_label_cycle",
           "output_label_name"
         ],
         "additionalProperties": false,
@@ -449,11 +421,6 @@
             "title": "Output Table Name",
             "type": "string",
             "description": "Missing description"
-          },
-          "label_image_cycle": {
-            "title": "Label Image Cycle",
-            "type": "integer",
-            "description": "indicates which cycle contains the label image (only needed if multiplexed)."
           },
           "measure_intensity": {
             "title": "Measure Intensity",
@@ -1164,7 +1131,7 @@
           "output_cycle": {
             "title": "Output Cycle",
             "type": "integer",
-            "description": "Cycle in which to store the new label image. If not provided, the label image is saved in the first cycle."
+            "description": "Acquisition in which to store the new label image."
           },
           "overwrite": {
             "title": "Overwrite",
@@ -1179,7 +1146,8 @@
           "component",
           "metadata",
           "channel_label",
-          "output_label_name"
+          "output_label_name",
+          "output_cycle"
         ],
         "additionalProperties": false
       },

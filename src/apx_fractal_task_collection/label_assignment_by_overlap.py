@@ -18,8 +18,9 @@ import fractal_tasks_core
 import numpy as np
 import pandas as pd
 import zarr
-from typing import Optional
 from skimage.measure import regionprops_table
+
+from apx_fractal_task_collection.utils import get_label_image_from_well
 from fractal_tasks_core.tables import write_table
 
 from pydantic.decorator import validate_arguments
@@ -84,8 +85,6 @@ def label_assignment_by_overlap(  # noqa: C901
     # Task-specific arguments:
     parent_label_image: str,
     child_label_image: str,
-    parent_label_cycle: Optional[int] = None,
-    child_label_cycle: Optional[int] = None,
     child_table_name: str,
     level: int = 0,
     overlap_threshold: float = 1.0,
@@ -117,8 +116,6 @@ def label_assignment_by_overlap(  # noqa: C901
             Needs to exist in OME-Zarr file.
         child_label_image: Name of the child label image.
             Needs to exist in OME-Zarr file.
-        parent_label_cycle: indicates which cycle contains the parent label image (only needed if multiplexed).
-        child_label_cycle: indicates which cycle contains the child label image (only needed if multiplexed).
         child_table_name: Name of the feature table associated with
             the child label image.
         level: Resolution of the label image to calculate overlap.
@@ -127,71 +124,70 @@ def label_assignment_by_overlap(  # noqa: C901
             label object that must be contained in parent label object to
              be considered a match.
     """
-    if parent_label_cycle is not None:
-    # update the component for the label image
-        parts = component.rsplit("/", 1)
-        parent_label_component = parts[0] + "/" + str(parent_label_cycle)
-        child_label_component = parts[0] + "/" + str(child_label_cycle)
-    else:
-        parent_label_component = component
-        child_label_component = component
 
-    # define path to feature table
-    child_feature_path = f"{Path(output_path)}/{component}/tables/{child_table_name}"
+    in_path = Path(input_paths[0])
+    well_url = in_path.joinpath(component)
+    well_group = zarr.open(well_url, mode="r")
 
-    if Path(child_feature_path).is_dir():
-        in_path = Path(input_paths[0]).as_posix()
-        parent_label = da.from_zarr(
-            f"{in_path}/{parent_label_component}/labels/{parent_label_image}/{level}"
-        )
+    parent_label, parent_label_path = get_label_image_from_well(
+        well_url,
+        parent_label_image,
+        level)
 
-        # load the parent label image
-        parent_label = parent_label.compute()
+    child_label, child_label_path = get_label_image_from_well(
+        well_url,
+        child_label_image,
+        level)
 
-        child_label = da.from_zarr(
-            f"{in_path}/{child_label_component}/labels/{child_label_image}/{level}"
-        )
+    # make the assignment
+    assignments = assign_objects(parent_label.compute(),
+                                 child_label.compute(),
+                                 overlap_threshold,
+                                 )
 
-        # load the child labe image
-        child_label = child_label.compute()
+    assignments.rename(
+        columns={'parent_label': f'{parent_label_image}_label',
+                 'overlap': f'{child_label_image}_{parent_label_image}_overlap'},
+    inplace=True)
+    # convert label index to string (otherwise merging with Anndata will fail)
+    assignments.index = assignments.index.astype('str')
+
+    # loop over images and write the assignments to the child table
+    for image in well_group.attrs['well']["images"]:
+
+        # define path to feature table
+        child_feature_path = well_url.joinpath(image['path'],
+                                               'tables',
+                                               child_table_name)
+
         # load the child feature table
-        child_features = ad.read_zarr(child_feature_path)
-        # make the assignment
-        assignments = assign_objects(parent_label,
-                                     child_label,
-                                     overlap_threshold,
-                                     )
-
-        assignments.rename(
-            columns={'parent_label': f'{parent_label_image}_label',
-                     'overlap': f'{child_label_image}_{parent_label_image}_overlap'},
-        inplace=True)
-        # convert label index to string (otherwise merging with Anndata will fail)
-        assignments.index = assignments.index.astype('str')
+        try:
+            child_features = ad.read_zarr(child_feature_path)
+        except:
+            continue
         # merge with child feature obs data
         merged_data = child_features.obs.merge(assignments,
                                                left_index=True,
                                                right_index=True,
                                                how='left')
-        merged_data[f'{parent_label_image}_label'] = merged_data[f'{parent_label_image}_label'].astype('Int32')
+        merged_data[f'{parent_label_image}_label'] = \
+            merged_data[f'{parent_label_image}_label'].astype('Int32')
 
         child_features.obs = merged_data
 
         # read original attributes of child table
-        child_table_group = zarr.open_group(
-            f"{in_path}/{child_label_component}/tables/{child_table_name}",
-            mode='r')
+        child_table_group = zarr.open_group(child_feature_path, mode='r')
         orig_attrs = child_table_group.attrs.asdict()
 
-        image_group = zarr.group(f"{in_path}/{component}")
-        write_table(image_group,
+        img_group = zarr.group(child_feature_path.parents[1])
+        print(child_feature_path.parents[1])
+        write_table(img_group,
                     child_table_name,
                     child_features,
                     overwrite=True,
                     table_attrs=orig_attrs,
                     )
-    else:
-        pass
+
 
 
 if __name__ == "__main__":

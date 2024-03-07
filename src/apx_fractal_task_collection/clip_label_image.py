@@ -22,7 +22,8 @@ import dask.array as da
 import fractal_tasks_core
 import numpy as np
 import zarr
-from typing import Optional
+
+from apx_fractal_task_collection.utils import get_label_image_from_well
 from fractal_tasks_core.labels import prepare_label_group
 from fractal_tasks_core.utils import rescale_datasets
 from fractal_tasks_core.ngff import load_NgffImageMeta
@@ -47,10 +48,8 @@ def clip_label_image(  # noqa: C901
     # Task-specific arguments:
     label_image_name: str,
     clipping_mask_name: str,
-    label_image_cycle: Optional[int] = None,
-    clipping_mask_cycle: Optional[int] = None,
-    output_label_cycle: Optional[int] = None,
     output_label_name: str,
+    output_label_cycle: int,
     level: int = 0,
     overwrite: bool = True,
 ) -> None:
@@ -75,11 +74,9 @@ def clip_label_image(  # noqa: C901
             Needs to exist in OME-Zarr file.
         clipping_mask_name: Name of the label image used as mask for clipping. This
             image will be binarized. Needs to exist in OME-Zarr file.
-        label_image_cycle: indicates which cycle contains the label image (only needed if multiplexed).
-        clipping_mask_cycle: indicates which cycle contains the clipping mask image (only needed if multiplexed).
-        output_label_cycle:  indicates in which cycle to store the result (only needed if multiplexed).
+        output_label_cycle:  indicates in which cycle to store the result.
         output_label_name: Name of the output label image.
-        level: Resolution of the label image to calculate overlap.
+        level: Resolution of the label image.
             Only tested for level 0.
         overwrite: If True, overwrite existing label image.
     """
@@ -87,31 +84,21 @@ def clip_label_image(  # noqa: C901
     # update the component for the label image if multiplexed experiment
 
     in_path = Path(input_paths[0])
+    well_url = in_path.joinpath(component)
 
     # load images
-    label_image = da.from_zarr(
-        in_path.joinpath(
-            component,
-            str(label_image_cycle),
-            'labels',
-            label_image_name,
-            str(level)
-        )
-    )
+    label_image, label_image_path = get_label_image_from_well(
+        well_url,
+        label_image_name,
+        level)
 
-    clipping_mask = da.from_zarr(
-        in_path.joinpath(
-            component,
-            str(clipping_mask_cycle),
-            'labels',
-            clipping_mask_name,
-            str(level)
-        )
-    )
+    clipping_mask, clipping_mask_path = get_label_image_from_well(
+        well_url,
+        clipping_mask_name,
+        level)
 
     # prepare label image
-    ngff_image_meta = load_NgffImageMeta(
-        in_path.joinpath( component, str(label_image_cycle)))
+    ngff_image_meta = load_NgffImageMeta(label_image_path)
     num_levels = ngff_image_meta.num_levels
     coarsening_xy = ngff_image_meta.coarsening_xy
 

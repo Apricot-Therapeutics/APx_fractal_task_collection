@@ -26,14 +26,17 @@ import mahotas as mh
 from skimage.filters import gaussian
 from skimage.morphology import area_closing
 from typing import Optional
+
+from apx_fractal_task_collection.utils import (
+    get_channel_image_from_well,
+    get_label_image_from_well,
+)
+
 from fractal_tasks_core.labels import prepare_label_group
 from fractal_tasks_core.utils import rescale_datasets
 from fractal_tasks_core.ngff import load_NgffImageMeta
 from fractal_tasks_core.pyramids import build_pyramid
 from fractal_tasks_core.channels import ChannelInputModel
-from fractal_tasks_core.channels import ChannelNotFoundError
-from fractal_tasks_core.channels import OmeroChannel
-from fractal_tasks_core.channels import get_channel_from_image_zarr
 from fractal_tasks_core.roi import check_valid_ROI_indices
 from fractal_tasks_core.roi import (
     convert_ROI_table_to_indices,
@@ -100,15 +103,13 @@ def segment_secondary_objects(  # noqa: C901
     # Task-specific arguments:
     label_image_name: str,
     channel: ChannelInputModel,
-    label_image_cycle: Optional[int] = None,
-    intensity_image_cycle: Optional[int] = None,
     ROI_table_name: str,
     min_threshold: Optional[int] = None,
     max_threshold: Optional[int] = None,
     gaussian_blur: Optional[int] = None,
     fill_holes_area: Optional[int] = None,
     contrast_threshold: int = 5,
-    output_label_cycle: Optional[int] = None,
+    output_label_cycle: int,
     output_label_name: str,
     level: int = 0,
     overwrite: bool = True,
@@ -133,62 +134,33 @@ def segment_secondary_objects(  # noqa: C901
             Needs to exist in OME-Zarr file.
         channel: Name of the intensity image used for watershed.
             Needs to exist in OME-Zarr file.
-        label_image_cycle: indicates which cycle contains the label image
-            (only needed if multiplexed).
-        intensity_image_cycle: indicates which cycle contains the intensity
-            image (only needed if multiplexed).
         ROI_table_name: Name of the table containing the ROIs.
         min_threshold: Minimum threshold for the background definition.
         max_threshold: Maximum threshold for the background definition.
         gaussian_blur: Sigma for gaussian blur.
         fill_holes_area: Area threshold for filling holes after watershed.
         contrast_threshold: Contrast threshold for background definition.
-        output_label_cycle: indicates in which cycle to store the result
-            (only needed if multiplexed).
+        output_label_cycle: indicates in which acquisition to store the result.
         output_label_name: Name of the output label image.
         level: Resolution of the label image to calculate overlap.
             Only tested for level 0.
         overwrite: If True, overwrite existing label image.
     """
 
-    # update the component for the label image if multiplexed experiment
-    if label_image_cycle is not None:
-        label_image_component = component + "/" + str(label_image_cycle)
-        intensity_image_component = component + "/" + \
-                                    str(intensity_image_cycle)
-        output_component = component + "/" + str(output_label_cycle)
-    else:
-        label_image_component = component + "/0"
-        intensity_image_component = component + "/0"
-        output_component = component + "/0"
-
     in_path = Path(input_paths[0])
-    zarrurl = (in_path.resolve() / intensity_image_component).as_posix()
+    well_url = in_path.joinpath(component)
 
-    # load primary label image
-    label_image = da.from_zarr(
-        f"{in_path}/{label_image_component}/labels/{label_image_name}/{level}"
-    )
+    # update components
+    output_component = component + "/" + str(output_label_cycle)
 
-    # Find channel index
-    try:
-        tmp_channel: OmeroChannel = get_channel_from_image_zarr(
-            image_zarr_path=zarrurl,
-            wavelength_id=channel.wavelength_id,
-            label=channel.label,
-        )
-    except ChannelNotFoundError as e:
-        logger.warning(
-            "Channel not found, exit from the task.\n"
-            f"Original error: {str(e)}"
-        )
-        return {}
-    ind_channel = tmp_channel.index
+    label_image, label_image_path = get_label_image_from_well(
+        well_url, label_image_name, level)
+    data_zyx, intensity_image_path = get_channel_image_from_well(
+        well_url, channel.label, level)
 
-    data_zyx = da.from_zarr(f"{zarrurl}/{level}")[ind_channel]
 
     # prepare label image
-    ngff_image_meta = load_NgffImageMeta(in_path.joinpath(label_image_component))
+    ngff_image_meta = load_NgffImageMeta(intensity_image_path)
     num_levels = ngff_image_meta.num_levels
     coarsening_xy = ngff_image_meta.coarsening_xy
     full_res_pxl_sizes_zyx = ngff_image_meta.get_pixel_sizes_zyx(level=0)
@@ -266,7 +238,7 @@ def segment_secondary_objects(  # noqa: C901
     )
 
     # load ROI table
-    ROI_table = ad.read_zarr(in_path.joinpath(label_image_component, "tables",
+    ROI_table = ad.read_zarr(label_image_path.joinpath("tables",
                                               ROI_table_name))
     # Create list of indices for 3D FOVs spanning the entire Z direction
     list_indices = convert_ROI_table_to_indices(

@@ -20,7 +20,8 @@ import mahotas as mh
 import numpy as np
 import zarr
 import anndata as ad
-from typing import Optional
+
+from apx_fractal_task_collection.utils import get_acquisition_from_label_name
 from fractal_tasks_core.channels import get_omero_channel_list
 from fractal_tasks_core.ngff import load_NgffImageMeta
 from fractal_tasks_core.tables import write_table
@@ -34,7 +35,6 @@ from fractal_tasks_core.roi import (
 
 
 __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
-
 
 logger = logging.getLogger(__name__)
 
@@ -268,7 +268,6 @@ def measure_features(  # noqa: C901
         label_image_name: str,
 		ROI_table_name: str,
 		output_table_name: str,
-        label_image_cycle: Optional[int] = None,
         measure_intensity: bool = False,
         measure_morphology: bool = False,
         measure_texture: bool = False,
@@ -296,8 +295,6 @@ def measure_features(  # noqa: C901
             Needs to exist in OME-Zarr file.
 		ROI_table_name: Name of the ROI table to process.
 		output_table_name: Name of the feature table.
-        label_image_cycle: indicates which cycle contains the label image
-            (only needed if multiplexed).
         measure_intensity: If True, calculate intensity features.
         measure_morphology: If True, calculate morphology features.
         measure_texture: If True, calculate texture features.
@@ -313,12 +310,12 @@ def measure_features(  # noqa: C901
         overwrite: If True, overwrite existing feature table.
     """
 
+    zarrurl = Path(input_paths[0]).joinpath(component.split("/")[0])
+    label_image_cycle = get_acquisition_from_label_name(zarrurl,
+                                                        label_image_name)
     # update the component for the label image if multiplexed experiment
-    if label_image_cycle is not None:
-        parts = component.rsplit("/", 1)
-        label_image_component = parts[0] + "/" + str(label_image_cycle)
-    else:
-        label_image_component = component
+    parts = component.rsplit("/", 1)
+    label_image_component = parts[0] + "/" + str(label_image_cycle)
 
     in_path = Path(input_paths[0])
     # get some meta data

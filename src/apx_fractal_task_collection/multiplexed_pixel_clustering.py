@@ -27,6 +27,7 @@ from sklearn.preprocessing import (StandardScaler,
                                    PowerTransformer,
                                    FunctionTransformer,
                                    QuantileTransformer)
+
 from fractal_tasks_core.labels import prepare_label_group
 from fractal_tasks_core.channels import OmeroChannel
 from fractal_tasks_core.utils import rescale_datasets
