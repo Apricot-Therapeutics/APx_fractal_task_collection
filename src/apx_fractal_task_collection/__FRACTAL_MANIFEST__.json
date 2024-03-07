@@ -8,7 +8,7 @@
       "output_type": "zarr",
       "meta": {
         "cpus_per_task": 1,
-        "mem": 8000,
+        "mem": 3000,
         "parallelization_level": "image"
       },
       "args_schema": {
@@ -79,8 +79,8 @@
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
-        "cpus_per_task": 4,
-        "mem": 16000,
+        "cpus_per_task": 1,
+        "mem": 3000,
         "parallelization_level": "well"
       },
       "args_schema": {
@@ -157,8 +157,8 @@
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
-        "cpus_per_task": 4,
-        "mem": 16000,
+        "cpus_per_task": 1,
+        "mem": 3000,
         "parallelization_level": "well"
       },
       "args_schema": {
@@ -241,8 +241,8 @@
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
-        "cpus_per_task": 4,
-        "mem": 32000,
+        "cpus_per_task": 1,
+        "mem": 3000,
         "parallelization_level": "well"
       },
       "args_schema": {
@@ -376,8 +376,8 @@
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
-        "cpus_per_task": 4,
-        "mem": 16000,
+        "cpus_per_task": 1,
+        "mem": 3000,
         "parallelization_level": "image"
       },
       "args_schema": {
@@ -478,8 +478,8 @@
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
-        "cpus_per_task": 4,
-        "mem": 16000
+        "cpus_per_task": 1,
+        "mem": 3000
       },
       "args_schema": {
         "title": "CalculateIlluminationProfiles",
@@ -537,8 +537,8 @@
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
-        "cpus_per_task": 4,
-        "mem": 16000,
+        "cpus_per_task": 1,
+        "mem": 3000,
         "parallelization_level": "well"
       },
       "args_schema": {
@@ -610,7 +610,7 @@
       "output_type": "zarr",
       "meta": {
         "cpus_per_task": 1,
-        "mem": 4000,
+        "mem": 3000,
         "parallelization_level": "image"
       },
       "args_schema": {
@@ -675,7 +675,7 @@
       "output_type": "zarr",
       "meta": {
         "cpus_per_task": 1,
-        "mem": 4000
+        "mem": 3000
       },
       "args_schema": {
         "title": "CreateOmeZarrMultiplexIc6000",
@@ -846,7 +846,7 @@
       "output_type": "zarr",
       "meta": {
         "cpus_per_task": 1,
-        "mem": 4000,
+        "mem": 3000,
         "parallelization_level": "image"
       },
       "args_schema": {
@@ -899,7 +899,7 @@
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
-        "cpus_per_task": 4,
+        "cpus_per_task": 2,
         "mem": 60000
       },
       "args_schema": {
@@ -1028,7 +1028,7 @@
       "output_type": "zarr",
       "meta": {
         "cpus_per_task": 1,
-        "mem": 5000,
+        "mem": 3000,
         "parallelization_level": "well"
       },
       "args_schema": {
@@ -1088,7 +1088,7 @@
       "output_type": "zarr",
       "meta": {
         "cpus_per_task": 1,
-        "mem": 10000,
+        "mem": 3000,
         "parallelization_level": "well"
       },
       "args_schema": {
@@ -1160,7 +1160,7 @@
       "output_type": "zarr",
       "meta": {
         "cpus_per_task": 1,
-        "mem": 10000,
+        "mem": 3000,
         "parallelization_level": "well"
       },
       "args_schema": {
@@ -1235,7 +1235,7 @@
       "output_type": "zarr",
       "meta": {
         "cpus_per_task": 1,
-        "mem": 10000,
+        "mem": 3000,
         "parallelization_level": "image"
       },
       "args_schema": {
@@ -1298,7 +1298,7 @@
       "output_type": "zarr",
       "meta": {
         "cpus_per_task": 1,
-        "mem": 5000,
+        "mem": 3000,
         "parallelization_level": "image"
       },
       "args_schema": {
@@ -1358,7 +1358,7 @@
       "output_type": "zarr",
       "meta": {
         "cpus_per_task": 1,
-        "mem": 5000,
+        "mem": 3000,
         "parallelization_level": "well"
       },
       "args_schema": {
@@ -1442,7 +1442,7 @@
       "output_type": "zarr",
       "meta": {
         "cpus_per_task": 1,
-        "mem": 5000,
+        "mem": 3000,
         "parallelization_level": "well"
       },
       "args_schema": {
