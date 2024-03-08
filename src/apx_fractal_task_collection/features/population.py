@@ -99,6 +99,11 @@ def measure_population_features(
 
     label_image = np.squeeze(label_image)
 
+    # if there are less objects than the maximum number of neighbours
+    # reduce the number of neighbours
+    num_labels = len(np.unique(label_image)) - 1
+    n_neighbours = [n for n in n_neighbours if n < num_labels]
+
     # get coordinates
     coordinates_df = pd.DataFrame(
         regionprops_table(
