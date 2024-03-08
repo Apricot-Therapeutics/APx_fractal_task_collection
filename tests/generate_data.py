@@ -98,21 +98,24 @@ def main() -> None:
                 image_group,
                 "FOV_ROI_table",
                 FOV_table,
-                overwrite=True
+                overwrite=True,
+                table_type="roi_table",
             )
 
             write_table(
                 image_group,
                 "well_ROI_table",
                 well_table,
-                overwrite=True
+                overwrite=True,
+                table_type="roi_table",
             )
 
             if fi == 0:
                 # add labels...
                 blobs = [binary_blobs(length=size_xy,
-                                      volume_fraction=0.4
-                                      , n_dim=3).astype('uint8')
+                                      volume_fraction=0.6,
+                                      blob_size_fraction=0.07,
+                                      n_dim=3).astype('uint8')
                          for n in range(0, num_labels)]
                 label_images = [label(b[:size_z, :, :]) for b in blobs]
                 label_names = ["Label A", "Label B"]
@@ -123,8 +126,9 @@ def main() -> None:
             if fi == 2:
                 # add labels...
                 blobs = [binary_blobs(length=size_xy,
-                                      volume_fraction=0.4
-                                      , n_dim=3).astype('uint8')
+                                      volume_fraction=0.6,
+                                      blob_size_fraction=0.07,
+                                      n_dim=3).astype('uint8')
                          for n in range(0, num_labels)]
                 label_images = [label(b[:size_z, :, :]) for b in blobs]
                 label_names = ["Label C", "Label D"]
