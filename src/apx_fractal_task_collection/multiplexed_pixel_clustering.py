@@ -24,9 +24,7 @@ from pathlib import Path
 from typing import Any, Dict, Sequence, Optional
 
 from sklearn.preprocessing import (StandardScaler,
-                                   PowerTransformer,
-                                   FunctionTransformer,
-                                   QuantileTransformer)
+                                   FunctionTransformer)
 
 from fractal_tasks_core.labels import prepare_label_group
 from fractal_tasks_core.channels import OmeroChannel

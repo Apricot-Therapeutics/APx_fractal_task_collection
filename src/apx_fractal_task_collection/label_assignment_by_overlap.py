@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Any, Dict, Sequence
 
 import anndata as ad
-import dask.array as da
 import fractal_tasks_core
 import numpy as np
 import pandas as pd

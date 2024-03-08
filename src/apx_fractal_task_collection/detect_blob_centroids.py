@@ -26,12 +26,10 @@ import numpy as np
 import zarr
 import anndata as ad
 from skimage.feature import blob_log
-from skimage.morphology import area_closing
 from skimage.morphology import label
 
 from apx_fractal_task_collection.utils import (
     get_channel_image_from_well,
-    get_label_image_from_well,
 )
 
 from fractal_tasks_core.labels import prepare_label_group

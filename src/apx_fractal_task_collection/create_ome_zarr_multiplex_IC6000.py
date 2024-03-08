@@ -33,7 +33,6 @@ from fractal_tasks_core.channels import check_well_channel_labels
 from fractal_tasks_core.channels import define_omero_channels
 from fractal_tasks_core.channels import OmeroChannel
 from fractal_tasks_core.cellvoyager.filenames import glob_with_multiple_patterns
-from fractal_tasks_core.cellvoyager.filenames import parse_filename
 from fractal_tasks_core.roi import prepare_FOV_ROI_table
 from fractal_tasks_core.roi import prepare_well_ROI_table
 from fractal_tasks_core.roi import remove_FOV_overlaps

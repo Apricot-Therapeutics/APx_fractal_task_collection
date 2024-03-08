@@ -15,13 +15,19 @@ from typing import Any, Dict, Sequence
 import dask.array as da
 import fractal_tasks_core
 import pandas as pd
-from skimage.measure import regionprops_table
-import mahotas as mh
 import numpy as np
 import zarr
 import anndata as ad
 
 from apx_fractal_task_collection.utils import get_acquisition_from_label_name
+from apx_fractal_task_collection.features.intensity import measure_intensity_features
+from apx_fractal_task_collection.features.morphology import (
+    measure_morphology_features,
+    get_borders_internal,
+    get_borders_external)
+from apx_fractal_task_collection.features.texture import measure_texture_features
+from apx_fractal_task_collection.features.population import measure_population_features
+
 from fractal_tasks_core.channels import get_omero_channel_list
 from fractal_tasks_core.ngff import load_NgffImageMeta
 from fractal_tasks_core.tables import write_table
@@ -37,223 +43,6 @@ from fractal_tasks_core.roi import (
 __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
 logger = logging.getLogger(__name__)
-
-def sum_intensity(regionmask, intensity_image):
-    return np.sum(intensity_image[regionmask])
-
-def std_intensity(regionmask, intensity_image):
-    return np.std(intensity_image[regionmask])
-
-def measure_intensity_features(label_image, intensity_image):
-    """
-    Measure intensity features for label image.
-    """
-    intensity_features = pd.DataFrame(
-        regionprops_table(
-            np.squeeze(label_image),
-            intensity_image,
-            properties=[
-                "label",
-                "max_intensity",
-                "mean_intensity",
-                "min_intensity",
-                "weighted_moments_hu",
-            ],
-            extra_properties=[
-                sum_intensity,
-                std_intensity
-            ],
-        )
-    )
-    return intensity_features
-
-
-def roundness(regionmask):
-    return mh.features.roundness(regionmask)
-
-
-def get_borders_internal(well_table, fov_table, morphology_features,
-                         pixel_size_xy):
-
-    well_table = well_table.to_df()
-    fov_table = fov_table.to_df()
-    obj_name = morphology_features.columns[0].split("_")[0]
-
-    def check_range(row, borders, col_start, col_end):
-        start_value = row[col_start]
-        end_value = row[col_end]
-        range_values = np.arange(start_value, end_value + 1)
-        is_in_range = np.isin(borders, range_values)
-        return np.any(is_in_range)
-
-    # get internal borders of FOVs
-    borders_x = np.unique(
-        (fov_table['x_micrometer'] / pixel_size_xy).astype('uint16'))[1:] - \
-                np.unique((well_table['x_micrometer'] / pixel_size_xy).astype(
-                    'uint16'))[0]
-    borders_y = np.unique(
-        (fov_table['y_micrometer'] / pixel_size_xy).astype('uint16'))[1:] - \
-                np.unique((well_table['y_micrometer'] / pixel_size_xy).astype(
-                    'uint16'))[0]
-
-    #a = morphology_features[f'{obj_name}_Morphology_bbox-0'].isin(borders_y)
-    #b = morphology_features[f'{obj_name}_Morphology_bbox-1'].isin(borders_x)
-    #c = morphology_features[f'{obj_name}_Morphology_bbox-2'].isin(borders_y)
-    #d = morphology_features[f'{obj_name}_Morphology_bbox-3'].isin(borders_x)
-
-    e = morphology_features.apply(lambda x:
-                              check_range(
-                                  x,
-                                  borders_y,
-                                  f'{obj_name}_Morphology_bbox-0',
-                                  f'{obj_name}_Morphology_bbox-2'),
-                              axis=1)
-
-    f = morphology_features.apply(lambda x:
-                              check_range(
-                                  x,
-                                  borders_x,
-                                  f'{obj_name}_Morphology_bbox-1',
-                                  f'{obj_name}_Morphology_bbox-3'),
-                              axis=1)
-
-
-    #is_border_internal = a | b | c | d
-
-    is_border_internal = e | f
-
-    return is_border_internal
-
-
-
-def get_borders_external(ROI_table, morphology_features, pixel_size_xy):
-
-    safety_range = 5
-    ROI_df = ROI_table.to_df()
-    obj_name = morphology_features.columns[0].split("_")[0]
-
-    borders_x = np.unique(
-        (ROI_df['x_micrometer'] / pixel_size_xy).astype('uint16')) - np.min(
-        ROI_df['x_micrometer'] / pixel_size_xy).astype('uint16')
-    borders_x = np.append(borders_x, borders_x[-1] + np.round(
-        ROI_df['len_x_micrometer'] / pixel_size_xy).astype('uint16')[0])
-    borders_x_start = np.arange(borders_x[0], borders_x[0] + safety_range)
-    borders_x_end = np.arange(borders_x[-1] - safety_range, borders_x[-1])
-
-    borders_x = np.append(borders_x, borders_x_start)
-    borders_x = np.append(borders_x, borders_x_end)
-
-    borders_y = np.unique(
-        (ROI_df['y_micrometer'] / pixel_size_xy).astype('uint16')) - np.min(
-        ROI_df['y_micrometer'] / pixel_size_xy).astype('uint16')
-    borders_y = np.append(borders_y, borders_y[-1] + np.round(
-        ROI_df['len_y_micrometer'] / pixel_size_xy).astype('uint16')[0])
-    borders_y_start = np.arange(borders_y[0], borders_y[0] + safety_range)
-    borders_y_end = np.arange(borders_y[-1] - safety_range, borders_y[-1])
-
-    borders_y = np.append(borders_y, borders_y_start)
-    borders_y = np.append(borders_y, borders_y_end)
-
-    a = morphology_features[f'{obj_name}_Morphology_bbox-0'].isin(borders_y)
-    b = morphology_features[f'{obj_name}_Morphology_bbox-1'].isin(borders_x)
-    c = morphology_features[f'{obj_name}_Morphology_bbox-2'].isin(borders_y)
-    d = morphology_features[f'{obj_name}_Morphology_bbox-3'].isin(borders_x)
-
-    is_border_external = a | b | c | d
-
-    return is_border_external
-
-
-def measure_morphology_features(label_image):
-    """
-    Measure morphology features for label image.
-    """
-    morphology_features = pd.DataFrame(regionprops_table(
-        np.squeeze(label_image),
-        properties=[
-            "label",
-            "area",
-            "centroid",
-            "bbox_area",
-            "bbox",
-            "convex_area",
-            "eccentricity",
-            "equivalent_diameter",
-            "euler_number",
-            "extent",
-            "filled_area",
-            "major_axis_length",
-            "minor_axis_length",
-            "orientation",
-            "perimeter",
-            "solidity",
-        ],
-        extra_properties=[
-            roundness,
-        ],
-    )
-    )
-    morphology_features["circularity"] = (4*np.pi*morphology_features.area) \
-                                         / (morphology_features.perimeter**2)
-    return morphology_features
-
-# histomicstk version, couldn't get it to install in package as dependency
-# def measure_texture_features(label_image, intensity_image):
-#     """
-#     Measure texture features for label image.
-#     """
-#
-#     texture_features = compute_haralick_features(label_image, intensity_image)
-#     texture_features['label'] = np.unique(label_image[np.nonzero(label_image)])
-#
-#     return texture_features
-
-
-def haralick_features(regionmask, intensity_image):
-    haralick_values_list = []
-    masked_image = np.where(regionmask > 0, intensity_image, 0)
-    for distance in [2, 5]:
-        try:
-            haralick_values = mh.features.haralick(
-                masked_image.astype('uint8'),
-                distance=distance,
-                return_mean=True,
-                ignore_zeros=True)
-        except ValueError:
-            haralick_values = np.full(13, np.NaN, dtype=float)
-
-        haralick_values_list.extend(haralick_values)
-    return haralick_values_list
-
-
-def measure_texture_features(label_image, intensity_image):
-    """
-    Measure texture features for label image.
-    """
-
-    # NOTE: Haralick features are computed on 8-bit images.
-    clip_value = np.percentile(intensity_image, 99.999)
-    clipped_img = np.clip(intensity_image, 0, clip_value).astype('uint16')
-    rescaled_img = mh.stretch(clipped_img)
-
-    names = ['angular-second-moment', 'contrast', 'correlation',
-             'sum-of-squares', 'inverse-diff-moment', 'sum-avg',
-             'sum-var', 'sum-entropy', 'entropy', 'diff-var',
-             'diff-entropy', 'info-measure-corr-1', 'info-measure-corr-2']
-
-    names = [
-        f"Haralick-{name}-{distance}" for distance in [2, 5] for name in names]
-
-    texture_features = pd.DataFrame(
-        regionprops_table(label_image,
-                          rescaled_img,
-                          properties=['label'],
-                          extra_properties=[haralick_features]))
-
-    texture_features.set_index('label', inplace=True)
-    texture_features.columns = names
-    texture_features.reset_index(inplace=True)
-    return texture_features
 
 
 @validate_arguments
@@ -271,6 +60,7 @@ def measure_features(  # noqa: C901
         measure_intensity: bool = False,
         measure_morphology: bool = False,
         measure_texture: bool = False,
+        measure_population: bool = False,
         calculate_internal_borders: bool = False,
         level: int = 0,
         overwrite: bool = True,
@@ -298,6 +88,7 @@ def measure_features(  # noqa: C901
         measure_intensity: If True, calculate intensity features.
         measure_morphology: If True, calculate morphology features.
         measure_texture: If True, calculate texture features.
+        measure_population: If True, calculate population features.
         calculate_internal_borders: For a typical experiment this should
             not be selected. If True, calculate internal borders (whether
             an object touches or overlaps with a FOV border). This
@@ -392,10 +183,10 @@ def measure_features(  # noqa: C901
 
             # insert new centroid columns
             morphology_features.insert(centroid_index + 1,
-                                       f'well_centroid-0',
+                                       'well_centroid-0',
                                        well_centroid_0)
             morphology_features.insert(centroid_index + 2,
-                                       f'well_centroid-1',
+                                       'well_centroid-1',
                                        well_centroid_1)
 
 
@@ -405,7 +196,6 @@ def measure_features(  # noqa: C901
             roi_feature_list.append(morphology_features)
             logger.info(f"Done calculating morphology features "
                         f"for {label_image_name}.")
-
 
         if measure_intensity or measure_texture:
             intensity_features = []
@@ -468,6 +258,18 @@ def measure_features(  # noqa: C901
             if texture_features:
                 texture_features = pd.concat(texture_features, axis=1)
                 roi_feature_list.append(texture_features)
+
+        if measure_population:
+            logger.info(f"Calculating population features for "
+                        f"{label_image_name}.")
+            population_features = measure_population_features(label_image)
+            population_features.set_index("label", inplace=True)
+            population_features.columns = label_image_name +\
+                                         "_Population_" +\
+                                         population_features.columns
+            roi_feature_list.append(population_features)
+            logger.info(f"Done calculating population features "
+                        f"for {label_image_name}.")
 
         merged_roi_features = pd.concat(roi_feature_list, axis=1)
         merged_roi_features.reset_index(inplace=True)

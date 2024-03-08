@@ -64,7 +64,7 @@ def correct(
     if flatfield.shape != img_stack.shape[2:] or img_stack.shape[0] != 1:
         raise ValueError(
             "Error in illumination_correction:\n"
-            f"{img_stack.shape=}\n{corr_img.shape=}"
+            f"{img_stack.shape=}\n{flatfield.shape=}"
         )
 
     # Store info about dtype

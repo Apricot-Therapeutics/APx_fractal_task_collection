@@ -29,12 +29,13 @@ def concat_features(feature_tables):
     well_table = ad.concat(feature_tables, axis=1, merge="same")
     well_table.var_names_make_unique(join="trash")
 
-    vars_to_keep = [v for v in well_table.var_names if not "trash" in v]
+    vars_to_keep = [v for v in well_table.var_names if "trash" not in v]
     morphology = [v for v in vars_to_keep if "Morphology" in v]
     intensity = [v for v in vars_to_keep if "Intensity" in v]
     texture = [v for v in vars_to_keep if "Texture" in v]
+    population = [v for v in vars_to_keep if "Population" in v]
 
-    vars_to_keep = morphology + intensity + texture
+    vars_to_keep = morphology + intensity + texture + population
 
     feature_table = well_table[:, vars_to_keep]
 

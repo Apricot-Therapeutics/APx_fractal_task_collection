@@ -10,7 +10,6 @@
 
 import logging
 import itertools
-import subprocess
 from pathlib import Path
 import tempfile
 from typing import Any

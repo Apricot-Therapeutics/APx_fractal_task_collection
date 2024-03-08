@@ -440,6 +440,12 @@
             "type": "boolean",
             "description": "If True, calculate texture features."
           },
+          "measure_population": {
+            "title": "Measure Population",
+            "default": false,
+            "type": "boolean",
+            "description": "If True, calculate population features."
+          },
           "calculate_internal_borders": {
             "title": "Calculate Internal Borders",
             "default": false,

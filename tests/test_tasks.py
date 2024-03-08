@@ -515,3 +515,22 @@ def test_stitch_fovs_with_overlap(test_data_dir):
 #         ref_cycle=0
 #     )
 
+
+# from apx_fractal_task_collection.measure_features import measure_features
+# measure_features(
+#     input_paths=[r"J:\general\20240124_Arpan_4channel_20x_02272024Rad51foci_4cell_line_1\Output_2"],
+#     output_path=r"J:\general\20240124_Arpan_4channel_20x_02272024Rad51foci_4cell_line_1\Output_2",
+#     component="02272024Rad51foci_4cell_line.zarr/C/04/0",
+#     metadata={},
+#     label_image_name='Nuclei',
+#     measure_intensity=False,
+#     measure_morphology=True,
+#     measure_texture=False,
+#     measure_population=True,
+#     ROI_table_name='well_ROI_table',
+#     calculate_internal_borders=True,
+#     output_table_name='feature_table',
+#     level=0,
+#     overwrite=True
+# )
+

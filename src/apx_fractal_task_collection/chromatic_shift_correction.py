@@ -164,7 +164,7 @@ def chromatic_shift_correction(
         reference_channel_label: Label of the channel that is used as
             reference. (This channel is not corrected.)
     """
-    logger.info(f"Correcting chromatic shift based on reference images.")
+    logger.info("Correcting chromatic shift based on reference images.")
     in_path = Path(input_paths[0])
     zarrurl = in_path.joinpath(in_path.joinpath(component))
 
@@ -246,7 +246,6 @@ def chromatic_shift_correction(
             wavelength_id=None,
             label=channel.label
         )
-        ind_channel = tmp_channel.index
         data_czyx = \
             da.from_zarr(zarrurl.joinpath('0'))
 

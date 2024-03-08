@@ -16,7 +16,6 @@ import dask.array as da
 
 from typing import Any
 from typing import Sequence
-from typing import Optional
 from pathlib import Path
 from skimage.morphology import label
 from pydantic.decorator import validate_arguments
@@ -24,13 +23,10 @@ from pydantic.decorator import validate_arguments
 from apx_fractal_task_collection.utils import get_channel_image_from_well
 
 import fractal_tasks_core
-from fractal_tasks_core.channels import get_omero_channel_list
 from fractal_tasks_core.utils import rescale_datasets
 from fractal_tasks_core.labels import prepare_label_group
 from fractal_tasks_core.pyramids import build_pyramid
-from fractal_tasks_core.channels import OmeroChannel
 from fractal_tasks_core.ngff import load_NgffImageMeta
-from fractal_tasks_core.channels import get_channel_from_image_zarr
 
 
 logger = logging.getLogger(__name__)

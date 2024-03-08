@@ -10,7 +10,7 @@
 
 import logging
 import itertools
-import subprocess
+import napari
 from pathlib import Path
 import tempfile
 from typing import Any
@@ -28,8 +28,6 @@ from fractal_tasks_core.pyramids import build_pyramid
 
 logger = logging.getLogger(__name__)
 
-import napari
-from skimage.filters import gaussian
 
 viewer = napari.Viewer()
 
