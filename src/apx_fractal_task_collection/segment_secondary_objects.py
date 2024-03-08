@@ -55,13 +55,17 @@ logger = logging.getLogger(__name__)
 
 def watershed(intensity_image, label_image,
               min_threshold, max_threshold,
-              gaussian_blur, contrast_threshold):
+              gaussian_blur, contrast_threshold,
+              mask):
 
     # if there are no labels, return a zero array
     if np.max(label_image) == 0:
         return np.zeros(label_image.shape, dtype='uint32')
 
     else:
+        # only retain intensity in masked region
+        intensity_image[mask == 0] = 0
+
         # apply gaussian blur
         if gaussian_blur is not None:
             intensity_image = gaussian(intensity_image, gaussian_blur,
@@ -112,6 +116,7 @@ def segment_secondary_objects(  # noqa: C901
     gaussian_blur: Optional[int] = None,
     fill_holes_area: Optional[int] = None,
     contrast_threshold: int = 5,
+    mask: Optional[str] = None,
     output_label_cycle: int,
     output_label_name: str,
     level: int = 0,
@@ -143,6 +148,8 @@ def segment_secondary_objects(  # noqa: C901
         gaussian_blur: Sigma for gaussian blur.
         fill_holes_area: Area threshold for filling holes after watershed.
         contrast_threshold: Contrast threshold for background definition.
+        mask: label image to use as mask. Only areas where the mask is
+            non-zero will be considered for the watershed.
         output_label_cycle: indicates in which acquisition to store the result.
         output_label_name: Name of the output label image.
         level: Resolution of the label image to calculate overlap.
@@ -161,8 +168,13 @@ def segment_secondary_objects(  # noqa: C901
     data_zyx, intensity_image_path = get_channel_image_from_well(
         well_url, channel.label, level)
 
+    if mask is not None:
+        mask_label, mask_image_path = get_label_image_from_well(
+            well_url, mask, level)
+    else:
+        mask_label = da.ones(label_image.shape, dtype='uint32')
 
-    # prepare label image
+        # prepare label image
     ngff_image_meta = load_NgffImageMeta(intensity_image_path)
     num_levels = ngff_image_meta.num_levels
     coarsening_xy = ngff_image_meta.coarsening_xy
@@ -275,7 +287,9 @@ def segment_secondary_objects(  # noqa: C901
             min_threshold=min_threshold,
             max_threshold=max_threshold,
             gaussian_blur=gaussian_blur,
-            contrast_threshold=contrast_threshold)
+            contrast_threshold=contrast_threshold,
+            mask=np.squeeze(mask_label[region].compute()),
+        )
 
         # fill holes in label image
         if fill_holes_area is not None:

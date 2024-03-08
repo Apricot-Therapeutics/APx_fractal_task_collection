@@ -121,6 +121,7 @@ def test_segment_secondary_objects(test_data_dir):
         gaussian_blur=2,
         fill_holes_area=10,
         contrast_threshold=5,
+        mask=None,
         output_label_cycle=0,
         output_label_name='watershed_result',
         level=0,
@@ -538,4 +539,3 @@ def test_stitch_fovs_with_overlap(test_data_dir):
 #     level=0,
 #     overwrite=True
 # )
-
