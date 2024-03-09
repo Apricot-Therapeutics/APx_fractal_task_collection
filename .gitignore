@@ -286,4 +286,7 @@ poetry.toml
 # LSP config files
 pyrightconfig.json
 
+# copier
+.copier-answers.yaml
+
 # End of https://www.toptal.com/developers/gitignore/api/python,pycharm

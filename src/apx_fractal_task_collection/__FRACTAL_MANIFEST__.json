@@ -3,7 +3,7 @@
   "task_list": [
     {
       "name": "Calculate Registration (image-based) [chi-squared shift]",
-      "executable": "calculate_registration_image_based_chi_squared_shift.py",
+      "executable": "tasks/calculate_registration_image_based_chi_squared_shift.py",
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
@@ -75,7 +75,7 @@
     },
     {
       "name": "Label Assignment by Overlap",
-      "executable": "label_assignment_by_overlap.py",
+      "executable": "tasks/label_assignment_by_overlap.py",
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
@@ -153,7 +153,7 @@
     },
     {
       "name": "Clip Label Image",
-      "executable": "clip_label_image.py",
+      "executable": "tasks/clip_label_image.py",
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
@@ -237,7 +237,7 @@
     },
     {
       "name": "Segment Secondary Objects",
-      "executable": "segment_secondary_objects.py",
+      "executable": "tasks/segment_secondary_objects.py",
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
@@ -313,6 +313,11 @@
             "type": "integer",
             "description": "Contrast threshold for background definition."
           },
+          "mask": {
+            "title": "Mask",
+            "type": "string",
+            "description": "label image to use as mask. Only areas where the mask is non-zero will be considered for the watershed."
+          },
           "output_label_cycle": {
             "title": "Output Label Cycle",
             "type": "integer",
@@ -372,7 +377,7 @@
     },
     {
       "name": "Measure Features",
-      "executable": "measure_features.py",
+      "executable": "tasks/measure_features.py",
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
@@ -480,7 +485,7 @@
     },
     {
       "name": "Calculate Illumination Profiles",
-      "executable": "calculate_illumination_profiles.py",
+      "executable": "tasks/calculate_illumination_profiles.py",
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
@@ -539,7 +544,7 @@
     },
     {
       "name": "Aggregate Tables to Well Level",
-      "executable": "aggregate_tables_to_well_level.py",
+      "executable": "tasks/aggregate_tables_to_well_level.py",
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
@@ -611,7 +616,7 @@
     },
     {
       "name": "Apply BaSiCPy Illumination Model",
-      "executable": "apply_basicpy_illumination_model.py",
+      "executable": "tasks/apply_basicpy_illumination_model.py",
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
@@ -676,7 +681,7 @@
     },
     {
       "name": "Create OME-Zarr structure IC6000",
-      "executable": "create_ome_zarr_multiplex_IC6000.py",
+      "executable": "tasks/create_ome_zarr_multiplex_IC6000.py",
       "input_type": "image",
       "output_type": "zarr",
       "meta": {
@@ -847,7 +852,7 @@
     },
     {
       "name": "Convert IC6000 to OME-Zarr",
-      "executable": "IC6000_to_ome_zarr.py",
+      "executable": "tasks/IC6000_to_ome_zarr.py",
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
@@ -901,7 +906,7 @@
     },
     {
       "name": "Multiplexed Pixel Clustering",
-      "executable": "multiplexed_pixel_clustering.py",
+      "executable": "tasks/multiplexed_pixel_clustering.py",
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
@@ -1029,7 +1034,7 @@
     },
     {
       "name": "Compress OME-Zarr for Visualization",
-      "executable": "compress_zarr_for_visualization.py",
+      "executable": "tasks/compress_zarr_for_visualization.py",
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
@@ -1089,7 +1094,7 @@
     },
     {
       "name": "Convert Channel to Label",
-      "executable": "convert_channel_to_label.py",
+      "executable": "tasks/convert_channel_to_label.py",
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
@@ -1161,7 +1166,7 @@
     },
     {
       "name": "Filter Label by Size",
-      "executable": "filter_label_by_size.py",
+      "executable": "tasks/filter_label_by_size.py",
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
@@ -1236,7 +1241,7 @@
     },
     {
       "name": "Chromatic Shift Correction",
-      "executable": "chromatic_shift_correction.py",
+      "executable": "tasks/chromatic_shift_correction.py",
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
@@ -1299,7 +1304,7 @@
     },
     {
       "name": "Stitch FOVs with Overlap",
-      "executable": "stitch_fovs_with_overlap.py",
+      "executable": "tasks/stitch_fovs_with_overlap.py",
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
@@ -1359,7 +1364,7 @@
     },
     {
       "name": "Apply Mask",
-      "executable": "apply_mask.py",
+      "executable": "tasks/apply_mask.py",
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
@@ -1443,7 +1448,7 @@
     },
     {
       "name": "Detect Blob Centroids",
-      "executable": "detect_blob_centroids.py",
+      "executable": "tasks/detect_blob_centroids.py",
       "input_type": "zarr",
       "output_type": "zarr",
       "meta": {
