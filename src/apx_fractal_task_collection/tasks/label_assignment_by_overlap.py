@@ -60,17 +60,23 @@ def assign_objects(
         sub_region_df['child_area'] = b.area
 
         res.append(sub_region_df)
-
-    res_merged = pd.concat(res, axis=0)
-    res_merged['overlap'] = res_merged['parent_area']/res_merged['child_area']
-    # keep only parent with highest overlap
-    res_merged = res_merged.groupby('child_label', as_index=False).apply(lambda x: x.loc[x.overlap == x.overlap.max()])
-    # in case of a tied overlap, keep a random parent
-    res_merged = res_merged.groupby('child_label', as_index=False).apply(lambda x: x.sample(1))
-    res_merged.set_index('child_label', inplace=True)
-    res_merged.loc[res_merged.overlap < overlap_threshold, 'parent_label'] = pd.NA
-
-    return res_merged[['parent_label', 'overlap']]
+        
+    # check whether there is any overlap
+    if len(res) > 1:
+        res_merged = pd.concat(res, axis=0)
+        res_merged['overlap'] = res_merged['parent_area']/res_merged['child_area']
+        # keep only parent with highest overlap
+        res_merged = res_merged.groupby('child_label', as_index=False).apply(lambda x: x.loc[x.overlap == x.overlap.max()])
+        # in case of a tied overlap, keep a random parent
+        res_merged = res_merged.groupby('child_label', as_index=False).apply(lambda x: x.sample(1))
+        res_merged.set_index('child_label', inplace=True)
+        res_merged.loc[res_merged.overlap < overlap_threshold, 'parent_label'] = pd.NA
+    # if there is no overlap, return an empty dataframe
+    else:
+        res_merged =  pd.DataFrame({'parent_label': pd.NA,
+                                    'overlap': pd.NA}, index=pd.Index([]))
+    
+    return res_merged
 
 
 @validate_arguments
@@ -138,11 +144,17 @@ def label_assignment_by_overlap(  # noqa: C901
         child_label_image,
         level)
 
-    # make the assignment
-    assignments = assign_objects(parent_label.compute(),
-                                 child_label.compute(),
-                                 overlap_threshold,
-                                 )
+    # if there are no child labels, assignments will be all NaN
+    if np.unique(child_label).compute().size == 1:
+        assignments = pd.DataFrame({'parent_label': pd.NA,
+                                    'overlap': pd.NA}, index=pd.Index([]))
+
+    else:
+        # make the assignment
+        assignments = assign_objects(parent_label.compute(),
+                                     child_label.compute(),
+                                     overlap_threshold,
+                                     )
 
     assignments.rename(
         columns={'parent_label': f'{parent_label_image}_label',
