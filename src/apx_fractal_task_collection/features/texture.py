@@ -1,9 +1,11 @@
 from skimage.measure import regionprops_table
+import logging
 import mahotas as mh
 import numpy as np
 import pandas as pd
 import pyfeats
 
+logger = logging.getLogger(__name__)
 
 def haralick_features(regionmask, intensity_image):
     """
@@ -72,14 +74,17 @@ def lte_features(label_image, intensity_image):
     Scikit-image regionprops_table extra_properties function to compute
     Law's Texture Energy (LTE) features for a region.
     """
-    features, labels = pyfeats.lte_measures(intensity_image, label_image, l=3)
+    try:
+        features, labels = pyfeats.lte_measures(intensity_image, label_image,
+                                                l=3)
+    except ValueError:
+        features = np.full(6, np.NaN, dtype=float)
     return list(features)
 
 def measure_lte_features(label_image, intensity_image):
     """
     Measure Law's Texture Energy Measures for label image.
     """
-
     features = pd.DataFrame(
         regionprops_table(label_image,
                           intensity_image,
@@ -91,23 +96,34 @@ def measure_lte_features(label_image, intensity_image):
     return features
 
 
-def measure_texture_features(label_image, intensity_image, clip_value=10000):
+def measure_texture_features(label_image,
+                             intensity_image,
+                             clip_value=10000,
+                             feature_selection=["haralick", "lte"]):
     """
     Measure texture features for label image.
     """
 
-    # get haralick features
-    haralick_features = measure_haralick_features(
-        label_image=label_image,
-        intensity_image=intensity_image,
-        clip_value=clip_value)
+    feature_list = []
 
-    # get lte features
-    lte_features = measure_lte_features(
-        label_image=label_image,
-        intensity_image=intensity_image)
+    if "haralick" in feature_selection:
+        logger.info("Measuring Haralick features")
+        # get haralick features
+        haralick_features = measure_haralick_features(
+            label_image=label_image,
+            intensity_image=intensity_image,
+            clip_value=clip_value)
+        feature_list.append(haralick_features)
 
-    texture_features = pd.concat([haralick_features, lte_features], axis=1)
+    if "lte" in feature_selection:
+        logger.info("Measuring Law's Texture Energy features")
+        # get lte features
+        lte_features = measure_lte_features(
+            label_image=label_image,
+            intensity_image=intensity_image)
+        feature_list.append(lte_features)
+
+    texture_features = pd.concat(feature_list, axis=1)
     texture_features.reset_index(inplace=True)
     return texture_features
 

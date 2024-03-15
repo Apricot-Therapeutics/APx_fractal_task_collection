@@ -441,24 +441,17 @@
           },
           "measure_texture": {
             "title": "Measure Texture",
-            "default": false,
-            "type": "boolean",
-            "description": "If True, calculate texture features."
-          },
-          "clip_value": {
-            "title": "Clip Value",
-            "default": 5000,
-            "type": "integer",
-            "description": "Value to which to clip the intensity image for texture feature calculation. Will be applied to all channels except the ones specified in clip_value_exceptions."
-          },
-          "clip_value_exceptions": {
-            "title": "Clip Value Exceptions",
-            "default": {},
-            "type": "object",
-            "additionalProperties": {
-              "type": "integer"
+            "default": {
+              "texture_features": null,
+              "clip_value": 5000,
+              "clip_value_exceptions": {}
             },
-            "description": "Dictionary of exceptions for the clip value. The dictionary should have the channel name as key and the clip value as value."
+            "allOf": [
+              {
+                "$ref": "#/definitions/TextureFeatures"
+              }
+            ],
+            "description": "Select which texture features should be calculated."
           },
           "measure_population": {
             "title": "Measure Population",
@@ -494,7 +487,40 @@
           "ROI_table_name",
           "output_table_name"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "definitions": {
+          "TextureFeatures": {
+            "title": "TextureFeatures",
+            "description": "Validator to handle texture features selection",
+            "type": "object",
+            "properties": {
+              "texture_features": {
+                "title": "Texture Features",
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "haralick",
+                    "lte"
+                  ],
+                  "type": "string"
+                }
+              },
+              "clip_value": {
+                "title": "Clip Value",
+                "default": 5000,
+                "type": "integer"
+              },
+              "clip_value_exceptions": {
+                "title": "Clip Value Exceptions",
+                "default": {},
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
       },
       "docs_info": "Calculate features based on label image and intensity image (optional).\n\nTakes a label image and an optional intensity image and calculates\nmorphology, intensity and texture features in 2D."
     },

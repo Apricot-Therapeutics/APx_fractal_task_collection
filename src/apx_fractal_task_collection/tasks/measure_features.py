@@ -10,7 +10,8 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, Sequence, Optional
+from typing import Any, Dict, Sequence, Optional, Literal
+from pydantic import BaseModel
 
 import dask.array as da
 import fractal_tasks_core
@@ -44,6 +45,24 @@ __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
 logger = logging.getLogger(__name__)
 
+class TextureFeatures(BaseModel):
+    """
+    Validator to handle texture features selection
+
+    Attributes:
+        haralick: If True, compute Haralick texture features.
+        clip_value: Value to which to clip the intensity image for haralick
+            texture feature calculation. Will be applied to all channels
+            except the ones specified in clip_value_exceptions.
+        clip_value_exceptions: Dictionary of exceptions for the clip value.
+            The dictionary should have the channel name as key and the
+            clip value as value.
+        lte: If True, compute Law's Texture Energy (LTE) features.
+    """
+    texture_features: list[Literal["haralick", "lte"]] = None
+    clip_value: int = 5000
+    clip_value_exceptions: dict[str, int] = {}
+
 
 @validate_arguments
 def measure_features(  # noqa: C901
@@ -59,9 +78,7 @@ def measure_features(  # noqa: C901
 		output_table_name: str,
         measure_intensity: bool = False,
         measure_morphology: bool = False,
-        measure_texture: bool = False,
-        clip_value: int = 5000,
-        clip_value_exceptions: dict[str, int] = {},
+        measure_texture: TextureFeatures = TextureFeatures(),
         measure_population: bool = False,
         calculate_internal_borders: bool = False,
         level: int = 0,
@@ -89,13 +106,7 @@ def measure_features(  # noqa: C901
 		output_table_name: Name of the feature table.
         measure_intensity: If True, calculate intensity features.
         measure_morphology: If True, calculate morphology features.
-        measure_texture: If True, calculate texture features.
-        clip_value: Value to which to clip the intensity image for texture
-            feature calculation. Will be applied to all channels except the
-            ones specified in clip_value_exceptions.
-        clip_value_exceptions: Dictionary of exceptions for the clip value.
-            The dictionary should have the channel name as key and the
-            clip value as value.
+        measure_texture: Select which texture features should be calculated.
         measure_population: If True, calculate population features.
         calculate_internal_borders: For a typical experiment this should
             not be selected. If True, calculate internal borders (whether
@@ -205,7 +216,7 @@ def measure_features(  # noqa: C901
             logger.info(f"Done calculating morphology features "
                         f"for {label_image_name}.")
 
-        if measure_intensity or measure_texture:
+        if measure_intensity or measure_texture.texture_features:
             intensity_features = []
             texture_features = []
             # get all channels in the acquisition
@@ -243,30 +254,37 @@ def measure_features(  # noqa: C901
                         f" {channel.label}.")
 
                 # texture features
-                if measure_texture:
+                if measure_texture.texture_features:
                     logger.info(
                         f"Calculating texture features for channel "
                         f"{channel.label}.")
 
-                    if channel.label in clip_value_exceptions:
-                        current_clip_value = \
-                            clip_value_exceptions[channel.label]
-                        logger.info(
-                            f"Found clip value exception for channel "
-                            f"{channel.label}. Clipping at:"
-                            f" {current_clip_value}."
-                        )
+                    if "haralick" in measure_texture.texture_features:
+                        if channel.label in measure_texture.clip_value_exceptions:
+                            current_clip_value = \
+                                measure_texture.clip_value_exceptions[channel.label]
+                            logger.info(
+                                f"Found clip value exception for channel "
+                                f"{channel.label}. Clipping at:"
+                                f" {current_clip_value}."
+                            )
+                        else:
+                            current_clip_value = measure_texture.clip_value
+                            logger.info(
+                                f"No clip value exception found for channel "
+                                f"{channel.label}. Clipping at:"
+                                f" {current_clip_value}."
+                            )
+
                     else:
-                        current_clip_value = clip_value
-                        logger.info(
-                            f"No clip value exception found for channel "
-                            f"{channel.label}. Clipping at:"
-                            f" {current_clip_value}."
-                        )
+                        current_clip_value = measure_texture.clip_value
+
                     current_features = measure_texture_features(
                         label_image=np.squeeze(label_image),
                         intensity_image=np.squeeze(data_zyx),
-                        clip_value=current_clip_value)
+                        clip_value=current_clip_value,
+                        feature_selection=measure_texture.texture_features)
+
                     current_features.set_index("label", inplace=True)
                     current_features.columns = label_image_name +\
                                                "_Texture_" +\

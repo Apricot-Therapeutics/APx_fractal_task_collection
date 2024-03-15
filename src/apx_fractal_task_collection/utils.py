@@ -1,10 +1,12 @@
 import zarr
-
+import logging
 from natsort import natsorted
 from pathlib import Path
 from fractal_tasks_core.channels import get_omero_channel_list
 from fractal_tasks_core.channels import get_channel_from_image_zarr
 import dask.array as da
+
+logger = logging.getLogger(__name__)
 
 def get_acquisition_from_channel_label(zarrurl: Path,
                                        channel_label: str) -> str:
@@ -162,5 +164,7 @@ def get_channel_image_from_image(img_url: Path,
             da.from_zarr(img_url.joinpath(str(level)))[ind_channel]
 
         return data_zyx
+
+
 
 

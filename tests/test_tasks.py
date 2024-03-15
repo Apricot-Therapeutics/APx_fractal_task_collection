@@ -8,7 +8,7 @@ from fractal_tasks_core.channels import ChannelInputModel
 from fractal_tasks_core.channels import OmeroChannel
 from fractal_tasks_core.tasks.copy_ome_zarr import copy_ome_zarr
 
-from apx_fractal_task_collection.tasks.measure_features import measure_features
+from apx_fractal_task_collection.tasks.measure_features import measure_features, TextureFeatures
 from apx_fractal_task_collection.tasks.clip_label_image import clip_label_image
 from apx_fractal_task_collection.tasks.segment_secondary_objects import segment_secondary_objects
 from apx_fractal_task_collection.tasks.calculate_illumination_profiles import calculate_illumination_profiles
@@ -67,9 +67,11 @@ def test_measure_features(test_data_dir):
         label_image_name='Label A',
         measure_intensity=True,
         measure_morphology=True,
-        measure_texture=True,
-        clip_value=3000,
-        clip_value_exceptions={'0_DAPI': 5000},
+        measure_texture=TextureFeatures(
+            texture_features=["haralick", "lte"],
+            clip_value=3000,
+            clip_value_exceptions={'0_DAPI': 5000}
+        ),
         measure_population=True,
         ROI_table_name='FOV_ROI_table',
         calculate_internal_borders=True,
@@ -210,7 +212,11 @@ def test_label_assignment_by_overlap(test_data_dir):
         label_image_name='Label B',
         measure_intensity=True,
         measure_morphology=True,
-        measure_texture=True,
+        measure_texture=TextureFeatures(
+            texture_features=["haralick", "lte"],
+            clip_value=3000,
+            clip_value_exceptions={'0_DAPI': 5000}
+        ),
         measure_population=False,
         ROI_table_name='FOV_ROI_table',
         calculate_internal_borders=True,
@@ -243,7 +249,11 @@ def test_aggregate_tables_to_well_level(test_data_dir):
         label_image_name='Label B',
         measure_intensity=True,
         measure_morphology=True,
-        measure_texture=True,
+        measure_texture=TextureFeatures(
+            texture_features=["haralick", "lte"],
+            clip_value=3000,
+            clip_value_exceptions={'0_DAPI': 5000}
+        ),
         measure_population=True,
         ROI_table_name='FOV_ROI_table',
         calculate_internal_borders=True,
@@ -260,7 +270,11 @@ def test_aggregate_tables_to_well_level(test_data_dir):
         label_image_name='Label B',
         measure_intensity=True,
         measure_morphology=True,
-        measure_texture=True,
+        measure_texture=TextureFeatures(
+            texture_features=["haralick", "lte"],
+            clip_value=3000,
+            clip_value_exceptions={'0_DAPI': 5000}
+        ),
         measure_population=True,
         ROI_table_name='FOV_ROI_table',
         calculate_internal_borders=True,
@@ -277,7 +291,11 @@ def test_aggregate_tables_to_well_level(test_data_dir):
         label_image_name='Label B',
         measure_intensity=True,
         measure_morphology=True,
-        measure_texture=True,
+        measure_texture=TextureFeatures(
+            texture_features=["haralick", "lte"],
+            clip_value=3000,
+            clip_value_exceptions={'0_DAPI': 5000}
+        ),
         measure_population=True,
         ROI_table_name='FOV_ROI_table',
         calculate_internal_borders=True,
