@@ -68,12 +68,14 @@ def test_measure_features(test_data_dir):
         measure_intensity=True,
         measure_morphology=True,
         measure_texture=True,
+        clip_value=3000,
+        clip_value_exceptions={'0_DAPI': 5000},
         measure_population=True,
         ROI_table_name='FOV_ROI_table',
         calculate_internal_borders=True,
         output_table_name='feature_table',
         level=0,
-        overwrite=True
+        overwrite=True,
     )
 
 
@@ -539,5 +541,3 @@ def test_stitch_fovs_with_overlap(test_data_dir):
 #     level=0,
 #     overwrite=True
 # )
-
-
