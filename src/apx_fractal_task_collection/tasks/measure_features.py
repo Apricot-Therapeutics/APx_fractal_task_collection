@@ -10,7 +10,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, Sequence
+from typing import Any, Dict, Sequence, Optional
 
 import dask.array as da
 import fractal_tasks_core
@@ -60,6 +60,8 @@ def measure_features(  # noqa: C901
         measure_intensity: bool = False,
         measure_morphology: bool = False,
         measure_texture: bool = False,
+        clip_value: int = 5000,
+        clip_value_exceptions: dict[str, int] = {},
         measure_population: bool = False,
         calculate_internal_borders: bool = False,
         level: int = 0,
@@ -88,6 +90,12 @@ def measure_features(  # noqa: C901
         measure_intensity: If True, calculate intensity features.
         measure_morphology: If True, calculate morphology features.
         measure_texture: If True, calculate texture features.
+        clip_value: Value to which to clip the intensity image for texture
+            feature calculation. Will be applied to all channels except the
+            ones specified in clip_value_exceptions.
+        clip_value_exceptions: Dictionary of exceptions for the clip value.
+            The dictionary should have the channel name as key and the
+            clip value as value.
         measure_population: If True, calculate population features.
         calculate_internal_borders: For a typical experiment this should
             not be selected. If True, calculate internal borders (whether
@@ -239,9 +247,26 @@ def measure_features(  # noqa: C901
                     logger.info(
                         f"Calculating texture features for channel "
                         f"{channel.label}.")
+
+                    if channel.label in clip_value_exceptions:
+                        current_clip_value = \
+                            clip_value_exceptions[channel.label]
+                        logger.info(
+                            f"Found clip value exception for channel "
+                            f"{channel.label}. Clipping at:"
+                            f" {current_clip_value}."
+                        )
+                    else:
+                        current_clip_value = clip_value
+                        logger.info(
+                            f"No clip value exception found for channel "
+                            f"{channel.label}. Clipping at:"
+                            f" {current_clip_value}."
+                        )
                     current_features = measure_texture_features(
-                        np.squeeze(label_image),
-                        np.squeeze(data_zyx))
+                        label_image=np.squeeze(label_image),
+                        intensity_image=np.squeeze(data_zyx),
+                        clip_value=current_clip_value)
                     current_features.set_index("label", inplace=True)
                     current_features.columns = label_image_name +\
                                                "_Texture_" +\
