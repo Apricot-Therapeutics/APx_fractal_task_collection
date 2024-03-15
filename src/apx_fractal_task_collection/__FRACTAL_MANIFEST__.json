@@ -445,6 +445,21 @@
             "type": "boolean",
             "description": "If True, calculate texture features."
           },
+          "clip_value": {
+            "title": "Clip Value",
+            "default": 5000,
+            "type": "integer",
+            "description": "Value to which to clip the intensity image for texture feature calculation. Will be applied to all channels except the ones specified in clip_value_exceptions."
+          },
+          "clip_value_exceptions": {
+            "title": "Clip Value Exceptions",
+            "default": {},
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Dictionary of exceptions for the clip value. The dictionary should have the channel name as key and the clip value as value."
+          },
           "measure_population": {
             "title": "Measure Population",
             "default": false,
