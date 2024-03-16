@@ -170,7 +170,7 @@ def get_channel_image_from_image(img_url: Path,
 
 class TextureFeatures(BaseModel):
     """
-    Validator to handle texture features selection
+    Validator to handle texture features selection.
 
     Attributes:
         texture_features: List of texture features to calculate. Options are
@@ -189,6 +189,11 @@ class TextureFeatures(BaseModel):
 
     @root_validator
     def validate_conditions(cls, values):
+        # Extract values
+        texture_features = values.get("texture_features")
+        lower_percentile = values.get("clip_value")
+        upper_percentile = values.get("clip_value_exceptions")
+
         return values
 
 

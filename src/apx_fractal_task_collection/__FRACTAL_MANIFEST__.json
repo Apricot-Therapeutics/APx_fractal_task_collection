@@ -494,7 +494,7 @@
         "definitions": {
           "TextureFeatures": {
             "title": "TextureFeatures",
-            "description": "Validator to handle texture features selection",
+            "description": "Validator to handle texture features selection.",
             "type": "object",
             "properties": {
               "texture_features": {
