@@ -44,8 +44,12 @@ def test_args_schemas_are_up_to_date():
         print(f"Now handling {task['executable']}")
         old_schema = TASK_LIST[ind_task]["args_schema"]
         new_schema = create_schema_for_single_task(
-                task["executable"], package="apx_fractal_task_collection"
-                )
+            task["executable"],
+            package="apx_fractal_task_collection",
+            custom_pydantic_models=[("apx_fractal_task_collection",
+                                     "utils.py",
+                                     "TextureFeatures")]
+        )
         # The following step is required because some arguments may have a
         # default which has a non-JSON type (e.g. a tuple), which we need to
         # convert to JSON type (i.e. an array) before comparison.

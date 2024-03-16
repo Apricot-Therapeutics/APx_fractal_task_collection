@@ -510,12 +510,14 @@
                     "lte"
                   ],
                   "type": "string"
-                }
+                },
+                "description": "List of texture features to calculate. Options are 'haralick' and 'lte'."
               },
               "clip_value": {
                 "title": "Clip Value",
                 "default": 5000,
-                "type": "integer"
+                "type": "integer",
+                "description": "Value to which to clip the intensity image for haralick texture feature calculation. Will be applied to all channels except the ones specified in clip_value_exceptions."
               },
               "clip_value_exceptions": {
                 "title": "Clip Value Exceptions",
@@ -523,7 +525,8 @@
                 "type": "object",
                 "additionalProperties": {
                   "type": "integer"
-                }
+                },
+                "description": "Dictionary of exceptions for the clip value. The dictionary should have the channel name as key and the clip value as value."
               }
             }
           }

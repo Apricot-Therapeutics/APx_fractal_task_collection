@@ -174,7 +174,7 @@ class TextureFeatures(BaseModel):
 
     Attributes:
         texture_features: List of texture features to calculate. Options are
-            "haralick" and "lte".
+            'haralick' and 'lte'.
         clip_value: Value to which to clip the intensity image for haralick
             texture feature calculation. Will be applied to all channels
             except the ones specified in clip_value_exceptions.

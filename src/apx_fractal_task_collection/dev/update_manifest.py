@@ -41,7 +41,13 @@ if __name__ == "__main__":
         logging.info(f"[{executable}] START")
 
         # Create new JSON Schema for task arguments
-        schema = create_schema_for_single_task(executable, package=PACKAGE)
+        schema = create_schema_for_single_task(
+            executable,
+            package=PACKAGE,
+            custom_pydantic_models=[("apx_fractal_task_collection",
+                                     "utils.py",
+                                     "TextureFeatures")])
+
         manifest["task_list"][ind]["args_schema"] = schema
 
         # Update docs_info, based on task-function description
