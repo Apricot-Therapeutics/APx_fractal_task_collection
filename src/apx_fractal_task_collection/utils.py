@@ -5,6 +5,8 @@ from pathlib import Path
 from fractal_tasks_core.channels import get_omero_channel_list
 from fractal_tasks_core.channels import get_channel_from_image_zarr
 import dask.array as da
+from pydantic import BaseModel, root_validator, Field
+from typing import Sequence, Literal, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -166,5 +168,27 @@ def get_channel_image_from_image(img_url: Path,
         return data_zyx
 
 
+class TextureFeatures(BaseModel):
+    """
+    Validator to handle texture features selection
+
+    Attributes:
+        texture_features: List of texture features to calculate. Options are
+            "haralick" and "lte".
+        clip_value: Value to which to clip the intensity image for haralick
+            texture feature calculation. Will be applied to all channels
+            except the ones specified in clip_value_exceptions.
+        clip_value_exceptions: Dictionary of exceptions for the clip value.
+            The dictionary should have the channel name as key and the
+            clip value as value.
+    """
+
+    texture_features: Sequence[Literal["haralick", "lte"]] = ["haralick", "lte"]
+    clip_value: int = 5000
+    clip_value_exceptions: dict[str, int] = {}
+
+    @root_validator
+    def validate_conditions(cls, values):
+        return values
 
 

@@ -1,0 +1,144 @@
+{
+  "title": "MeasureFeatures",
+  "type": "object",
+  "properties": {
+    "input_paths": {
+      "title": "Input Paths",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Path to the parent folder of the NGFF image. This task only supports a single input path. (standard argument for Fractal tasks, managed by Fractal server)."
+    },
+    "output_path": {
+      "title": "Output Path",
+      "type": "string",
+      "description": "This argument is not used in this task. (standard argument for Fractal tasks, managed by Fractal server)."
+    },
+    "component": {
+      "title": "Component",
+      "type": "string",
+      "description": "Path of the NGFF image, relative to `input_paths[0]`. (standard argument for Fractal tasks, managed by Fractal server)."
+    },
+    "metadata": {
+      "title": "Metadata",
+      "type": "object",
+      "description": "This argument is not used in this task. (standard argument for Fractal tasks, managed by Fractal server)."
+    },
+    "label_image_name": {
+      "title": "Label Image Name",
+      "type": "string",
+      "description": "Name of the label image that contains the seeds. Needs to exist in OME-Zarr file. ROI_table_name: Name of the ROI table to process. output_table_name: Name of the feature table."
+    },
+    "ROI_table_name": {
+      "title": "Roi Table Name",
+      "type": "string",
+      "description": "Missing description"
+    },
+    "output_table_name": {
+      "title": "Output Table Name",
+      "type": "string",
+      "description": "Missing description"
+    },
+    "measure_intensity": {
+      "title": "Measure Intensity",
+      "default": false,
+      "type": "boolean",
+      "description": "If True, calculate intensity features."
+    },
+    "measure_morphology": {
+      "title": "Measure Morphology",
+      "default": false,
+      "type": "boolean",
+      "description": "If True, calculate morphology features."
+    },
+    "measure_texture": {
+      "title": "Measure Texture",
+      "default": {
+        "texture_features": [
+          "haralick",
+          "lte"
+        ],
+        "clip_value": 5000,
+        "clip_value_exceptions": {}
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/TextureFeatures"
+        }
+      ],
+      "description": "Select which texture features should be calculated."
+    },
+    "measure_population": {
+      "title": "Measure Population",
+      "default": false,
+      "type": "boolean",
+      "description": "If True, calculate population features."
+    },
+    "calculate_internal_borders": {
+      "title": "Calculate Internal Borders",
+      "default": false,
+      "type": "boolean",
+      "description": "For a typical experiment this should not be selected. If True, calculate internal borders (whether an object touches or overlaps with a FOV border). This is only useful if you registered by well and want to remove objects that are on the border of a FOV. IMPORTANT: This only catches objects that are on the border of FOVs in cycle 1 of a multiplexed experiment."
+    },
+    "level": {
+      "title": "Level",
+      "default": 0,
+      "type": "integer",
+      "description": "Resolution of the label image to calculate features. Only tested for level 0."
+    },
+    "overwrite": {
+      "title": "Overwrite",
+      "default": true,
+      "type": "boolean",
+      "description": "If True, overwrite existing feature table."
+    }
+  },
+  "required": [
+    "input_paths",
+    "output_path",
+    "component",
+    "metadata",
+    "label_image_name",
+    "ROI_table_name",
+    "output_table_name"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "TextureFeatures": {
+      "title": "TextureFeatures",
+      "description": "Validator to handle texture features selection",
+      "type": "object",
+      "properties": {
+        "texture_features": {
+          "title": "Texture Features",
+          "default": [
+            "haralick",
+            "lte"
+          ],
+          "type": "array",
+          "items": {
+            "enum": [
+              "haralick",
+              "lte"
+            ],
+            "type": "string"
+          }
+        },
+        "clip_value": {
+          "title": "Clip Value",
+          "default": 5000,
+          "type": "integer"
+        },
+        "clip_value_exceptions": {
+          "title": "Clip Value Exceptions",
+          "default": {},
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}

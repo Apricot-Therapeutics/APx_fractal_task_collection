@@ -10,8 +10,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, Sequence, Optional, Literal
-from pydantic import BaseModel
+from typing import Any, Dict, Sequence
 
 import dask.array as da
 import fractal_tasks_core
@@ -20,7 +19,9 @@ import numpy as np
 import zarr
 import anndata as ad
 
-from apx_fractal_task_collection.utils import get_acquisition_from_label_name
+from apx_fractal_task_collection.utils import (
+    get_acquisition_from_label_name,
+    TextureFeatures)
 from apx_fractal_task_collection.features.intensity import measure_intensity_features
 from apx_fractal_task_collection.features.morphology import (
     measure_morphology_features,
@@ -44,24 +45,6 @@ from fractal_tasks_core.roi import (
 __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
 logger = logging.getLogger(__name__)
-
-class TextureFeatures(BaseModel):
-    """
-    Validator to handle texture features selection
-
-    Attributes:
-        haralick: If True, compute Haralick texture features.
-        clip_value: Value to which to clip the intensity image for haralick
-            texture feature calculation. Will be applied to all channels
-            except the ones specified in clip_value_exceptions.
-        clip_value_exceptions: Dictionary of exceptions for the clip value.
-            The dictionary should have the channel name as key and the
-            clip value as value.
-        lte: If True, compute Law's Texture Energy (LTE) features.
-    """
-    texture_features: list[Literal["haralick", "lte"]] = None
-    clip_value: int = 5000
-    clip_value_exceptions: dict[str, int] = {}
 
 
 @validate_arguments

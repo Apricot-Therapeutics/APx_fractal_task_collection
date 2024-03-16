@@ -442,7 +442,10 @@
           "measure_texture": {
             "title": "Measure Texture",
             "default": {
-              "texture_features": null,
+              "texture_features": [
+                "haralick",
+                "lte"
+              ],
               "clip_value": 5000,
               "clip_value_exceptions": {}
             },
@@ -496,6 +499,10 @@
             "properties": {
               "texture_features": {
                 "title": "Texture Features",
+                "default": [
+                  "haralick",
+                  "lte"
+                ],
                 "type": "array",
                 "items": {
                   "enum": [
