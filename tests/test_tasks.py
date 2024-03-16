@@ -8,7 +8,8 @@ from fractal_tasks_core.channels import ChannelInputModel
 from fractal_tasks_core.channels import OmeroChannel
 from fractal_tasks_core.tasks.copy_ome_zarr import copy_ome_zarr
 
-from apx_fractal_task_collection.tasks.measure_features import measure_features, TextureFeatures
+from apx_fractal_task_collection.utils import TextureFeatures
+from apx_fractal_task_collection.tasks.measure_features import measure_features
 from apx_fractal_task_collection.tasks.clip_label_image import clip_label_image
 from apx_fractal_task_collection.tasks.segment_secondary_objects import segment_secondary_objects
 from apx_fractal_task_collection.tasks.calculate_illumination_profiles import calculate_illumination_profiles
