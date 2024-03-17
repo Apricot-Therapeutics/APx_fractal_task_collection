@@ -1,6 +1,9 @@
 import shutil
 from pathlib import Path
 import os
+import anndata as ad
+import numpy as np
+import pandas as pd
 
 import pytest
 from devtools import debug
@@ -226,6 +229,12 @@ def test_label_assignment_by_overlap(test_data_dir):
         overwrite=True
     )
 
+    child_table = ad.read_zarr(Path(test_data_dir).joinpath(
+        WELL_COMPONENT,
+        "0/tables/feature_table")
+    )
+    old_obs_columns = list(child_table.obs.columns)
+
     label_assignment_by_overlap(
         input_paths=[test_data_dir],
         output_path=test_data_dir,
@@ -237,6 +246,41 @@ def test_label_assignment_by_overlap(test_data_dir):
         level=0,
         overlap_threshold=0.6,
     )
+
+    child_table = ad.read_zarr(Path(test_data_dir).joinpath(
+        WELL_COMPONENT,
+        "0/tables/feature_table")
+    )
+
+    # assert that child_table.obs contains the expected columns
+    expected_obs_columns = old_obs_columns + \
+                           ['Label A_label', 'Label B_Label A_overlap']
+    new_obs_columns = list(child_table.obs.columns)
+    assert new_obs_columns == expected_obs_columns, \
+        f"Expected obs columns {expected_obs_columns}," \
+        f" but got {new_obs_columns}"
+
+    # assert whether label assignments are correct
+    label_assignments = {9: 6,
+                         14: 6,
+                         31: 19,
+                         38: 19,
+                         36: pd.NA,
+                         20: pd.NA,
+                         12: 8}
+
+    for child_label, parent_label in label_assignments.items():
+        value = child_table.obs.loc[
+            child_table.obs.label == child_label, 'Label A_label'].values[0]
+        print(value)
+        try:
+            assert value == parent_label, \
+                f"Label assignment failed, expected {parent_label}," \
+                f" but got {value}"
+        except TypeError:
+            assert pd.isna(value), \
+                f"Label assignment failed, expected {parent_label}," \
+                f" but got {value}"
 
 
 def test_aggregate_tables_to_well_level(test_data_dir):
