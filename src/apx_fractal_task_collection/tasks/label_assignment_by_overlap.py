@@ -30,6 +30,30 @@ __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
 logger = logging.getLogger(__name__)
 
+
+def label_overlap(regionmask, intensity_image):
+    """
+    Scikit-image regionprops_table extra_properties function to compute
+    max overlap between two label images.
+    """
+    parent_labels = np.where(regionmask > 0, intensity_image, 0)
+
+    labels, counts = np.unique(parent_labels[parent_labels>0],
+                               return_counts=True)
+
+    if len(labels > 0):
+        # if there is a tie in the overlap, the first label is selected
+        max_label = labels[np.argmax(counts)]
+        max_label_area = counts.max()
+        child_area = regionmask[regionmask>0].size
+        overlap = max_label_area/child_area
+    else:
+        max_label = np.nan
+        overlap = np.nan
+
+    return [max_label, overlap]
+
+
 def assign_objects(
         parent_label: np.ndarray,
         child_label: np.ndarray,
@@ -45,38 +69,18 @@ def assign_objects(
     """
     parent_label = np.squeeze(parent_label)
     child_label = np.squeeze(child_label)
-    # get all image regions that represent child labels
-    t = pd.DataFrame(regionprops_table(child_label, parent_label,
-                                       properties=[
-                                       'label', 'image_intensity', 'area']))
 
-    res = []
-    for i, b in t.iterrows():
-        sub_region_df = pd.DataFrame(regionprops_table(b.image_intensity,
-                                       properties=['label', 'area']))
+    t = pd.DataFrame(regionprops_table(child_label,
+                                       parent_label,
+                                       properties=['label'],
+                                       extra_properties=[label_overlap]))
 
-        sub_region_df.rename(columns={'label': 'parent_label', 'area': 'parent_area'}, inplace=True)
-        sub_region_df['child_label'] = b.label
-        sub_region_df['child_area'] = b.area
+    t.columns = ['child_label', 'parent_label', 'overlap']
+    t.loc[t.overlap < overlap_threshold, 'parent_label'] = np.nan
+    t['parent_label'] = t['parent_label'].astype('Int32')
+    t.set_index('child_label', inplace=True)
 
-        res.append(sub_region_df)
-        
-    # check whether there is any overlap
-    if len(res) > 1:
-        res_merged = pd.concat(res, axis=0)
-        res_merged['overlap'] = res_merged['parent_area']/res_merged['child_area']
-        # keep only parent with highest overlap
-        res_merged = res_merged.groupby('child_label', as_index=False).apply(lambda x: x.loc[x.overlap == x.overlap.max()])
-        # in case of a tied overlap, keep a random parent
-        res_merged = res_merged.groupby('child_label', as_index=False).apply(lambda x: x.sample(1))
-        res_merged.set_index('child_label', inplace=True)
-        res_merged.loc[res_merged.overlap < overlap_threshold, 'parent_label'] = pd.NA
-    # if there is no overlap, return an empty dataframe
-    else:
-        res_merged =  pd.DataFrame({'parent_label': pd.NA,
-                                    'overlap': pd.NA}, index=pd.Index([]))
-    
-    return res_merged
+    return t
 
 
 @validate_arguments
@@ -160,8 +164,6 @@ def label_assignment_by_overlap(  # noqa: C901
         columns={'parent_label': f'{parent_label_image}_label',
                  'overlap': f'{child_label_image}_{parent_label_image}_overlap'},
     inplace=True)
-    # convert label index to string (otherwise merging with Anndata will fail)
-    assignments.index = assignments.index.astype('str')
 
     # loop over images and write the assignments to the child table
     for image in well_group.attrs['well']["images"]:
@@ -176,13 +178,28 @@ def label_assignment_by_overlap(  # noqa: C901
             child_features = ad.read_zarr(child_feature_path)
         except:
             continue
+
+        if f'{parent_label_image}_label' in child_features.obs.columns:
+            child_features.obs.drop(
+                columns=[f'{parent_label_image}_label',
+                         f'{child_label_image}_{parent_label_image}_overlap'],
+                                    inplace=True)
+
+        # remove these two columns that snuck in at some point (to make
+        # sure we don't have them in the output in case a user re-runs this tasks
+        # on the same data)
+        if 'parent_area' in child_features.obs.columns and\
+                'child_area' in child_features.obs.columns:
+            child_features.obs.drop(
+                columns=['parent_area', 'child_area'], inplace=True)
+
+
         # merge with child feature obs data
-        merged_data = child_features.obs.merge(assignments,
-                                               left_index=True,
-                                               right_index=True,
-                                               how='left')
-        merged_data[f'{parent_label_image}_label'] = \
-            merged_data[f'{parent_label_image}_label'].astype('Int32')
+        merged_data = pd.merge(child_features.obs,
+                               assignments,
+                               left_on='label',
+                               right_index=True,
+                               how='left')
 
         child_features.obs = merged_data
 
@@ -191,14 +208,12 @@ def label_assignment_by_overlap(  # noqa: C901
         orig_attrs = child_table_group.attrs.asdict()
 
         img_group = zarr.group(child_feature_path.parents[1])
-        print(child_feature_path.parents[1])
         write_table(img_group,
                     child_table_name,
                     child_features,
                     overwrite=True,
                     table_attrs=orig_attrs,
                     )
-
 
 
 if __name__ == "__main__":
