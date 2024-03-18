@@ -84,6 +84,175 @@ def test_measure_features(test_data_dir):
         overwrite=True,
     )
 
+    # assert that the feature table exists in correct location
+    feature_table_path = Path(test_data_dir).joinpath(
+        IMAGE_COMPONENT,
+        "tables/feature_table")
+    assert feature_table_path.exists(),\
+        f"Feature table not found at {feature_table_path}"
+
+    # assert that the obs contain correct columns
+    feature_table = ad.read_zarr(feature_table_path)
+    expected_columns = ['label',
+                        'well_name',
+                        'ROI',
+                        'is_border_internal',
+                        'is_border_external']
+
+    assert feature_table.obs.columns.tolist() == expected_columns, \
+        f"Expected columns {expected_columns}," \
+        f" but got {feature_table.obs.columns.tolist()}"
+
+    # assert that the feature table contains correct columns
+    morphology_labels = [
+        'Morphology_area',
+        'Morphology_centroid-0',
+        'Morphology_centroid-1',
+        'Morphology_well_centroid-0',
+        'Morphology_well_centroid-1',
+        'Morphology_bbox_area',
+        'Morphology_bbox-0',
+        'Morphology_bbox-1',
+        'Morphology_bbox-2',
+        'Morphology_bbox-3',
+        'Morphology_convex_area',
+        'Morphology_eccentricity',
+        'Morphology_equivalent_diameter',
+        'Morphology_euler_number',
+        'Morphology_extent',
+        'Morphology_filled_area',
+        'Morphology_major_axis_length',
+        'Morphology_minor_axis_length',
+        'Morphology_orientation',
+        'Morphology_perimeter',
+        'Morphology_solidity',
+        'Morphology_roundness',
+        'Morphology_circularity'
+    ]
+
+    intensity_labels = [
+        'Intensity_max_intensity',
+        'Intensity_mean_intensity',
+        'Intensity_min_intensity',
+        'Intensity_weighted_moments_hu-0',
+        'Intensity_weighted_moments_hu-1',
+        'Intensity_weighted_moments_hu-2',
+        'Intensity_weighted_moments_hu-3',
+        'Intensity_weighted_moments_hu-4',
+        'Intensity_weighted_moments_hu-5',
+        'Intensity_weighted_moments_hu-6',
+        'Intensity_sum_intensity',
+        'Intensity_std_intensity'
+    ]
+
+    texture_labels = [
+        'Texture_Haralick-Mean-angular-second-moment-2',
+        'Texture_Haralick-Mean-contrast-2',
+        'Texture_Haralick-Mean-correlation-2',
+        'Texture_Haralick-Mean-sum-of-squares-2',
+        'Texture_Haralick-Mean-inverse-diff-moment-2',
+        'Texture_Haralick-Mean-sum-avg-2',
+        'Texture_Haralick-Mean-sum-var-2',
+        'Texture_Haralick-Mean-sum-entropy-2',
+        'Texture_Haralick-Mean-entropy-2',
+        'Texture_Haralick-Mean-diff-var-2',
+        'Texture_Haralick-Mean-diff-entropy-2',
+        'Texture_Haralick-Mean-info-measure-corr-1-2',
+        'Texture_Haralick-Mean-info-measure-corr-2-2',
+        'Texture_Haralick-Range-angular-second-moment-2',
+        'Texture_Haralick-Range-contrast-2',
+        'Texture_Haralick-Range-correlation-2',
+        'Texture_Haralick-Range-sum-of-squares-2',
+        'Texture_Haralick-Range-inverse-diff-moment-2',
+        'Texture_Haralick-Range-sum-avg-2',
+        'Texture_Haralick-Range-sum-var-2',
+        'Texture_Haralick-Range-sum-entropy-2',
+        'Texture_Haralick-Range-entropy-2',
+        'Texture_Haralick-Range-diff-var-2',
+        'Texture_Haralick-Range-diff-entropy-2',
+        'Texture_Haralick-Range-info-measure-corr-1-2',
+        'Texture_Haralick-Range-info-measure-corr-2-2',
+        'Texture_Haralick-Mean-angular-second-moment-5',
+        'Texture_Haralick-Mean-contrast-5',
+        'Texture_Haralick-Mean-correlation-5',
+        'Texture_Haralick-Mean-sum-of-squares-5',
+        'Texture_Haralick-Mean-inverse-diff-moment-5',
+        'Texture_Haralick-Mean-sum-avg-5',
+        'Texture_Haralick-Mean-sum-var-5',
+        'Texture_Haralick-Mean-sum-entropy-5',
+        'Texture_Haralick-Mean-entropy-5',
+        'Texture_Haralick-Mean-diff-var-5',
+        'Texture_Haralick-Mean-diff-entropy-5',
+        'Texture_Haralick-Mean-info-measure-corr-1-5',
+        'Texture_Haralick-Mean-info-measure-corr-2-5',
+        'Texture_Haralick-Range-angular-second-moment-5',
+        'Texture_Haralick-Range-contrast-5',
+        'Texture_Haralick-Range-correlation-5',
+        'Texture_Haralick-Range-sum-of-squares-5',
+        'Texture_Haralick-Range-inverse-diff-moment-5',
+        'Texture_Haralick-Range-sum-avg-5',
+        'Texture_Haralick-Range-sum-var-5',
+        'Texture_Haralick-Range-sum-entropy-5',
+        'Texture_Haralick-Range-entropy-5',
+        'Texture_Haralick-Range-diff-var-5',
+        'Texture_Haralick-Range-diff-entropy-5',
+        'Texture_Haralick-Range-info-measure-corr-1-5',
+        'Texture_Haralick-Range-info-measure-corr-2-5',
+        'Texture_LTE_LL',
+        'Texture_LTE_EE',
+        'Texture_LTE_SS',
+        'Texture_LTE_LE',
+        'Texture_LTE_ES',
+        'Texture_LTE_LS'
+    ]
+
+    population_labels = [
+        'Population_density_bw_0.01',
+        'Population_density_bw_0.02',
+        'Population_density_bw_0.03',
+        'Population_density_bw_0.04',
+        'Population_density_bw_0.05',
+        'Population_density_bw_0.2',
+        'Population_density_bw_0.5',
+        'Population_density_bw_1.0',
+        'Population_mean_distance_nn_5',
+        'Population_mean_distance_nn_10',
+        'Population_mean_distance_nn_25',
+        #'Population_mean_distance_nn_50',
+        #'Population_mean_distance_nn_100',
+        'Population_n_neighbours_radius_100',
+        'Population_mean_distance_neighbours_radius_100',
+        'Population_n_neighbours_radius_200',
+        'Population_mean_distance_neighbours_radius_200',
+        'Population_n_neighbours_radius_300',
+        'Population_mean_distance_neighbours_radius_300',
+        'Population_n_neighbours_radius_400',
+        'Population_mean_distance_neighbours_radius_400',
+        'Population_n_neighbours_radius_500',
+        'Population_mean_distance_neighbours_radius_500'
+    ]
+
+    channels = ['0_DAPI', '0_GFP']
+
+    morphology_columns = ["Label A_" + c for c in morphology_labels]
+    intensity_columns = []
+    texture_columns = []
+    population_columns = ["Label A_" + c for c in population_labels]
+
+    for channel in channels:
+
+        intensity_columns.extend(["Label A_" + c + f"_{channel}" for c in intensity_labels])
+        texture_columns.extend(["Label A_" + c + f"_{channel}" for c in texture_labels])
+
+    expected_columns = morphology_columns +\
+                       intensity_columns +\
+                       texture_columns +\
+                       population_columns
+
+    assert feature_table.var.index.tolist() == expected_columns, \
+        f"Expected columns {expected_columns}," \
+        f" but got {feature_table.var.index.tolist()}"
+
 
 def test_clip_label_image(test_data_dir):
     clip_label_image(
