@@ -10,6 +10,130 @@ from typing import Sequence, Literal, Optional
 
 logger = logging.getLogger(__name__)
 
+FEATURE_LABELS = {
+    'morphology': [
+        'Morphology_area',
+        'Morphology_centroid-0',
+        'Morphology_centroid-1',
+        'Morphology_well_centroid-0',
+        'Morphology_well_centroid-1',
+        'Morphology_bbox_area',
+        'Morphology_bbox-0',
+        'Morphology_bbox-1',
+        'Morphology_bbox-2',
+        'Morphology_bbox-3',
+        'Morphology_convex_area',
+        'Morphology_eccentricity',
+        'Morphology_equivalent_diameter',
+        'Morphology_euler_number',
+        'Morphology_extent',
+        'Morphology_filled_area',
+        'Morphology_major_axis_length',
+        'Morphology_minor_axis_length',
+        'Morphology_orientation',
+        'Morphology_perimeter',
+        'Morphology_solidity',
+        'Morphology_roundness',
+        'Morphology_circularity'],
+    'intensity': [
+        'Intensity_max_intensity',
+        'Intensity_mean_intensity',
+        'Intensity_min_intensity',
+        'Intensity_weighted_moments_hu-0',
+        'Intensity_weighted_moments_hu-1',
+        'Intensity_weighted_moments_hu-2',
+        'Intensity_weighted_moments_hu-3',
+        'Intensity_weighted_moments_hu-4',
+        'Intensity_weighted_moments_hu-5',
+        'Intensity_weighted_moments_hu-6',
+        'Intensity_sum_intensity',
+        'Intensity_std_intensity'],
+    'texture': [
+        'Texture_Haralick-Mean-angular-second-moment-2',
+        'Texture_Haralick-Mean-contrast-2',
+        'Texture_Haralick-Mean-correlation-2',
+        'Texture_Haralick-Mean-sum-of-squares-2',
+        'Texture_Haralick-Mean-inverse-diff-moment-2',
+        'Texture_Haralick-Mean-sum-avg-2',
+        'Texture_Haralick-Mean-sum-var-2',
+        'Texture_Haralick-Mean-sum-entropy-2',
+        'Texture_Haralick-Mean-entropy-2',
+        'Texture_Haralick-Mean-diff-var-2',
+        'Texture_Haralick-Mean-diff-entropy-2',
+        'Texture_Haralick-Mean-info-measure-corr-1-2',
+        'Texture_Haralick-Mean-info-measure-corr-2-2',
+        'Texture_Haralick-Range-angular-second-moment-2',
+        'Texture_Haralick-Range-contrast-2',
+        'Texture_Haralick-Range-correlation-2',
+        'Texture_Haralick-Range-sum-of-squares-2',
+        'Texture_Haralick-Range-inverse-diff-moment-2',
+        'Texture_Haralick-Range-sum-avg-2',
+        'Texture_Haralick-Range-sum-var-2',
+        'Texture_Haralick-Range-sum-entropy-2',
+        'Texture_Haralick-Range-entropy-2',
+        'Texture_Haralick-Range-diff-var-2',
+        'Texture_Haralick-Range-diff-entropy-2',
+        'Texture_Haralick-Range-info-measure-corr-1-2',
+        'Texture_Haralick-Range-info-measure-corr-2-2',
+        'Texture_Haralick-Mean-angular-second-moment-5',
+        'Texture_Haralick-Mean-contrast-5',
+        'Texture_Haralick-Mean-correlation-5',
+        'Texture_Haralick-Mean-sum-of-squares-5',
+        'Texture_Haralick-Mean-inverse-diff-moment-5',
+        'Texture_Haralick-Mean-sum-avg-5',
+        'Texture_Haralick-Mean-sum-var-5',
+        'Texture_Haralick-Mean-sum-entropy-5',
+        'Texture_Haralick-Mean-entropy-5',
+        'Texture_Haralick-Mean-diff-var-5',
+        'Texture_Haralick-Mean-diff-entropy-5',
+        'Texture_Haralick-Mean-info-measure-corr-1-5',
+        'Texture_Haralick-Mean-info-measure-corr-2-5',
+        'Texture_Haralick-Range-angular-second-moment-5',
+        'Texture_Haralick-Range-contrast-5',
+        'Texture_Haralick-Range-correlation-5',
+        'Texture_Haralick-Range-sum-of-squares-5',
+        'Texture_Haralick-Range-inverse-diff-moment-5',
+        'Texture_Haralick-Range-sum-avg-5',
+        'Texture_Haralick-Range-sum-var-5',
+        'Texture_Haralick-Range-sum-entropy-5',
+        'Texture_Haralick-Range-entropy-5',
+        'Texture_Haralick-Range-diff-var-5',
+        'Texture_Haralick-Range-diff-entropy-5',
+        'Texture_Haralick-Range-info-measure-corr-1-5',
+        'Texture_Haralick-Range-info-measure-corr-2-5',
+        'Texture_LTE_LL',
+        'Texture_LTE_EE',
+        'Texture_LTE_SS',
+        'Texture_LTE_LE',
+        'Texture_LTE_ES',
+        'Texture_LTE_LS'],
+    'population': [
+        'Population_density_bw_0.01',
+        'Population_density_bw_0.02',
+        'Population_density_bw_0.03',
+        'Population_density_bw_0.04',
+        'Population_density_bw_0.05',
+        'Population_density_bw_0.2',
+        'Population_density_bw_0.5',
+        'Population_density_bw_1.0',
+        'Population_mean_distance_nn_5',
+        'Population_mean_distance_nn_10',
+        'Population_mean_distance_nn_25',
+        'Population_mean_distance_nn_50',
+        'Population_mean_distance_nn_100',
+        'Population_n_neighbours_radius_100',
+        'Population_mean_distance_neighbours_radius_100',
+        'Population_n_neighbours_radius_200',
+        'Population_mean_distance_neighbours_radius_200',
+        'Population_n_neighbours_radius_300',
+        'Population_mean_distance_neighbours_radius_300',
+        'Population_n_neighbours_radius_400',
+        'Population_mean_distance_neighbours_radius_400',
+        'Population_n_neighbours_radius_500',
+        'Population_mean_distance_neighbours_radius_500']
+}
+
+
 def get_acquisition_from_channel_label(zarrurl: Path,
                                        channel_label: str) -> str:
     """
@@ -170,11 +294,11 @@ def get_channel_image_from_image(img_url: Path,
 
 class TextureFeatures(BaseModel):
     """
-    Validator to handle texture features selection.
+    Validator to handle texture feature selection.
 
     Attributes:
-        texture_features: List of texture features to calculate. Options are
-            'haralick' and 'lte'.
+        haralick: Flag to calculate Haralick texture features.
+        laws_texture_energy: Flag to calculate Law's Texture Energy features.
         clip_value: Value to which to clip the intensity image for haralick
             texture feature calculation. Will be applied to all channels
             except the ones specified in clip_value_exceptions.
@@ -183,14 +307,16 @@ class TextureFeatures(BaseModel):
             clip value as value.
     """
 
-    texture_features: Sequence[Literal["haralick", "lte"]] = ["haralick", "lte"]
+    haralick: bool = True
+    laws_texture_energy: bool = True
     clip_value: int = 5000
     clip_value_exceptions: dict[str, int] = {}
 
     @root_validator
     def validate_conditions(cls, values):
         # Extract values
-        texture_features = values.get("texture_features")
+        haralick = values.get("haralick")
+        laws_texture_energy = values.get("laws_texture_engery")
         lower_percentile = values.get("clip_value")
         upper_percentile = values.get("clip_value_exceptions")
 
