@@ -2,6 +2,7 @@ from sklearn.neighbors import KernelDensity, NearestNeighbors
 import numpy as np
 from skimage.measure import regionprops_table
 import pandas as pd
+from typing import Union, Optional
 
 def measure_density(coordinates: np.array, img_dimensions: tuple,
                     bandwidth=0.01, kernel='gaussian'):
@@ -78,7 +79,8 @@ def measure_neighbours(coordinates: np.array, radius: int):
 
 
 def measure_population_features(
-        label_image: np.array,
+        input: Union[pd.DataFrame, np.ndarray],
+        shape: Optional[tuple] = None,
         n_neighbours: list = [5, 10, 25, 50, 100],
         radii: list = [100, 200, 300, 400, 500],
         bandwidths: list = [0.01, 0.02, 0.03, 0.04, 0.05, 0.2, 0.5, 1.0],
@@ -86,7 +88,9 @@ def measure_population_features(
     """
     Measure population features for the given coordinates.
     Args:
-        label_image: np.array containing objects.
+        input: np.array containing objects or pandas dataframe containing
+            regionprops centroids and labels.
+        shape: tuple, shape of the image (only neccessary if input is pd.DataFrame).
         n_neighbours: list, number of neighbours to consider.
         radii: list, radii to consider.
         bandwidths: list, bandwidths of the kernel.
@@ -96,24 +100,34 @@ def measure_population_features(
         population_features: pd.DataFrame with the population features.
 
     """
+    if type(input) == pd.DataFrame:
+        # if there are less objects than the maximum number of neighbours
+        # reduce the number of neighbours
+        num_labels = len(input.label.unique())
+        n_neighbours = [n for n in n_neighbours if n < num_labels]
 
-    label_image = np.squeeze(label_image)
+        coordinates_df = input
+        img_dimensions = shape
 
-    # if there are less objects than the maximum number of neighbours
-    # reduce the number of neighbours
-    num_labels = len(np.unique(label_image)) - 1
-    n_neighbours = [n for n in n_neighbours if n < num_labels]
+    elif type(input) == np.ndarray:
+        label_image = np.squeeze(input)
 
-    # get coordinates
-    coordinates_df = pd.DataFrame(
-        regionprops_table(
-            label_image,
-            properties=['label', 'centroid'],
+        # if there are less objects than the maximum number of neighbours
+        # reduce the number of neighbours
+        num_labels = len(np.unique(label_image)) - 1
+        n_neighbours = [n for n in n_neighbours if n < num_labels]
+
+        # get coordinates
+        coordinates_df = pd.DataFrame(
+            regionprops_table(
+                label_image,
+                properties=['label', 'centroid'],
+            )
         )
-    )
+
+        img_dimensions = label_image.shape
 
     coordinates = coordinates_df.drop('label', axis=1).values
-    img_dimensions = label_image.shape
 
     column_names = []
     features = []
