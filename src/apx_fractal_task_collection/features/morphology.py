@@ -3,6 +3,42 @@ import mahotas as mh
 import numpy as np
 import pandas as pd
 
+def get_well_coordinates(ROI_table,
+                         i_ROI,
+                         props,
+                         full_res_pxl_sizes_zyx):
+    """
+    Get the absolute coordinates of centroids across the well for each object.
+
+    Args:
+        ROI_table: pd.DataFrame containing the ROI table.
+        props: pd.DataFrame containing the properties.
+            Has to include centroid-0 and centroid-1 columns.
+        full_res_pxl_sizes_zyx: list containing the full resolution pixel sizes.
+
+    Returns:
+        props: pd.DataFrame with the well centroids.
+    """
+
+    ROI_df = ROI_table.to_df()
+    x_offset =\
+        int((ROI_df.iloc[i_ROI]['x_micrometer'] -
+             ROI_df['x_micrometer'].min()) /full_res_pxl_sizes_zyx[-1])
+    y_offset =\
+        int((ROI_df.iloc[i_ROI]['y_micrometer'] -
+             ROI_df['y_micrometer'].min()) /full_res_pxl_sizes_zyx[-1])
+
+    well_centroid_0 =\
+        props['centroid-0'] + y_offset
+    well_centroid_1 = \
+        props['centroid-1'] + x_offset
+
+    out = pd.DataFrame({'label': props['label'].values,
+                        'centroid-0': well_centroid_0,
+                        'centroid-1': well_centroid_1})
+
+    return out
+
 
 def roundness(regionmask):
     return mh.features.roundness(regionmask)
