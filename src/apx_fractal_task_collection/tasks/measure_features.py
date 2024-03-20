@@ -10,8 +10,8 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, Sequence
-
+from typing import Any, Dict, Sequence, Optional
+from skimage.measure import regionprops_table
 import dask.array as da
 import fractal_tasks_core
 import pandas as pd
@@ -26,14 +26,15 @@ from apx_fractal_task_collection.features.intensity import measure_intensity_fea
 from apx_fractal_task_collection.features.morphology import (
     measure_morphology_features,
     get_borders_internal,
-    get_borders_external)
+    get_borders_external,
+    get_well_coordinates)
 from apx_fractal_task_collection.features.texture import measure_texture_features
 from apx_fractal_task_collection.features.population import measure_population_features
 
 from fractal_tasks_core.channels import get_omero_channel_list
 from fractal_tasks_core.ngff import load_NgffImageMeta
 from fractal_tasks_core.tables import write_table
-from fractal_tasks_core.channels import OmeroChannel
+from fractal_tasks_core.channels import OmeroChannel, ChannelInputModel
 from fractal_tasks_core.channels import get_channel_from_image_zarr
 from pydantic.decorator import validate_arguments
 from fractal_tasks_core.roi import check_valid_ROI_indices
@@ -59,6 +60,8 @@ def measure_features(  # noqa: C901
         label_image_name: str,
 		ROI_table_name: str,
 		output_table_name: str,
+        channels_to_include: Optional[list[ChannelInputModel]] = None,
+        channels_to_exclude: Optional[list[ChannelInputModel]] = None,
         measure_intensity: bool = False,
         measure_morphology: bool = False,
         measure_texture: TextureFeatures = TextureFeatures(),
@@ -87,6 +90,12 @@ def measure_features(  # noqa: C901
             Needs to exist in OME-Zarr file.
 		ROI_table_name: Name of the ROI table to process.
 		output_table_name: Name of the feature table.
+        channels_to_include: List of channels to include for intensity
+            and texture measurements. Use the channel label to indicate
+            single channels. If None, all channels are included.
+        channels_to_exclude: List of channels to exclude for intensity
+            and texture measurements. Use the channel label to indicate
+            single channels. If None, no channels are excluded.
         measure_intensity: If True, calculate intensity features.
         measure_morphology: If True, calculate morphology features.
         measure_texture: Select which texture features should be calculated.
@@ -124,6 +133,13 @@ def measure_features(  # noqa: C901
                                               'FOV_ROI_table'))
 
     well_name = component.split("/")[1] + component.split("/")[2]
+
+    # get list of texture features to compute:
+    texture_feature_list = [measure_texture.haralick,
+                            measure_texture.laws_texture_energy]
+    texture_feature_names = ['haralick', 'lte']
+    texture_feature_list = [f for i, f in enumerate(texture_feature_names) if
+                            texture_feature_list[i]]
 
     # Create list of indices for 3D FOVs spanning the entire Z direction
     list_indices = convert_ROI_table_to_indices(
@@ -164,42 +180,54 @@ def measure_features(  # noqa: C901
             logger.info(f"Calculating morphology features for "
                         f"{label_image_name}.")
             morphology_features = measure_morphology_features(label_image)
-            morphology_features.set_index("label", inplace=True)
 
-            # add well centroid position:
-            ROI_df = ROI_table.to_df()
-            x_offset =\
-                int((ROI_df.iloc[i_ROI]['x_micrometer'] -
-                     ROI_df['x_micrometer'].min()) /full_res_pxl_sizes_zyx[-1])
-            y_offset =\
-                int((ROI_df.iloc[i_ROI]['y_micrometer'] -
-                     ROI_df['y_micrometer'].min()) /full_res_pxl_sizes_zyx[-1])
+            well_coords = get_well_coordinates(ROI_table,
+                                               i_ROI,
+                                               morphology_features,
+                                               full_res_pxl_sizes_zyx)
 
-            well_centroid_0 =\
-                morphology_features['centroid-0'] + y_offset
-            well_centroid_1 = \
-                morphology_features['centroid-1'] + x_offset
+            well_coords.rename(columns={
+                'centroid-0': 'well_centroid-0',
+                'centroid-1': 'well_centroid-1'}, inplace=True)
 
+            morphology_features = pd.merge(morphology_features, well_coords,
+                                           on='label')
+
+            # move the well coords after the original coords
             # get index of centroid columns
             centroid_index = morphology_features.columns.get_loc('centroid-1')
+            # move the well coords after the original coords
+            morphology_features.insert(
+                centroid_index + 1,
+                'well_centroid-0',
+                morphology_features.pop('well_centroid-0')
+            )
+            morphology_features.insert(
+                centroid_index + 2,
+                'well_centroid-1',
+                morphology_features.pop('well_centroid-1'))
 
-            # insert new centroid columns
-            morphology_features.insert(centroid_index + 1,
-                                       'well_centroid-0',
-                                       well_centroid_0)
-            morphology_features.insert(centroid_index + 2,
-                                       'well_centroid-1',
-                                       well_centroid_1)
-
-
+            morphology_features.set_index("label", inplace=True)
             morphology_features.columns = label_image_name +\
                                           "_Morphology_" +\
                                           morphology_features.columns
             roi_feature_list.append(morphology_features)
+
+            # get borders
+            borders_external = get_borders_external(ROI_table[i_ROI],
+                                                    morphology_features,
+                                                    full_res_pxl_sizes_zyx[-1])
+
+            if calculate_internal_borders:
+                borders_internal = get_borders_internal(ROI_table[i_ROI],
+                                                        fov_table,
+                                                        morphology_features,
+                                                        full_res_pxl_sizes_zyx[
+                                                            -1])
             logger.info(f"Done calculating morphology features "
                         f"for {label_image_name}.")
 
-        if measure_intensity or measure_texture.texture_features:
+        if measure_intensity or texture_feature_list:
             intensity_features = []
             texture_features = []
             # get all channels in the acquisition
@@ -207,6 +235,14 @@ def measure_features(  # noqa: C901
             channels = get_omero_channel_list(
                 image_zarr_path=zarrurl
             )
+            if channels_to_include:
+                channels_to_include = [c.label for c in channels_to_include]
+                channels = [c for c in channels if
+                            c.label in channels_to_include]
+            if channels_to_exclude:
+                channels_to_exclude = [c.label for c in channels_to_exclude]
+                channels = [c for c in channels if
+                            c.label not in channels_to_exclude]
             # loop over channels and measure intensity and texture features
             for channel in channels:
                 tmp_channel: OmeroChannel = get_channel_from_image_zarr(
@@ -237,12 +273,12 @@ def measure_features(  # noqa: C901
                         f" {channel.label}.")
 
                 # texture features
-                if measure_texture.texture_features:
+                if texture_feature_list:
                     logger.info(
                         f"Calculating texture features for channel "
                         f"{channel.label}.")
 
-                    if "haralick" in measure_texture.texture_features:
+                    if "haralick" in texture_feature_list:
                         if channel.label in measure_texture.clip_value_exceptions:
                             current_clip_value = \
                                 measure_texture.clip_value_exceptions[channel.label]
@@ -266,7 +302,7 @@ def measure_features(  # noqa: C901
                         label_image=np.squeeze(label_image),
                         intensity_image=np.squeeze(data_zyx),
                         clip_value=current_clip_value,
-                        feature_selection=measure_texture.texture_features)
+                        feature_selection=texture_feature_list)
 
                     current_features.set_index("label", inplace=True)
                     current_features.columns = label_image_name +\
@@ -288,7 +324,9 @@ def measure_features(  # noqa: C901
         if measure_population:
             logger.info(f"Calculating population features for "
                         f"{label_image_name}.")
-            population_features = measure_population_features(label_image)
+
+            population_features = measure_population_features(
+                input=label_image)
             population_features.set_index("label", inplace=True)
             population_features.columns = label_image_name +\
                                          "_Population_" +\
@@ -302,27 +340,20 @@ def measure_features(  # noqa: C901
 
         feature_list.append(merged_roi_features)
 
-        borders_external = get_borders_external(ROI_table[i_ROI],
-                                                morphology_features,
-                                                full_res_pxl_sizes_zyx[-1])
+        ROI_obs = pd.DataFrame(
+            {"label": merged_roi_features['label'],
+             "well_name": well_name,
+             "ROI": ROI_table.obs.index[i_ROI]})
 
-        if calculate_internal_borders:
-            borders_internal = get_borders_internal(ROI_table[i_ROI],
-                                                    fov_table,
-                                                    morphology_features,
-                                                    full_res_pxl_sizes_zyx[-1])
 
-            ROI_obs = pd.DataFrame(
-                {"label": merged_roi_features['label'],
-                 "well_name": well_name,
-                 "ROI": ROI_table.obs.index[i_ROI],
-                 "is_border_internal": borders_internal.values,
-                 "is_border_external": borders_external.values})
-        else:
-            ROI_obs = pd.DataFrame({"label": merged_roi_features['label'],
-                                    "well_name": well_name,
-                                    "ROI": ROI_table.obs.index[i_ROI],
-                                    "is_border": borders_external.values})
+        if measure_morphology:
+            if calculate_internal_borders:
+
+                ROI_obs['is_border_internal'] = borders_internal.values
+                ROI_obs['is_border_external'] = borders_external.values
+
+            else:
+                ROI_obs['is_border'] = borders_external.values
 
         obs_list.append(ROI_obs)
 
