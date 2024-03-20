@@ -427,6 +427,22 @@
             "type": "string",
             "description": "Missing description"
           },
+          "channels_to_include": {
+            "title": "Channels To Include",
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/ChannelInputModel"
+            },
+            "description": "List of channels to include for intensity and texture measurements. Use the channel label to indicate single channels. If None, all channels are included."
+          },
+          "channels_to_exclude": {
+            "title": "Channels To Exclude",
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/ChannelInputModel"
+            },
+            "description": "List of channels to exclude for intensity and texture measurements. Use the channel label to indicate single channels. If None, no channels are excluded."
+          },
           "measure_intensity": {
             "title": "Measure Intensity",
             "default": false,
@@ -442,10 +458,8 @@
           "measure_texture": {
             "title": "Measure Texture",
             "default": {
-              "texture_features": [
-                "haralick",
-                "lte"
-              ],
+              "haralick": true,
+              "laws_texture_energy": true,
               "clip_value": 5000,
               "clip_value_exceptions": {}
             },
@@ -492,26 +506,39 @@
         ],
         "additionalProperties": false,
         "definitions": {
-          "TextureFeatures": {
-            "title": "TextureFeatures",
-            "description": "Validator to handle texture features selection.",
+          "ChannelInputModel": {
+            "title": "ChannelInputModel",
+            "description": "A channel which is specified by either `wavelength_id` or `label`.",
             "type": "object",
             "properties": {
-              "texture_features": {
-                "title": "Texture Features",
-                "default": [
-                  "haralick",
-                  "lte"
-                ],
-                "type": "array",
-                "items": {
-                  "enum": [
-                    "haralick",
-                    "lte"
-                  ],
-                  "type": "string"
-                },
-                "description": "List of texture features to calculate. Options are 'haralick' and 'lte'."
+              "wavelength_id": {
+                "title": "Wavelength Id",
+                "type": "string",
+                "description": "Unique ID for the channel wavelength, e.g. `A01_C01`."
+              },
+              "label": {
+                "title": "Label",
+                "type": "string",
+                "description": "Name of the channel."
+              }
+            }
+          },
+          "TextureFeatures": {
+            "title": "TextureFeatures",
+            "description": "Validator to handle texture feature selection.",
+            "type": "object",
+            "properties": {
+              "haralick": {
+                "title": "Haralick",
+                "default": true,
+                "type": "boolean",
+                "description": "Flag to calculate Haralick texture features."
+              },
+              "laws_texture_energy": {
+                "title": "Laws Texture Energy",
+                "default": true,
+                "type": "boolean",
+                "description": "Flag to calculate Law's Texture Energy features."
               },
               "clip_value": {
                 "title": "Clip Value",
