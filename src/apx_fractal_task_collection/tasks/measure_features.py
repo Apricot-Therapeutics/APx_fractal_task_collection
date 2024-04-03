@@ -236,13 +236,13 @@ def measure_features(  # noqa: C901
                 image_zarr_path=zarrurl
             )
             if channels_to_include:
-                channels_to_include = [c.label for c in channels_to_include]
+                channel_labels_to_include = [c.label for c in channels_to_include]
                 channels = [c for c in channels if
-                            c.label in channels_to_include]
+                            c.label in channel_labels_to_include]
             if channels_to_exclude:
-                channels_to_exclude = [c.label for c in channels_to_exclude]
+                channel_labels_to_exclude = [c.label for c in channels_to_exclude]
                 channels = [c for c in channels if
-                            c.label not in channels_to_exclude]
+                            c.label not in channel_labels_to_exclude]
             # loop over channels and measure intensity and texture features
             for channel in channels:
                 tmp_channel: OmeroChannel = get_channel_from_image_zarr(

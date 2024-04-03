@@ -11,7 +11,7 @@ from fractal_tasks_core.channels import ChannelInputModel
 from fractal_tasks_core.channels import OmeroChannel
 from fractal_tasks_core.tasks.copy_ome_zarr import copy_ome_zarr
 
-from apx_fractal_task_collection.utils import TextureFeatures
+from apx_fractal_task_collection.utils import TextureFeatures, FEATURE_LABELS
 from apx_fractal_task_collection.tasks.measure_features import measure_features
 from apx_fractal_task_collection.tasks.clip_label_image import clip_label_image
 from apx_fractal_task_collection.tasks.segment_secondary_objects import segment_secondary_objects
@@ -71,8 +71,11 @@ def test_measure_features(test_data_dir):
         label_image_name='Label A',
         measure_intensity=True,
         measure_morphology=True,
+        channels_to_include=None,
+        channels_to_exclude=[ChannelInputModel(label='0_GFP', wavelength_id=None)],
         measure_texture=TextureFeatures(
-            texture_features=["haralick", "lte"],
+            haralick=True,
+            laws_texture_energy=True,
             clip_value=3000,
             clip_value_exceptions={'0_DAPI': 5000}
         ),
@@ -104,135 +107,16 @@ def test_measure_features(test_data_dir):
         f" but got {feature_table.obs.columns.tolist()}"
 
     # assert that the feature table contains correct columns
-    morphology_labels = [
-        'Morphology_area',
-        'Morphology_centroid-0',
-        'Morphology_centroid-1',
-        'Morphology_well_centroid-0',
-        'Morphology_well_centroid-1',
-        'Morphology_bbox_area',
-        'Morphology_bbox-0',
-        'Morphology_bbox-1',
-        'Morphology_bbox-2',
-        'Morphology_bbox-3',
-        'Morphology_convex_area',
-        'Morphology_eccentricity',
-        'Morphology_equivalent_diameter',
-        'Morphology_euler_number',
-        'Morphology_extent',
-        'Morphology_filled_area',
-        'Morphology_major_axis_length',
-        'Morphology_minor_axis_length',
-        'Morphology_orientation',
-        'Morphology_perimeter',
-        'Morphology_solidity',
-        'Morphology_roundness',
-        'Morphology_circularity'
-    ]
+    morphology_labels = FEATURE_LABELS['morphology']
+    intensity_labels = FEATURE_LABELS['intensity']
+    texture_labels = FEATURE_LABELS['texture']
+    population_labels = FEATURE_LABELS['population']
 
-    intensity_labels = [
-        'Intensity_max_intensity',
-        'Intensity_mean_intensity',
-        'Intensity_min_intensity',
-        'Intensity_weighted_moments_hu-0',
-        'Intensity_weighted_moments_hu-1',
-        'Intensity_weighted_moments_hu-2',
-        'Intensity_weighted_moments_hu-3',
-        'Intensity_weighted_moments_hu-4',
-        'Intensity_weighted_moments_hu-5',
-        'Intensity_weighted_moments_hu-6',
-        'Intensity_sum_intensity',
-        'Intensity_std_intensity'
-    ]
+    # remove population mean distance nn 50 and nn 100
+    population_labels.remove('Population_mean_distance_nn_50')
+    population_labels.remove('Population_mean_distance_nn_100')
 
-    texture_labels = [
-        'Texture_Haralick-Mean-angular-second-moment-2',
-        'Texture_Haralick-Mean-contrast-2',
-        'Texture_Haralick-Mean-correlation-2',
-        'Texture_Haralick-Mean-sum-of-squares-2',
-        'Texture_Haralick-Mean-inverse-diff-moment-2',
-        'Texture_Haralick-Mean-sum-avg-2',
-        'Texture_Haralick-Mean-sum-var-2',
-        'Texture_Haralick-Mean-sum-entropy-2',
-        'Texture_Haralick-Mean-entropy-2',
-        'Texture_Haralick-Mean-diff-var-2',
-        'Texture_Haralick-Mean-diff-entropy-2',
-        'Texture_Haralick-Mean-info-measure-corr-1-2',
-        'Texture_Haralick-Mean-info-measure-corr-2-2',
-        'Texture_Haralick-Range-angular-second-moment-2',
-        'Texture_Haralick-Range-contrast-2',
-        'Texture_Haralick-Range-correlation-2',
-        'Texture_Haralick-Range-sum-of-squares-2',
-        'Texture_Haralick-Range-inverse-diff-moment-2',
-        'Texture_Haralick-Range-sum-avg-2',
-        'Texture_Haralick-Range-sum-var-2',
-        'Texture_Haralick-Range-sum-entropy-2',
-        'Texture_Haralick-Range-entropy-2',
-        'Texture_Haralick-Range-diff-var-2',
-        'Texture_Haralick-Range-diff-entropy-2',
-        'Texture_Haralick-Range-info-measure-corr-1-2',
-        'Texture_Haralick-Range-info-measure-corr-2-2',
-        'Texture_Haralick-Mean-angular-second-moment-5',
-        'Texture_Haralick-Mean-contrast-5',
-        'Texture_Haralick-Mean-correlation-5',
-        'Texture_Haralick-Mean-sum-of-squares-5',
-        'Texture_Haralick-Mean-inverse-diff-moment-5',
-        'Texture_Haralick-Mean-sum-avg-5',
-        'Texture_Haralick-Mean-sum-var-5',
-        'Texture_Haralick-Mean-sum-entropy-5',
-        'Texture_Haralick-Mean-entropy-5',
-        'Texture_Haralick-Mean-diff-var-5',
-        'Texture_Haralick-Mean-diff-entropy-5',
-        'Texture_Haralick-Mean-info-measure-corr-1-5',
-        'Texture_Haralick-Mean-info-measure-corr-2-5',
-        'Texture_Haralick-Range-angular-second-moment-5',
-        'Texture_Haralick-Range-contrast-5',
-        'Texture_Haralick-Range-correlation-5',
-        'Texture_Haralick-Range-sum-of-squares-5',
-        'Texture_Haralick-Range-inverse-diff-moment-5',
-        'Texture_Haralick-Range-sum-avg-5',
-        'Texture_Haralick-Range-sum-var-5',
-        'Texture_Haralick-Range-sum-entropy-5',
-        'Texture_Haralick-Range-entropy-5',
-        'Texture_Haralick-Range-diff-var-5',
-        'Texture_Haralick-Range-diff-entropy-5',
-        'Texture_Haralick-Range-info-measure-corr-1-5',
-        'Texture_Haralick-Range-info-measure-corr-2-5',
-        'Texture_LTE_LL',
-        'Texture_LTE_EE',
-        'Texture_LTE_SS',
-        'Texture_LTE_LE',
-        'Texture_LTE_ES',
-        'Texture_LTE_LS'
-    ]
-
-    population_labels = [
-        'Population_density_bw_0.01',
-        'Population_density_bw_0.02',
-        'Population_density_bw_0.03',
-        'Population_density_bw_0.04',
-        'Population_density_bw_0.05',
-        'Population_density_bw_0.2',
-        'Population_density_bw_0.5',
-        'Population_density_bw_1.0',
-        'Population_mean_distance_nn_5',
-        'Population_mean_distance_nn_10',
-        'Population_mean_distance_nn_25',
-        #'Population_mean_distance_nn_50',
-        #'Population_mean_distance_nn_100',
-        'Population_n_neighbours_radius_100',
-        'Population_mean_distance_neighbours_radius_100',
-        'Population_n_neighbours_radius_200',
-        'Population_mean_distance_neighbours_radius_200',
-        'Population_n_neighbours_radius_300',
-        'Population_mean_distance_neighbours_radius_300',
-        'Population_n_neighbours_radius_400',
-        'Population_mean_distance_neighbours_radius_400',
-        'Population_n_neighbours_radius_500',
-        'Population_mean_distance_neighbours_radius_500'
-    ]
-
-    channels = ['0_DAPI', '0_GFP']
+    channels = ['0_DAPI']
 
     morphology_columns = ["Label A_" + c for c in morphology_labels]
     intensity_columns = []
@@ -755,20 +639,26 @@ def test_stitch_fovs_with_overlap(test_data_dir):
 #         ref_cycle=0
 #     )
 
-
+#
 # from apx_fractal_task_collection.tasks.measure_features import measure_features
 # measure_features(
 #     input_paths=[r"J:\general\20240124_Arpan_4channel_20x_02272024Rad51foci_4cell_line_1\Output_2"],
 #     output_path=r"J:\general\20240124_Arpan_4channel_20x_02272024Rad51foci_4cell_line_1\Output_2",
-#     component="02272024Rad51foci_4cell_line.zarr/C/04/0",
+#     component="02272024Rad51foci_4cell_line.zarr/C/03/0",
 #     metadata={},
 #     label_image_name='Nuclei',
+#     channels_to_include=[ChannelInputModel(label='568', wavelength_id=None)],
 #     measure_intensity=False,
-#     measure_morphology=True,
-#     measure_texture=False,
-#     measure_population=True,
-#     ROI_table_name='well_ROI_table',
-#     calculate_internal_borders=True,
+#     measure_morphology=False,
+#     measure_texture=TextureFeatures(
+#         haralick=False,
+#         laws_texture_energy=True,
+#         clip_value=3000,
+#         clip_value_exceptions={'0_DAPI': 5000}
+#     ),
+#     measure_population=False,
+#     ROI_table_name='FOV_ROI_table',
+#     calculate_internal_borders=False,
 #     output_table_name='feature_table',
 #     level=0,
 #     overwrite=True

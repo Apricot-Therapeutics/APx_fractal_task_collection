@@ -92,7 +92,13 @@ def measure_lte_features(label_image, intensity_image):
                           extra_properties=[lte_features]))
 
     features.set_index('label', inplace=True)
-    features.columns = ["LTE_LL","LTE_EE","LTE_SS","LTE_LE","LTE_ES","LTE_LS"]
+    features.columns = ["LTE_LL",
+                        "LTE_EE",
+                        "LTE_SS",
+                        "LTE_LE",
+                        "LTE_ES",
+                        "LTE_LS"]
+
     return features
 
 
