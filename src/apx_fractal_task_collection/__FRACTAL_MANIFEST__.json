@@ -458,8 +458,8 @@
           "measure_texture": {
             "title": "Measure Texture",
             "default": {
-              "haralick": true,
-              "laws_texture_energy": true,
+              "haralick": false,
+              "laws_texture_energy": false,
               "clip_value": 5000,
               "clip_value_exceptions": {}
             },
@@ -530,13 +530,13 @@
             "properties": {
               "haralick": {
                 "title": "Haralick",
-                "default": true,
+                "default": false,
                 "type": "boolean",
                 "description": "Flag to calculate Haralick texture features."
               },
               "laws_texture_energy": {
                 "title": "Laws Texture Energy",
-                "default": true,
+                "default": false,
                 "type": "boolean",
                 "description": "Flag to calculate Law's Texture Energy features."
               },

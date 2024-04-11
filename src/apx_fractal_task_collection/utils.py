@@ -304,8 +304,8 @@ class TextureFeatures(BaseModel):
             clip value as value.
     """
 
-    haralick: bool = True
-    laws_texture_energy: bool = True
+    haralick: bool = False
+    laws_texture_energy: bool = False
     clip_value: int = 5000
     clip_value_exceptions: dict[str, int] = {}
 
