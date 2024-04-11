@@ -15,7 +15,7 @@ def test_valid_manifest(tmp_path):
     url = (
         "https://raw.githubusercontent.com/fractal-analytics-platform/"
         "fractal-server/main/"
-        "fractal_server/app/schemas/json_schemas/manifest.json"
+        "fractal_server/json_schemas/manifest_v1.json"
     )
     r = requests.get(url)
     with (tmp_path / "manifest_schema.json").open("wb") as f:

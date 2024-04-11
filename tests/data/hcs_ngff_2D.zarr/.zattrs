@@ -1,0 +1,36 @@
+{
+    "plate": {
+        "columns": [
+            {
+                "name": "1"
+            },
+            {
+                "name": "2"
+            },
+            {
+                "name": "3"
+            }
+        ],
+        "rows": [
+            {
+                "name": "A"
+            },
+            {
+                "name": "B"
+            }
+        ],
+        "version": "0.4",
+        "wells": [
+            {
+                "columnIndex": 1,
+                "path": "A/2",
+                "rowIndex": 0
+            },
+            {
+                "columnIndex": 2,
+                "path": "B/3",
+                "rowIndex": 1
+            }
+        ]
+    }
+}

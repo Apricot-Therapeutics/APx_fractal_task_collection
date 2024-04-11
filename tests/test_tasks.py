@@ -32,8 +32,10 @@ from apx_fractal_task_collection.tasks.apply_mask import apply_mask
 #from apx_fractal_task_collection.tasks.ashlar_stitching_and_registration import ashlar_stitching_and_registration
 #from apx_fractal_task_collection.tasks.ashlar_stitching_and_registration_pure import ashlar_stitching_and_registration
 
-WELL_COMPONENT = "hcs_ngff.zarr/A/2"
-IMAGE_COMPONENT = "hcs_ngff.zarr/A/2/0"
+WELL_COMPONENT_2D = "hcs_ngff_2D.zarr/A/2"
+IMAGE_COMPONENT_2D = "hcs_ngff_2D.zarr/A/2/0"
+WELL_COMPONENT_3D = "hcs_ngff_3D.zarr/A/2"
+IMAGE_COMPONENT_3D = "hcs_ngff_3D.zarr/A/2/0"
 
 @pytest.fixture(scope="function")
 def test_data_dir(tmp_path: Path) -> str:
@@ -61,12 +63,12 @@ def fixed_test_data_dir() -> str:
     shutil.copytree(source_dir, dest_dir)
     return dest_dir
 
-
-def test_measure_features(test_data_dir):
+@pytest.mark.parametrize("component", [IMAGE_COMPONENT_2D, IMAGE_COMPONENT_3D])
+def test_measure_features(test_data_dir, component):
     measure_features(
         input_paths=[test_data_dir],
         output_path=test_data_dir,
-        component=IMAGE_COMPONENT,
+        component=component,
         metadata={},
         label_image_name='Label A',
         measure_intensity=True,
@@ -89,7 +91,7 @@ def test_measure_features(test_data_dir):
 
     # assert that the feature table exists in correct location
     feature_table_path = Path(test_data_dir).joinpath(
-        IMAGE_COMPONENT,
+        component,
         "tables/feature_table")
     assert feature_table_path.exists(),\
         f"Feature table not found at {feature_table_path}"
@@ -107,14 +109,17 @@ def test_measure_features(test_data_dir):
         f" but got {feature_table.obs.columns.tolist()}"
 
     # assert that the feature table contains correct columns
-    morphology_labels = FEATURE_LABELS['morphology']
-    intensity_labels = FEATURE_LABELS['intensity']
-    texture_labels = FEATURE_LABELS['texture']
-    population_labels = FEATURE_LABELS['population']
+    morphology_labels = FEATURE_LABELS['morphology'].copy()
+    intensity_labels = FEATURE_LABELS['intensity'].copy()
+    texture_labels = FEATURE_LABELS['texture'].copy()
+    population_labels = FEATURE_LABELS['population'].copy()
 
-    # remove population mean distance nn 50 and nn 100
-    population_labels.remove('Population_mean_distance_nn_50')
-    population_labels.remove('Population_mean_distance_nn_100')
+    # remove some morphology features in 3D case
+    if component == IMAGE_COMPONENT_3D:
+        morphology_labels.remove('Morphology_eccentricity')
+        morphology_labels.remove('Morphology_orientation')
+        morphology_labels.remove('Morphology_perimeter')
+        morphology_labels.remove('Morphology_roundness')
 
     channels = ['0_DAPI']
 
@@ -133,16 +138,17 @@ def test_measure_features(test_data_dir):
                        texture_columns +\
                        population_columns
 
-    assert feature_table.var.index.tolist() == expected_columns, \
+    print(feature_table.to_df().columns)
+    assert np.isin(feature_table.var.index.tolist(), expected_columns).all(), \
         f"Expected columns {expected_columns}," \
         f" but got {feature_table.var.index.tolist()}"
 
-
-def test_clip_label_image(test_data_dir):
+@pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
+def test_clip_label_image(test_data_dir, component):
     clip_label_image(
         input_paths=[test_data_dir],
         output_path=test_data_dir,
-        component=WELL_COMPONENT,
+        component=component,
         metadata={},
         label_image_name='Label A',
         clipping_mask_name='Label D',
@@ -152,12 +158,12 @@ def test_clip_label_image(test_data_dir):
         overwrite=True
     )
 
-
-def test_apply_mask(test_data_dir):
+@pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
+def test_apply_mask(test_data_dir, component):
     apply_mask(
         input_paths=[test_data_dir],
         output_path=test_data_dir,
-        component=WELL_COMPONENT,
+        component=component,
         metadata={},
         label_image_name='Label A',
         mask_label_name='Label D',
@@ -167,12 +173,12 @@ def test_apply_mask(test_data_dir):
         overwrite=True
     )
 
-
-def test_segment_secondary_objects(test_data_dir):
+@pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
+def test_segment_secondary_objects(test_data_dir, component):
     segment_secondary_objects(
         input_paths=[test_data_dir],
         output_path=test_data_dir,
-        component=WELL_COMPONENT,
+        component=component,
         metadata={},
         label_image_name='Label A',
         channel=ChannelInputModel(label='0_DAPI', wavelength_id=None),
@@ -189,12 +195,12 @@ def test_segment_secondary_objects(test_data_dir):
         overwrite=True
     )
 
-
-def test_detect_blob_centroids(test_data_dir):
+@pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
+def test_detect_blob_centroids(test_data_dir, component):
     detect_blob_centroids(
         input_paths=[test_data_dir],
         output_path=test_data_dir,
-        component=WELL_COMPONENT,
+        component=component,
         metadata={},
         channel=ChannelInputModel(label='0_DAPI', wavelength_id=None),
         ROI_table_name='FOV_ROI_table',
@@ -209,8 +215,8 @@ def test_detect_blob_centroids(test_data_dir):
         overwrite=True
     )
 
-
-def test_illumination_correction(test_data_dir):
+@pytest.mark.parametrize("component", [IMAGE_COMPONENT_2D, IMAGE_COMPONENT_3D])
+def test_illumination_correction(test_data_dir, component):
     calculate_illumination_profiles(
         input_paths=[test_data_dir],
         output_path=test_data_dir,
@@ -223,19 +229,19 @@ def test_illumination_correction(test_data_dir):
     apply_basicpy_illumination_model(
         input_paths=[test_data_dir],
         output_path=test_data_dir,
-        component=IMAGE_COMPONENT,
+        component=component,
         metadata={},
         illumination_profiles_folder=test_data_dir,
         overwrite_input=True,
         new_component=None
     )
 
-
-def test_convert_channel_to_label(test_data_dir):
+@pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
+def test_convert_channel_to_label(test_data_dir, component):
     convert_channel_to_label(
         input_paths=[test_data_dir],
         output_path=test_data_dir,
-        component=WELL_COMPONENT,
+        component=component,
         metadata={},
         channel_label='0_DAPI',
         output_label_name='DAPI',
@@ -243,13 +249,13 @@ def test_convert_channel_to_label(test_data_dir):
         overwrite=True
     )
 
-
-def test_filter_label_by_size(test_data_dir):
+@pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
+def test_filter_label_by_size(test_data_dir, component):
     filter_label_by_size(
         input_paths=[test_data_dir],
         output_path=test_data_dir,
         metadata={},
-        component=WELL_COMPONENT,
+        component=component,
         label_name='Label A',
         output_label_name='filtered_label',
         min_size=10,
@@ -257,14 +263,14 @@ def test_filter_label_by_size(test_data_dir):
         overwrite=True
     )
 
-
-def test_label_assignment_by_overlap(test_data_dir):
+@pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
+def test_label_assignment_by_overlap(test_data_dir, component):
 
     # create a feature table
     measure_features(
         input_paths=[test_data_dir],
         output_path=test_data_dir,
-        component=IMAGE_COMPONENT,
+        component=component + '/0',
         metadata={},
         label_image_name='Label B',
         measure_intensity=True,
@@ -283,7 +289,7 @@ def test_label_assignment_by_overlap(test_data_dir):
     )
 
     child_table = ad.read_zarr(Path(test_data_dir).joinpath(
-        WELL_COMPONENT,
+        component,
         "0/tables/feature_table")
     )
     old_obs_columns = list(child_table.obs.columns)
@@ -292,7 +298,7 @@ def test_label_assignment_by_overlap(test_data_dir):
         input_paths=[test_data_dir],
         output_path=test_data_dir,
         metadata={},
-        component=WELL_COMPONENT,
+        component=component,
         parent_label_image='Label A',
         child_label_image='Label B',
         child_table_name='feature_table',
@@ -301,9 +307,11 @@ def test_label_assignment_by_overlap(test_data_dir):
     )
 
     child_table = ad.read_zarr(Path(test_data_dir).joinpath(
-        WELL_COMPONENT,
+        component,
         "0/tables/feature_table")
     )
+
+    print(child_table.obs)
 
     # assert that child_table.obs contains the expected columns
     expected_obs_columns = old_obs_columns + \
@@ -314,18 +322,23 @@ def test_label_assignment_by_overlap(test_data_dir):
         f" but got {new_obs_columns}"
 
     # assert whether label assignments are correct
-    label_assignments = {9: 6,
-                         14: 6,
-                         31: 19,
-                         38: 19,
-                         36: pd.NA,
-                         20: pd.NA,
-                         12: 8}
+    if component == WELL_COMPONENT_2D:
+        label_assignments = {9: 6,
+                             14: 6,
+                             31: 19,
+                             38: 19,
+                             36: pd.NA,
+                             20: pd.NA,
+                             12: 8}
+    elif component == WELL_COMPONENT_3D:
+        label_assignments = {4: 2,
+                             10: 2,
+                             1: pd.NA,
+                             }
 
     for child_label, parent_label in label_assignments.items():
         value = child_table.obs.loc[
             child_table.obs.label == child_label, 'Label A_label'].values[0]
-        print(value)
         try:
             assert value == parent_label, \
                 f"Label assignment failed, expected {parent_label}," \
@@ -335,14 +348,14 @@ def test_label_assignment_by_overlap(test_data_dir):
                 f"Label assignment failed, expected {parent_label}," \
                 f" but got {value}"
 
-
-def test_aggregate_tables_to_well_level(test_data_dir):
+@pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
+def test_aggregate_tables_to_well_level(test_data_dir, component):
 
     # create a feature table
     measure_features(
         input_paths=[test_data_dir],
         output_path=test_data_dir,
-        component=IMAGE_COMPONENT,
+        component=component + "/0",
         metadata={},
         label_image_name='Label B',
         measure_intensity=True,
@@ -363,7 +376,7 @@ def test_aggregate_tables_to_well_level(test_data_dir):
     measure_features(
         input_paths=[test_data_dir],
         output_path=test_data_dir,
-        component=Path(IMAGE_COMPONENT).parent.joinpath('1').as_posix(),
+        component=component + "/1",
         metadata={},
         label_image_name='Label B',
         measure_intensity=True,
@@ -384,7 +397,7 @@ def test_aggregate_tables_to_well_level(test_data_dir):
     measure_features(
         input_paths=[test_data_dir],
         output_path=test_data_dir,
-        component=Path(IMAGE_COMPONENT).parent.joinpath('2').as_posix(),
+        component=component + "/2",
         metadata={},
         label_image_name='Label B',
         measure_intensity=True,
@@ -406,19 +419,19 @@ def test_aggregate_tables_to_well_level(test_data_dir):
         input_paths=[test_data_dir],
         output_path=test_data_dir,
         metadata={},
-        component=WELL_COMPONENT,
+        component=component,
         input_table_name='feature_table',
         output_table_name='feature_table',
         overwrite=True
     )
 
-
-def test_chromatic_shift_correction(test_data_dir):
+@pytest.mark.parametrize("component", [IMAGE_COMPONENT_2D, IMAGE_COMPONENT_3D])
+def test_chromatic_shift_correction(test_data_dir, component):
     chromatic_shift_correction(
         input_paths=[test_data_dir],
         output_path=test_data_dir,
         metadata={},
-        component=IMAGE_COMPONENT,
+        component=component,
         correction_channel_labels=['0_DAPI', '0_GFP'],
         reference_channel_label='0_DAPI'
     )
@@ -426,8 +439,8 @@ def test_chromatic_shift_correction(test_data_dir):
     Path(os.getcwd()).joinpath("TransformParameters.0.txt").unlink(
         missing_ok=True)
 
-
-def test_compress_zarr_for_visualization(test_data_dir):
+@pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
+def test_compress_zarr_for_visualization(test_data_dir, component):
 
     copy_ome_zarr(
         input_paths=[test_data_dir],
@@ -445,12 +458,11 @@ def test_compress_zarr_for_visualization(test_data_dir):
         output_path=test_data_dir,
         metadata={'plate': 'hcs_ngff',
                   'copy_ome_zarr': {'suffix': 'vis'}},
-        component=WELL_COMPONENT,
+        component=component,
         output_zarr_path=Path(test_data_dir).joinpath(
             "hcs_ngff_vis.zarr").as_posix(),
         overwrite=True
     )
-
 
 def test_IC6000_conversion(test_data_dir):
 

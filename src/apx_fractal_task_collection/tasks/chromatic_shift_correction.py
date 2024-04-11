@@ -91,11 +91,19 @@ def register_channel(channel_images, ref_images):
     img = correct_background(channel_images)
     img = exposure.match_histograms(img, ref).astype('uint16')
 
-    ref = sitk.GetImageFromArray(ref[0, 0, :, :])
-    ref.SetOrigin([0, 0])
+    if len(np.squeeze(ref).shape) == 2:
+        ref = sitk.GetImageFromArray(ref[0, 0, :, :])
+        ref.SetOrigin([0, 0])
 
-    img = sitk.GetImageFromArray(img[0, 0, :, :])
-    img.SetOrigin([0, 0])
+        img = sitk.GetImageFromArray(img[0, 0, :, :])
+        img.SetOrigin([0, 0])
+
+    elif len(np.squeeze(ref).shape) == 3:
+        ref = sitk.GetImageFromArray(ref[0, :, :, :])
+        ref.SetOrigin([0, 0, 0])
+
+        img = sitk.GetImageFromArray(img[0, :, :, :])
+        img.SetOrigin([0, 0, 0])
 
     elastixImageFilter = sitk.ElastixImageFilter()
     elastixImageFilter.SetFixedImage(ref)
@@ -110,8 +118,13 @@ def register_channel(channel_images, ref_images):
 
 def register_image(img, transformation_map):
 
-    img = sitk.GetImageFromArray(np.squeeze(img))
-    img.SetOrigin([0, 0])
+    if len(np.squeeze(img).shape) == 2:
+        img = sitk.GetImageFromArray(np.squeeze(img))
+        img.SetOrigin([0, 0])
+
+    elif len(np.squeeze(img).shape) == 3:
+        img = sitk.GetImageFromArray(np.squeeze(img))
+        img.SetOrigin([0, 0, 0])
 
     transformixImageFilter = sitk.TransformixImageFilter()
     transformixImageFilter.SetTransformParameterMap(transformation_map)
@@ -263,7 +276,7 @@ def chromatic_shift_correction(
 
             corrected_fov = da.zeros(data_czyx[region].shape,
                                      dtype=data_czyx.dtype)
-            corrected_fov[0, 0, :, :] = register_image(
+            corrected_fov[0, :, :, :] = register_image(
                 data_czyx[region],
                 transformation_maps[tmp_channel.wavelength_id][i_ROI])
 

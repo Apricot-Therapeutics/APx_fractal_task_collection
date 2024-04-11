@@ -48,33 +48,58 @@ def measure_morphology_features(label_image):
     """
     Measure morphology features for label image.
     """
-    morphology_features = pd.DataFrame(regionprops_table(
-        np.squeeze(label_image),
-        properties=[
-            "label",
-            "area",
-            "centroid",
-            "bbox_area",
-            "bbox",
-            "convex_area",
-            "eccentricity",
-            "equivalent_diameter",
-            "euler_number",
-            "extent",
-            "filled_area",
-            "major_axis_length",
-            "minor_axis_length",
-            "orientation",
-            "perimeter",
-            "solidity",
-        ],
-        extra_properties=[
-            roundness,
-        ],
-    )
-    )
-    morphology_features["circularity"] = (4*np.pi*morphology_features.area) \
-                                         / (morphology_features.perimeter**2)
+    # eccentricity only implemented for 2D
+    if len(label_image.shape) == 2:
+        morphology_features = pd.DataFrame(regionprops_table(
+            np.squeeze(label_image),
+            properties=[
+                "label",
+                "area",
+                "centroid",
+                "bbox_area",
+                "bbox",
+                "convex_area",
+                "eccentricity",
+                "equivalent_diameter",
+                "euler_number",
+                "extent",
+                "filled_area",
+                "major_axis_length",
+                "minor_axis_length",
+                "orientation",
+                "perimeter",
+                "solidity",
+            ],
+            extra_properties=[
+                roundness,
+            ],
+        )
+        )
+
+    elif len(label_image.shape) == 3:
+        morphology_features = pd.DataFrame(regionprops_table(
+            np.squeeze(label_image),
+            properties=[
+                "label",
+                "area",
+                "centroid",
+                "bbox_area",
+                "bbox",
+                "convex_area",
+                #"eccentricity",
+                "equivalent_diameter",
+                "euler_number",
+                "extent",
+                "filled_area",
+                "major_axis_length",
+                "minor_axis_length",
+                #"orientation",
+                #"perimeter",
+                "solidity",
+            ],
+        )
+        )
+
     return morphology_features
 
 

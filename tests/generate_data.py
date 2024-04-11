@@ -14,25 +14,29 @@ import pandas as pd
 from skimage.data import binary_blobs
 from skimage.morphology import label
 
-
-def main() -> None:
+def generate_data(name, row_names, col_names, well_paths, field_paths,
+                  size_xy, size_z, size_c, num_labels, mean_val=10):
     """
     Generate some NGFF data.
-    """
-    path = Path(Path(__file__).parent).joinpath("data/hcs_ngff.zarr")
-    row_names = ["A", "B"]
-    col_names = ["1", "2", "3"]
-    well_paths = ["A/2", "B/3"]
-    field_paths = ["0", "1", "2"]
+    Args:
+        out_path:
+        row_names:
+        col_names:
+        well_paths:
+        field_paths:
+        size_xy:
+        size_z:
+        size_c:
+        num_labels:
+        mean_val:
 
-    # generate data
-    mean_val = 10
+    Returns:
+
+    """
+
+    path = Path(Path(__file__).parent).joinpath(name)
     num_wells = len(well_paths)
     num_fields = len(field_paths)
-    size_xy = 128
-    size_z = 1
-    size_c = 2
-    num_labels = 2
     rng = np.random.default_rng(0)
     data = rng.poisson(mean_val, size=(num_wells,
                                        num_fields,
@@ -84,11 +88,11 @@ def main() -> None:
             well_obs = ["well_1"]
 
             FOV_table = pd.DataFrame(
-                np.array([[0, 0, 0, size_xy, size_xy, 1, 0, 0]]),
+                np.array([[0, 0, 0, size_xy, size_xy, size_z, 0, 0]]),
                 columns=var, index=FOV_obs)
 
             well_table = pd.DataFrame(
-                np.array([[0, 0, 0, size_xy, size_xy, 1]]),
+                np.array([[0, 0, 0, size_xy, size_xy, size_z]]),
                 columns=var[0:-2], index=well_obs)
 
             FOV_table = ad.AnnData(FOV_table)
@@ -135,6 +139,50 @@ def main() -> None:
                 for i, label_name in enumerate(label_names):
                     write_labels(label_images[i], image_group, axes="zyx",
                                  name=label_name)
+
+
+def main() -> None:
+    """
+    Generate some NGFF data.
+    """
+
+    # generate 2D test data
+    row_names = ["A", "B"]
+    col_names = ["1", "2", "3"]
+    well_paths = ["A/2", "B/3"]
+    field_paths = ["0", "1", "2"]
+
+    # generate data
+    mean_val = 10
+    size_xy = 128
+    size_z = 1
+    size_c = 2
+    num_labels = 2
+    name = "data/hcs_ngff_2D.zarr"
+
+    #generate_data(name=name, row_names=row_names, col_names=col_names,
+    #              well_paths=well_paths, field_paths=field_paths,
+    #              size_xy=size_xy, size_z=size_z, size_c=size_c,
+    #              num_labels=num_labels, mean_val=mean_val)
+
+    # generate 3D test data
+    row_names = ["A", "B"]
+    col_names = ["1", "2", "3"]
+    well_paths = ["A/2", "B/3"]
+    field_paths = ["0", "1", "2"]
+
+    # generate data
+    mean_val = 10
+    size_xy = 128
+    size_z = 5
+    size_c = 2
+    num_labels = 2
+    name = "data/hcs_ngff_3D.zarr"
+
+    generate_data(name=name, row_names=row_names, col_names=col_names,
+                  well_paths=well_paths, field_paths=field_paths,
+                  size_xy=size_xy, size_z=size_z, size_c=size_c,
+                  num_labels=num_labels, mean_val=mean_val)
 
 if __name__ == "__main__":
     main()

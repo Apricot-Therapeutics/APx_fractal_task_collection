@@ -27,7 +27,7 @@ import zarr
 import anndata as ad
 import mahotas as mh
 from skimage.filters import gaussian
-from skimage.morphology import area_closing
+from skimage.morphology import area_closing, disk, ball
 from typing import Optional
 
 from apx_fractal_task_collection.utils import (
@@ -76,8 +76,19 @@ def watershed(intensity_image, label_image,
 
         # get the background mask and label its regions
         # (will later be used as background seeds)
-        background_mask = mh.thresholding.bernsen(
-            intensity_image, 5, contrast_threshold
+        # background_mask = mh.thresholding.bernsen(
+        #     intensity_image, 5, contrast_threshold
+        # )
+        if len(intensity_image.shape) == 2:
+            struct = disk(5).astype('bool')
+        elif len(intensity_image.shape) == 3:
+            struct = ball(5).astype('bool')
+
+        background_mask = mh.thresholding.gbernsen(
+            f=intensity_image,
+            se=struct,
+            contrast_threshold=contrast_threshold,
+            gthresh=128,
         )
 
         if min_threshold is not None:
@@ -249,7 +260,7 @@ def segment_secondary_objects(  # noqa: C901
 
     logger.info(
         f"mask will have shape {data_zyx.shape} "
-        f"and chunks {data_zyx.chunks}"
+        f"and chunks {data_zyx.chunksize}"
     )
 
     # load ROI table
@@ -291,12 +302,16 @@ def segment_secondary_objects(  # noqa: C901
             mask=np.squeeze(mask_label[region].compute()),
         )
 
+        logger.info(f"Finished watershed for ROI {i_ROI + 1}/{num_ROIs}.")
+        logger.info(f"New label image has shape {new_label_image.shape}.")
+
         # fill holes in label image
         if fill_holes_area is not None:
             new_label_image = area_closing(new_label_image,
                                            area_threshold=fill_holes_area)
 
-        new_label_image = np.expand_dims(new_label_image, axis=0)
+        if len(new_label_image.shape) == 2:
+            new_label_image = np.expand_dims(new_label_image, axis=0)
 
         # Compute and store 0-th level to disk
         da.array(new_label_image).to_zarr(

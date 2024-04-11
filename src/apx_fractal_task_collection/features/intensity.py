@@ -21,7 +21,7 @@ def measure_intensity_features(label_image, intensity_image):
                 "max_intensity",
                 "mean_intensity",
                 "min_intensity",
-                "weighted_moments_hu",
+                #"weighted_moments_hu",
             ],
             extra_properties=[
                 sum_intensity,
@@ -29,4 +29,5 @@ def measure_intensity_features(label_image, intensity_image):
             ],
         )
     )
+
     return intensity_features
