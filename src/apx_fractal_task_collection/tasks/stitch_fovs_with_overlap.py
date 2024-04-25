@@ -37,7 +37,9 @@ def stitch_fovs_with_overlap(
     metadata: dict[str, Any],
     # Task-specific arguments
     overlap: float = 0.1,
-    filter_sigma: float = 10
+    filter_sigma: float = 10,
+    layout: str = "snake",
+    direction: str = "horizontal",
 ) -> None:
 
     """
@@ -62,9 +64,10 @@ def stitch_fovs_with_overlap(
         overlap: The overlap between FOVs in percent (0-1).
         filter_sigma: The sigma of the Gaussian filter used to filter the
             FOVs for stitching. Can help to improve the stitching performance.
-        safety_pad: The amount of padding in pixels to add to the stitched
-            image additionally to the padding to match the original image size.
-            (image can be slightly larger in each dimension after stitching)
+        layout: The layout of the FOVs. Can be "raster" or "snake".
+            See https://forum.image.sc/t/ashlar-how-to-pass-multiple-images-to-be-stitched/49864/24 for more information.
+        direction: The direction of the stitching. Can be "vertical" or
+            "horizontal". See https://forum.image.sc/t/ashlar-how-to-pass-multiple-images-to-be-stitched/49864/24 for more information.
     """
     in_path = Path(input_paths[0])
     zarrurl = in_path.joinpath(component)
@@ -103,7 +106,8 @@ def stitch_fovs_with_overlap(
         logger.info("Running ASHLAR to stitch FOVs")
         ashlar_path = f"fileseries|{tmpdir}|pattern=chunk_.tif|" \
                       f"overlap={overlap}|width={width}|" \
-                      f"height={height}|pixel_size={pixel_size_yx}"
+                      f"height={height}|pixel_size={pixel_size_yx}|" \
+                      f"layout={layout}|direction={direction}"
         ashlar_path = ashlar_path.replace("chunk_",
                                           "chunk_F{series:3}_C{channel:2}")
         #ashlar_args = \
