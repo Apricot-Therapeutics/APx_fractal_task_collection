@@ -1428,18 +1428,6 @@
             "default": 10,
             "type": "number",
             "description": "The sigma of the Gaussian filter used to filter the FOVs for stitching. Can help to improve the stitching performance."
-          },
-          "layout": {
-            "title": "Layout",
-            "default": "snake",
-            "type": "string",
-            "description": "The layout of the FOVs. Can be \"raster\" or \"snake\". See https://forum.image.sc/t/ashlar-how-to-pass-multiple-images-to-be-stitched/49864/24 for more information."
-          },
-          "direction": {
-            "title": "Direction",
-            "default": "horizontal",
-            "type": "string",
-            "description": "The direction of the stitching. Can be \"vertical\" or \"horizontal\". See https://forum.image.sc/t/ashlar-how-to-pass-multiple-images-to-be-stitched/49864/24 for more information."
           }
         },
         "required": [

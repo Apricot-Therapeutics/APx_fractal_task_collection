@@ -37,9 +37,7 @@ def stitch_fovs_with_overlap(
     metadata: dict[str, Any],
     # Task-specific arguments
     overlap: float = 0.1,
-    filter_sigma: float = 10,
-    layout: str = "snake",
-    direction: str = "horizontal",
+    filter_sigma: float = 10
 ) -> None:
 
     """
@@ -64,10 +62,6 @@ def stitch_fovs_with_overlap(
         overlap: The overlap between FOVs in percent (0-1).
         filter_sigma: The sigma of the Gaussian filter used to filter the
             FOVs for stitching. Can help to improve the stitching performance.
-        layout: The layout of the FOVs. Can be "raster" or "snake".
-            See https://forum.image.sc/t/ashlar-how-to-pass-multiple-images-to-be-stitched/49864/24 for more information.
-        direction: The direction of the stitching. Can be "vertical" or
-            "horizontal". See https://forum.image.sc/t/ashlar-how-to-pass-multiple-images-to-be-stitched/49864/24 for more information.
     """
     in_path = Path(input_paths[0])
     zarrurl = in_path.joinpath(component)
@@ -104,10 +98,15 @@ def stitch_fovs_with_overlap(
                     f"{tmpdir.joinpath(f'chunk_F{i:03d}_C{i_c:02d}.tif')}")
 
         logger.info("Running ASHLAR to stitch FOVs")
+
+        # layout: The layout of the FOVs. Can be "raster" or "snake".
+         #     See https://forum.image.sc/t/ashlar-how-to-pass-multiple-images-to-be-stitched/49864/24 for more information.
+         #direction: The direction of the stitching. Can be "vertical" or
+         #    "horizontal". See https://forum.image.sc/t/ashlar-how-to-pass-multiple-images-to-be-stitched/49864/24 for more information.
+
         ashlar_path = f"fileseries|{tmpdir}|pattern=chunk_.tif|" \
                       f"overlap={overlap}|width={width}|" \
-                      f"height={height}|pixel_size={pixel_size_yx}|" \
-                      f"layout={layout}|direction={direction}"
+                      f"height={height}|pixel_size={pixel_size_yx}"
         ashlar_path = ashlar_path.replace("chunk_",
                                           "chunk_F{series:3}_C{channel:2}")
         #ashlar_args = \
