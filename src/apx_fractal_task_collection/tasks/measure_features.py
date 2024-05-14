@@ -11,7 +11,6 @@
 import logging
 from pathlib import Path
 from typing import Any, Dict, Sequence, Optional
-from skimage.measure import regionprops_table
 import dask.array as da
 import fractal_tasks_core
 import pandas as pd
@@ -52,10 +51,7 @@ logger = logging.getLogger(__name__)
 def measure_features(  # noqa: C901
         *,
         # Default arguments for fractal tasks:
-        input_paths: Sequence[str],
-        output_path: str,
-        component: str,
-        metadata: Dict[str, Any],
+        zarr_url: str,
         # Task-specific arguments:
         label_image_name: str,
 		ROI_table_name: str,
@@ -112,27 +108,21 @@ def measure_features(  # noqa: C901
         overwrite: If True, overwrite existing feature table.
     """
 
-    zarrurl = Path(input_paths[0]).joinpath(component.split("/")[0])
-    label_image_cycle = get_acquisition_from_label_name(zarrurl,
+    well_url = Path(zarr_url).parent
+    label_image_cycle = get_acquisition_from_label_name(well_url,
                                                         label_image_name)
     # update the component for the label image if multiplexed experiment
-    parts = component.rsplit("/", 1)
-    label_image_component = parts[0] + "/" + str(label_image_cycle)
+    label_image_url = well_url.joinpath(str(label_image_cycle))
 
-    in_path = Path(input_paths[0])
     # get some meta data
-    ngff_image_meta = load_NgffImageMeta(in_path.joinpath(component))
+    ngff_image_meta = load_NgffImageMeta(zarr_url)
     full_res_pxl_sizes_zyx = ngff_image_meta.get_pixel_sizes_zyx(level=level)
     coarsening_xy = ngff_image_meta.coarsening_xy
 
     # load ROI table
-    ROI_table = ad.read_zarr(in_path.joinpath(component, "tables",
-                                               ROI_table_name))
-
-    fov_table = ad.read_zarr(in_path.joinpath(component, "tables",
-                                              'FOV_ROI_table'))
-
-    well_name = component.split("/")[1] + component.split("/")[2]
+    ROI_table = ad.read_zarr(f"{zarr_url}/tables/{ROI_table_name}")
+        
+    well_name = zarr_url.split("/")[-3] + zarr_url.split("/")[-2]
 
     # get list of texture features to compute:
     texture_feature_list = [measure_texture.haralick,
@@ -172,8 +162,9 @@ def measure_features(  # noqa: C901
 
         # make morphology measurements
         # load label image
+        logger.info(f"{label_image_url}")
         label_image = da.from_zarr(
-            f"{in_path}/{label_image_component}/labels/"
+            f"{label_image_url}/labels/"
             f"{label_image_name}/{level}")[region[1:]].compute()
 
         if measure_morphology:
@@ -219,6 +210,7 @@ def measure_features(  # noqa: C901
                                                     full_res_pxl_sizes_zyx[-1])
 
             if calculate_internal_borders:
+                fov_table = ad.read_zarr(f"{zarr_url}/tables/FOV_ROI_table")
                 borders_internal = get_borders_internal(ROI_table[i_ROI],
                                                         fov_table,
                                                         morphology_features,
@@ -231,9 +223,8 @@ def measure_features(  # noqa: C901
             intensity_features = []
             texture_features = []
             # get all channels in the acquisition
-            zarrurl = (in_path.resolve() / component).as_posix()
             channels = get_omero_channel_list(
-                image_zarr_path=zarrurl
+                image_zarr_path=zarr_url
             )
             if channels_to_include:
                 channel_labels_to_include = [c.label for c in channels_to_include]
@@ -246,12 +237,12 @@ def measure_features(  # noqa: C901
             # loop over channels and measure intensity and texture features
             for channel in channels:
                 tmp_channel: OmeroChannel = get_channel_from_image_zarr(
-                    image_zarr_path=zarrurl,
+                    image_zarr_path=zarr_url,
                     wavelength_id=channel.wavelength_id,
                     label=channel.label,
                 )
                 ind_channel = tmp_channel.index
-                data_zyx = da.from_zarr(f"{zarrurl}/{level}")[region][
+                data_zyx = da.from_zarr(f"{zarr_url}/{level}")[region][
                     ind_channel].compute()
 
                 # intensity features
@@ -370,7 +361,7 @@ def measure_features(  # noqa: C901
                                dtype='float32')
 
     # Write to zarr group
-    image_group = zarr.group(f"{in_path}/{component}")
+    image_group = zarr.group(zarr_url)
     write_table(
         image_group,
         output_table_name,

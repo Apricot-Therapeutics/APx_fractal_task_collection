@@ -9,12 +9,14 @@ import pytest
 from devtools import debug
 from fractal_tasks_core.channels import ChannelInputModel
 from fractal_tasks_core.channels import OmeroChannel
-from fractal_tasks_core.tasks.copy_ome_zarr import copy_ome_zarr
+from fractal_tasks_core.tasks.io_models import MultiplexingAcquisition
+#from fractal_tasks_core.tasks.copy_ome_zarr import copy_ome_zarr
 
 from apx_fractal_task_collection.utils import TextureFeatures, FEATURE_LABELS
 from apx_fractal_task_collection.tasks.measure_features import measure_features
 from apx_fractal_task_collection.tasks.clip_label_image import clip_label_image
 from apx_fractal_task_collection.tasks.segment_secondary_objects import segment_secondary_objects
+from apx_fractal_task_collection.tasks.init_segment_secondary_objects import init_segment_secondary_objects
 from apx_fractal_task_collection.tasks.calculate_illumination_profiles import calculate_illumination_profiles
 from apx_fractal_task_collection.tasks.apply_basicpy_illumination_model import apply_basicpy_illumination_model
 from apx_fractal_task_collection.tasks.convert_channel_to_label import convert_channel_to_label
@@ -23,8 +25,8 @@ from apx_fractal_task_collection.tasks.label_assignment_by_overlap import label_
 from apx_fractal_task_collection.tasks.aggregate_tables_to_well_level import aggregate_tables_to_well_level
 from apx_fractal_task_collection.tasks.chromatic_shift_correction import chromatic_shift_correction
 from apx_fractal_task_collection.tasks.compress_zarr_for_visualization import compress_zarr_for_visualization
-from apx_fractal_task_collection.tasks.create_ome_zarr_multiplex_IC6000 import create_ome_zarr_multiplex_IC6000
-from apx_fractal_task_collection.tasks.IC6000_to_ome_zarr import IC6000_to_ome_zarr
+from apx_fractal_task_collection.tasks.init_convert_IC6000_to_ome_zarr import init_convert_IC6000_to_ome_zarr
+from apx_fractal_task_collection.tasks.convert_IC6000_to_ome_zarr import convert_IC6000_to_ome_zarr
 from apx_fractal_task_collection.tasks.multiplexed_pixel_clustering import multiplexed_pixel_clustering
 from apx_fractal_task_collection.tasks.stitch_fovs_with_overlap import stitch_fovs_with_overlap
 from apx_fractal_task_collection.tasks.detect_blob_centroids import detect_blob_centroids
@@ -36,6 +38,20 @@ WELL_COMPONENT_2D = "hcs_ngff_2D.zarr/A/2"
 IMAGE_COMPONENT_2D = "hcs_ngff_2D.zarr/A/2/0"
 WELL_COMPONENT_3D = "hcs_ngff_3D.zarr/A/2"
 IMAGE_COMPONENT_3D = "hcs_ngff_3D.zarr/A/2/0"
+
+IMAGE_LIST_2D = ["hcs_ngff_2D.zarr/A/2/0",
+                 "hcs_ngff_2D.zarr/A/2/1",
+                 "hcs_ngff_2D.zarr/A/2/2",
+                 "hcs_ngff_2D.zarr/B/3/0",
+                 "hcs_ngff_2D.zarr/B/3/1",
+                 "hcs_ngff_2D.zarr/B/3/2"]
+
+IMAGE_LIST_3D = ["hcs_ngff_3D.zarr/A/2/0",
+                 "hcs_ngff_3D.zarr/A/2/1",
+                 "hcs_ngff_3D.zarr/A/2/2",
+                 "hcs_ngff_3D.zarr/B/3/0",
+                 "hcs_ngff_3D.zarr/B/3/1",
+                 "hcs_ngff_3D.zarr/B/3/2"]
 
 @pytest.fixture(scope="function")
 def test_data_dir(tmp_path: Path) -> str:
@@ -66,10 +82,7 @@ def fixed_test_data_dir() -> str:
 @pytest.mark.parametrize("component", [IMAGE_COMPONENT_2D, IMAGE_COMPONENT_3D])
 def test_measure_features(test_data_dir, component):
     measure_features(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        component=component,
-        metadata={},
+        zarr_url=f"{test_data_dir}/{component}",
         label_image_name='Label A',
         measure_intensity=True,
         measure_morphology=True,
@@ -173,23 +186,32 @@ def test_apply_mask(test_data_dir, component):
         overwrite=True
     )
 
-@pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
-def test_segment_secondary_objects(test_data_dir, component):
+@pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
+def test_segment_secondary_objects(test_data_dir, image_list):
+
+    image_list = [f"{test_data_dir}/{i}" for i in image_list]
+
+    parallelization_list = init_segment_secondary_objects(
+        zarr_urls=image_list,
+        zarr_dir=test_data_dir,
+        channel_label='0_DAPI',
+        label_name='Label A',
+        output_label_image_name="0",
+        mask='Label B',
+    )
+
+    zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
+    init_args = parallelization_list['parallelization_list'][0]['init_args']
+
     segment_secondary_objects(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        component=component,
-        metadata={},
-        label_image_name='Label A',
-        channel=ChannelInputModel(label='0_DAPI', wavelength_id=None),
+        zarr_url=zarr_url,
+        init_args=init_args,
         ROI_table_name='FOV_ROI_table',
         min_threshold=10,
         max_threshold=20,
         gaussian_blur=2,
         fill_holes_area=10,
         contrast_threshold=5,
-        mask=None,
-        output_label_cycle=0,
         output_label_name='watershed_result',
         level=0,
         overwrite=True
@@ -466,51 +488,48 @@ def test_compress_zarr_for_visualization(test_data_dir, component):
 
 def test_IC6000_conversion(test_data_dir):
 
-    create_ome_zarr_multiplex_IC6000(
-        input_paths=[
-            Path(test_data_dir).joinpath("IC6000_data/cycle_0").as_posix(),
-            Path(test_data_dir).joinpath("IC6000_data/cycle_1").as_posix()],
-        output_path=Path(test_data_dir).joinpath("IC6000_data").as_posix(),
-        metadata={},
-        allowed_channels={'0':[OmeroChannel(label='0_DAPI',
-                                            wavelength_id='UV - DAPI'),
-                               OmeroChannel(label='0_GFP',
-                                            wavelength_id='Blue - FITC'),
-                               OmeroChannel(label='0_RFP',
-                                            wavelength_id='Green - dsRed'),
-                               OmeroChannel(label='0_FR',
-                                            wavelength_id='Red - Cy5')],
-                          '1': [OmeroChannel(label='1_DAPI',
-                                             wavelength_id='UV - DAPI'),
-                                OmeroChannel(label='1_GFP',
-                                             wavelength_id='Blue - FITC'),
-                                OmeroChannel(label='1_RFP',
-                                             wavelength_id='Green - dsRed'),
-                                OmeroChannel(label='1_FR',
-                                             wavelength_id='Red - Cy5')
-                                ]
-                          },
+    parallelization_list = init_convert_IC6000_to_ome_zarr(
+        zarr_urls=[],
+        zarr_dir=test_data_dir,
+        acquisitions={"0":
+                          MultiplexingAcquisition(
+                              image_dir=Path(test_data_dir).joinpath("IC6000_data/cycle_0").as_posix(),
+                              allowed_channels=[
+                                  OmeroChannel(label='0_DAPI',
+                                               wavelength_id='UV - DAPI'),
+                                  OmeroChannel(label='0_GFP',
+                                               wavelength_id='Blue - FITC'),
+                                  OmeroChannel(label='0_RFP',
+                                               wavelength_id='Green - dsRed'),
+                                  OmeroChannel(label='0_FR',
+                                               wavelength_id='Red - Cy5')]),
+                      "1":
+                          MultiplexingAcquisition(
+                              image_dir=Path(test_data_dir).joinpath("IC6000_data/cycle_1").as_posix(),
+                              allowed_channels=[
+                                  OmeroChannel(label='1_DAPI',
+                                               wavelength_id='UV - DAPI'),
+                                  OmeroChannel(label='1_GFP',
+                                               wavelength_id='Blue - FITC'),
+                                  OmeroChannel(label='1_RFP',
+                                               wavelength_id='Green - dsRed'),
+                                  OmeroChannel(label='1_FR',
+                                               wavelength_id='Red - Cy5')])},
         image_glob_patterns=None,
         num_levels=5,
         coarsening_xy=2,
         image_extension='tif',
-        overwrite=True
+        overwrite=True,
     )
 
-    IC6000_to_ome_zarr(
-        input_paths=[Path(test_data_dir).joinpath("IC6000_data").as_posix()],
-        output_path=Path(test_data_dir).joinpath("IC6000_data").as_posix(),
-        component="test_plate.zarr/C/03/0",
-        metadata={
-            'original_paths': [
-            Path(test_data_dir).joinpath("IC6000_data", "cycle_0").as_posix(),
-            Path(test_data_dir).joinpath("IC6000_data", "cycle_1").as_posix()
-            ],
-            'image_extension': 'tif',
-            'image_glob_patterns': None,
-        },
-        overwrite=True
+    zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
+    init_args = parallelization_list['parallelization_list'][0]['init_args']
+
+    convert_IC6000_to_ome_zarr(
+        zarr_url=zarr_url,
+        init_args=init_args,
     )
+
 
 
 def test_multiplexed_pixel_clustering(test_data_dir):

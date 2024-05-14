@@ -175,18 +175,13 @@ def get_acquisition_from_label_name(zarrurl: Path,
     Returns:
         The acquisition name.
     """
-
-    zarr_group = zarr.open(zarrurl, mode="r")
-    first_well_url = zarr_group.attrs['plate']['wells'][0]['path']
-    well_group = zarr.open(zarrurl.joinpath(first_well_url), mode="r")
-
+    well_group = zarr.open(zarrurl, mode="r")
     img_paths = natsorted(
         [image['path'] for image in well_group.attrs['well']["images"]])
 
     actual_img_path = None
     for img_path in img_paths:
         label_path = zarrurl.joinpath(
-            first_well_url,
             img_path,
             "labels",
             label_name,
