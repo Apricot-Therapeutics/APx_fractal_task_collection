@@ -22,4 +22,10 @@ TASK_LIST = [
         executable="tasks/convert_IC6000_to_ome_zarr.py",
         meta={"cpus_per_task": 1, "mem": 3750},
     ),
+    CompoundTask(
+        name="Label Assignment by Overlap",
+        executable_init="tasks/init_label_assignment_by_overlap.py",
+        executable="tasks/label_assignment_by_overlap.py",
+        meta={"cpus_per_task": 1, "mem": 3750},
+    ),
 ]

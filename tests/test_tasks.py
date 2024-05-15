@@ -21,6 +21,7 @@ from apx_fractal_task_collection.tasks.calculate_illumination_profiles import ca
 from apx_fractal_task_collection.tasks.apply_basicpy_illumination_model import apply_basicpy_illumination_model
 from apx_fractal_task_collection.tasks.convert_channel_to_label import convert_channel_to_label
 from apx_fractal_task_collection.tasks.filter_label_by_size import filter_label_by_size
+from apx_fractal_task_collection.tasks.init_label_assignment_by_overlap import init_label_assignment_by_overlap
 from apx_fractal_task_collection.tasks.label_assignment_by_overlap import label_assignment_by_overlap
 from apx_fractal_task_collection.tasks.aggregate_tables_to_well_level import aggregate_tables_to_well_level
 from apx_fractal_task_collection.tasks.chromatic_shift_correction import chromatic_shift_correction
@@ -79,10 +80,13 @@ def fixed_test_data_dir() -> str:
     shutil.copytree(source_dir, dest_dir)
     return dest_dir
 
-@pytest.mark.parametrize("component", [IMAGE_COMPONENT_2D, IMAGE_COMPONENT_3D])
-def test_measure_features(test_data_dir, component):
+@pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
+def test_measure_features(test_data_dir, image_list):
+
+    image_list = [f"{test_data_dir}/{i}" for i in image_list]
+
     measure_features(
-        zarr_url=f"{test_data_dir}/{component}",
+        zarr_url=image_list[0],
         label_image_name='Label A',
         measure_intensity=True,
         measure_morphology=True,
@@ -103,9 +107,7 @@ def test_measure_features(test_data_dir, component):
     )
 
     # assert that the feature table exists in correct location
-    feature_table_path = Path(test_data_dir).joinpath(
-        component,
-        "tables/feature_table")
+    feature_table_path = Path(image_list[0]).joinpath("tables/feature_table")
     assert feature_table_path.exists(),\
         f"Feature table not found at {feature_table_path}"
 
@@ -128,7 +130,7 @@ def test_measure_features(test_data_dir, component):
     population_labels = FEATURE_LABELS['population'].copy()
 
     # remove some morphology features in 3D case
-    if component == IMAGE_COMPONENT_3D:
+    if image_list[0] == IMAGE_LIST_3D[0]:
         morphology_labels.remove('Morphology_eccentricity')
         morphology_labels.remove('Morphology_orientation')
         morphology_labels.remove('Morphology_perimeter')
@@ -285,55 +287,60 @@ def test_filter_label_by_size(test_data_dir, component):
         overwrite=True
     )
 
-@pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
-def test_label_assignment_by_overlap(test_data_dir, component):
+@pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
+def test_label_assignment_by_overlap(test_data_dir, image_list):
 
+    image_list = [f"{test_data_dir}/{i}" for i in image_list]
+    image_list = [i for i in image_list if "A/2" in i]
+    zarr_url = image_list[0]
     # create a feature table
     measure_features(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        component=component + '/0',
-        metadata={},
+        zarr_url=zarr_url,
         label_image_name='Label B',
         measure_intensity=True,
         measure_morphology=True,
+        channels_to_include=None,
+        channels_to_exclude=[
+            ChannelInputModel(label='0_GFP', wavelength_id=None)],
         measure_texture=TextureFeatures(
-            texture_features=["haralick", "lte"],
+            haralick=True,
+            laws_texture_energy=True,
             clip_value=3000,
             clip_value_exceptions={'0_DAPI': 5000}
         ),
-        measure_population=False,
+        measure_population=True,
         ROI_table_name='FOV_ROI_table',
         calculate_internal_borders=True,
         output_table_name='feature_table',
         level=0,
-        overwrite=True
+        overwrite=True,
     )
 
-    child_table = ad.read_zarr(Path(test_data_dir).joinpath(
-        component,
-        "0/tables/feature_table")
-    )
+    child_table = ad.read_zarr(Path(zarr_url).joinpath(
+        "tables/feature_table"))
     old_obs_columns = list(child_table.obs.columns)
 
+    parallelization_list = init_label_assignment_by_overlap(
+        zarr_urls=image_list,
+        zarr_dir=test_data_dir,
+        parent_label_name="Label A",
+        child_label_name="Label B",
+    )
+
+    new_zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
+    init_args = parallelization_list['parallelization_list'][0][
+        'init_args']
+
     label_assignment_by_overlap(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        metadata={},
-        component=component,
-        parent_label_image='Label A',
-        child_label_image='Label B',
+        zarr_url=new_zarr_url,
+        init_args=init_args,
         child_table_name='feature_table',
         level=0,
         overlap_threshold=0.6,
     )
 
-    child_table = ad.read_zarr(Path(test_data_dir).joinpath(
-        component,
-        "0/tables/feature_table")
-    )
-
-    print(child_table.obs)
+    child_table = ad.read_zarr(Path(zarr_url).joinpath(
+        "tables/feature_table"))
 
     # assert that child_table.obs contains the expected columns
     expected_obs_columns = old_obs_columns + \
@@ -344,7 +351,7 @@ def test_label_assignment_by_overlap(test_data_dir, component):
         f" but got {new_obs_columns}"
 
     # assert whether label assignments are correct
-    if component == WELL_COMPONENT_2D:
+    if zarr_url.split("/data/")[1] == IMAGE_LIST_2D[0]:
         label_assignments = {9: 6,
                              14: 6,
                              31: 19,
@@ -352,7 +359,7 @@ def test_label_assignment_by_overlap(test_data_dir, component):
                              36: pd.NA,
                              20: pd.NA,
                              12: 8}
-    elif component == WELL_COMPONENT_3D:
+    elif zarr_url.split("/data/")[1] == IMAGE_LIST_3D[0]:
         label_assignments = {4: 2,
                              10: 2,
                              1: pd.NA,

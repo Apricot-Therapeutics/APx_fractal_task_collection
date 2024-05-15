@@ -129,6 +129,10 @@ def segment_secondary_objects(  # noqa: C901
     labels based on watershed segmentation.
 
     Args:
+        zarr_url: Path or url to the individual OME-Zarr image to be processed.
+            (standard argument for Fractal tasks, managed by Fractal server).
+        init_args: Intialization arguments provided by
+            `init_segment_secondary_objects`.
         ROI_table_name: Name of the table containing the ROIs.
         min_threshold: Minimum threshold for the background definition.
         max_threshold: Maximum threshold for the background definition.

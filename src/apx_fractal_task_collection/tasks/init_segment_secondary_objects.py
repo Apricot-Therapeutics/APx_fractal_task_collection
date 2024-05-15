@@ -34,7 +34,7 @@ def init_segment_secondary_objects(
     output_label_image_name: str = "0"
 ) -> dict[str, list[dict[str, Any]]]:
     """
-    Initialized calculate registration task
+    Initialized secondary segmentation task
 
     Criteria:
     - Works for multiplexing & non-multiplexing
@@ -90,7 +90,6 @@ def init_segment_secondary_objects(
     parallelization_list = []
 
     for well, well_list in well_dict.items():
-        print(f"well list is {well_list}")
         label_zarr_url = get_label_zarr_url(well_list, label_name)
         channel_zarr_url = get_channel_zarr_url(well_list, channel_label)
         if mask is not None:

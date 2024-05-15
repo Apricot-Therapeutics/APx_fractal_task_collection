@@ -61,3 +61,26 @@ class InitArgsIC6000(BaseModel):
     image_extension: str
     image_glob_patterns: Optional[list[str]]
     acquisition: Optional[int]
+
+
+class InitArgsLabelAssignment(BaseModel):
+    """
+
+    Arguments to be passed from Label Assignment init to compute
+
+    Attributes:
+        parent_label_name: Name of the parent label.
+        parent_label_zarr_url: Zarr url indicating the zarr image containing the
+            parent label image.
+        child_label_name: Name of the child label. This label will be assigned
+            to the parent label based on overlap. The parent label will appear
+            in the child feature table as the "(parent_label_name)_label"
+            column in the obs table of the anndata table.
+        child_label_zarr_url: Zarr url indicating the zarr image containing the
+            child label image.
+    """
+
+    parent_label_name: str
+    parent_label_zarr_url: str
+    child_label_name: str
+    child_label_zarr_url: str

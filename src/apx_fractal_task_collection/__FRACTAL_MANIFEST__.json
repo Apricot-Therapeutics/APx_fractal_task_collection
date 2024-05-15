@@ -221,12 +221,12 @@
           "zarr_url": {
             "title": "Zarr Url",
             "type": "string",
-            "description": "Missing description"
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "init_args": {
             "$ref": "#/definitions/InitArgsSegmentSecondary",
             "title": "Init_Args",
-            "description": "Missing description"
+            "description": "Intialization arguments provided by `init_segment_secondary_objects`."
           },
           "ROI_table_name": {
             "title": "Roi Table Name",
@@ -324,7 +324,7 @@
           }
         }
       },
-      "docs_info": "## init_segment_secondary_objects\nInitialized calculate registration task\n\nCriteria:\n- Works for multiplexing & non-multiplexing\n- \n\nOption 1:\nAsk user for path for output_label_image_name => defaults tricky, but fully flexible\nBetter: Optional\n\nOption 2:\nAlways put output label in same image as label_image_name => downside: Confusing why label would go there\n\nOption 3:\nAlways put output label in same image as channel => downside: Confusing why label would go there\n\nOption 4:\nOptional acquisition parameter, used only in multiplexing case, determines where output image goes\n=> overkill for the moment\n\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform secondary segmentation based on a channel image and\na label image.\n## segment_secondary_objects\nSegments secondary objects based on primary labels and intensity image.\n\nTakes a primary label image and an intensity image and calculates secondary\nlabels based on watershed segmentation.\n"
+      "docs_info": "## init_segment_secondary_objects\nInitialized secondary segmentation task\n\nCriteria:\n- Works for multiplexing & non-multiplexing\n- \n\nOption 1:\nAsk user for path for output_label_image_name => defaults tricky, but fully flexible\nBetter: Optional\n\nOption 2:\nAlways put output label in same image as label_image_name => downside: Confusing why label would go there\n\nOption 3:\nAlways put output label in same image as channel => downside: Confusing why label would go there\n\nOption 4:\nOptional acquisition parameter, used only in multiplexing case, determines where output image goes\n=> overkill for the moment\n\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform secondary segmentation based on a channel image and\na label image.\n## segment_secondary_objects\nSegments secondary objects based on primary labels and intensity image.\n\nTakes a primary label image and an intensity image and calculates secondary\nlabels based on watershed segmentation.\n"
     },
     {
       "name": "Convert IC600 to OME-Zarr",
@@ -573,6 +573,122 @@
         }
       },
       "docs_info": "## init_convert_IC6000_to_ome_zarr\nCreate OME-NGFF structure and metadata to host a multiplexing dataset.\n\nThis task takes a set of image folders (i.e. different acquisition cycles)\nand build the internal structure and metadata of a OME-NGFF zarr group,\nwithout actually loading/writing the image data.\n\nEach element in input_paths should be treated as a different acquisition.\n## convert_IC6000_to_ome_zarr\nConvert IC6000 output (png, tif) to zarr file.\n\nThis task is run after \"init_convert_IC6000_to_ome_zarr\"\nand populates the empty OME-Zarr files that were prepared.\n"
+    },
+    {
+      "name": "Label Assignment by Overlap",
+      "executable_non_parallel": "tasks/init_label_assignment_by_overlap.py",
+      "executable_parallel": "tasks/label_assignment_by_overlap.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 3750
+      },
+      "args_schema_non_parallel": {
+        "title": "InitLabelAssignmentByOverlap",
+        "type": "object",
+        "properties": {
+          "zarr_urls": {
+            "title": "Zarr Urls",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "zarr_dir": {
+            "title": "Zarr Dir",
+            "type": "string",
+            "description": "path of the directory where the new OME-Zarrs will be created. Not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "parent_label_name": {
+            "title": "Parent Label Name",
+            "type": "string",
+            "description": "Name of the parent label."
+          },
+          "child_label_name": {
+            "title": "Child Label Name",
+            "type": "string",
+            "description": "Name of the child label. This label will be assigned to the parent label based on overlap. The parent label will appear in the child feature table as the \"(parent_label_name)_label\" column in the obs table of the anndata table."
+          }
+        },
+        "required": [
+          "zarr_urls",
+          "zarr_dir",
+          "parent_label_name",
+          "child_label_name"
+        ],
+        "additionalProperties": false
+      },
+      "args_schema_parallel": {
+        "title": "LabelAssignmentByOverlap",
+        "type": "object",
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "init_args": {
+            "$ref": "#/definitions/InitArgsLabelAssignment",
+            "title": "Init_Args",
+            "description": "Intialization arguments provided by `init_label_assignment_by_overlap`."
+          },
+          "child_table_name": {
+            "title": "Child Table Name",
+            "type": "string",
+            "description": "Name of the feature table associated with the child label image."
+          },
+          "level": {
+            "title": "Level",
+            "default": 0,
+            "type": "integer",
+            "description": "Resolution of the label image to calculate overlap. Only tested for level 0."
+          },
+          "overlap_threshold": {
+            "title": "Overlap Threshold",
+            "default": 1.0,
+            "type": "number",
+            "description": "The minimum percentage (between 0 and 1) of child label object that must be contained in parent label object to be considered a match."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "init_args",
+          "child_table_name"
+        ],
+        "additionalProperties": false,
+        "definitions": {
+          "InitArgsLabelAssignment": {
+            "title": "InitArgsLabelAssignment",
+            "description": "Arguments to be passed from Label Assignment init to compute",
+            "type": "object",
+            "properties": {
+              "parent_label_name": {
+                "title": "Parent Label Name",
+                "type": "string"
+              },
+              "parent_label_zarr_url": {
+                "title": "Parent Label Zarr Url",
+                "type": "string"
+              },
+              "child_label_name": {
+                "title": "Child Label Name",
+                "type": "string"
+              },
+              "child_label_zarr_url": {
+                "title": "Child Label Zarr Url",
+                "type": "string"
+              }
+            },
+            "required": [
+              "parent_label_name",
+              "parent_label_zarr_url",
+              "child_label_name",
+              "child_label_zarr_url"
+            ]
+          }
+        }
+      },
+      "docs_info": "## init_label_assignment_by_overlap\nInitialized label assignment by overlap task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform label assignment based on overlap between two label images.\n## label_assignment_by_overlap\nAssign labels to each other based on overlap.\n\nTakes a parent label image and a child label image and calculates\noverlaps between their labels. Child labels will be assigned to parent\nlabels based on an overlap threshold.\n"
     }
   ],
   "has_args_schemas": true,
