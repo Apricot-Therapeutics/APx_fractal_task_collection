@@ -28,4 +28,21 @@ TASK_LIST = [
         executable="tasks/label_assignment_by_overlap.py",
         meta={"cpus_per_task": 1, "mem": 3750},
     ),
+    CompoundTask(
+        name="Clip Label Image",
+        executable_init="tasks/init_clip_label_image.py",
+        executable="tasks/clip_label_image.py",
+        meta={"cpus_per_task": 1, "mem": 3750},
+    ),
+    CompoundTask(
+        name="Calculate BaSiCPy Illumination Models",
+        executable_init="tasks/init_calculate_basicpy_illumination_models.py",
+        executable="tasks/calculate_basicpy_illumination_models.py",
+        meta={"cpus_per_task": 1, "mem": 3750},
+    ),
+    ParallelTask(
+        name="Apply BaSiCPy Illumination Models",
+        executable="tasks/apply_basicpy_illumination_models.py",
+        meta={"cpus_per_task": 1, "mem": 3750},
+    ),
 ]

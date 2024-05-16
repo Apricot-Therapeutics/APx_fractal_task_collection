@@ -73,14 +73,7 @@ def measure_features(  # noqa: C901
     morphology, intensity and texture features in 2D.
 
     Args:
-        input_paths: Path to the parent folder of the NGFF image.
-            This task only supports a single input path.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        output_path: This argument is not used in this task.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        component: Path of the NGFF image, relative to `input_paths[0]`.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        metadata: This argument is not used in this task.
+        zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
         label_image_name: Name of the label image that contains the seeds.
             Needs to exist in OME-Zarr file.

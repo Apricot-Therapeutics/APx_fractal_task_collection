@@ -84,3 +84,46 @@ class InitArgsLabelAssignment(BaseModel):
     parent_label_zarr_url: str
     child_label_name: str
     child_label_zarr_url: str
+
+
+class InitArgsClipLabelImage(BaseModel):
+    """
+
+    Arguments to be passed from Clip Label Image init to compute
+
+    Attributes:
+        label_name: Name of the label image to be clipped.
+            Needs to exist in OME-Zarr file.
+        label_zarr_url: Zarr url indicating the zarr image containing the
+            label image.
+        clipping_mask_name: Name of the label image used as mask for clipping.
+            This image will be binarized. Needs to exist in OME-Zarr file.
+        clipping_mask_zarr_url: Zarr url indicating the zarr image containing
+            the clipping mask image.
+    """
+
+    label_name: str
+    label_zarr_url: str
+    clipping_mask_name: str
+    clipping_mask_zarr_url: str
+
+
+class InitArgsBaSiCPyCalculate(BaseModel):
+    """
+
+    Arguments to be passed from BaSiCPy Calculate init to compute
+
+    Attributes:
+        channel_label: label of the channel for which the illumination model
+            will be calculated.
+        channel_zarr_urls: list of zarr urls specifying the images that
+            contain the channel and will be used to calculate the illumination
+            model.
+        channel_zarr_dict: dictionary specifying how often each zarr url
+            should be sampled.
+
+    """
+
+    channel_label: str
+    channel_zarr_urls: list[str]
+    channel_zarr_dict: dict[str, int]

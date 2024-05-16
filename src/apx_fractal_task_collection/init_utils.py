@@ -33,6 +33,26 @@ def group_by_well(zarr_urls: list[str]):
     return well_dict
 
 
+def group_by_channel(zarr_urls: list[str]):
+    """
+    Create channel dictionaries for the zarr_urls
+
+    Keys are channel ids, values are a list of zarr_urls that belong to that channel.
+
+    zarr_urls: List of zarr_urls. Each zarr_url is a string that defines the
+        path to an individual zarr_url in an HCS plate
+    """
+    channel_dict = {}
+    for zarr_url in zarr_urls:
+        channels = get_omero_channel_list(image_zarr_path=zarr_url)
+        for channel in channels:
+            if channel.label not in channel_dict:
+                channel_dict[channel.label] = [zarr_url]
+            else:
+                channel_dict[channel.label].append(zarr_url)
+    return channel_dict
+
+
 def get_label_zarr_url(well_list: list, label_name: str) -> str:
     """
     Get the label zarr url for a well
@@ -58,7 +78,7 @@ def get_label_zarr_url(well_list: list, label_name: str) -> str:
 
 def get_channel_zarr_url(well_list: list, channel_label: str) -> str:
     """
-    Get the label zarr url for a well
+    Get the channel zarr url for a well
 
     Args:
         well_list: list of zarr urls for a well

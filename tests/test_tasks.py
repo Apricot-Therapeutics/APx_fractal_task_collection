@@ -15,10 +15,12 @@ from fractal_tasks_core.tasks.io_models import MultiplexingAcquisition
 from apx_fractal_task_collection.utils import TextureFeatures, FEATURE_LABELS
 from apx_fractal_task_collection.tasks.measure_features import measure_features
 from apx_fractal_task_collection.tasks.clip_label_image import clip_label_image
+from apx_fractal_task_collection.tasks.init_clip_label_image import init_clip_label_image
 from apx_fractal_task_collection.tasks.segment_secondary_objects import segment_secondary_objects
 from apx_fractal_task_collection.tasks.init_segment_secondary_objects import init_segment_secondary_objects
-from apx_fractal_task_collection.tasks.calculate_illumination_profiles import calculate_illumination_profiles
-from apx_fractal_task_collection.tasks.apply_basicpy_illumination_model import apply_basicpy_illumination_model
+from apx_fractal_task_collection.tasks.calculate_basicpy_illumination_models import calculate_basicpy_illumination_models
+from apx_fractal_task_collection.tasks.init_calculate_basicpy_illumination_models import init_calculate_basicpy_illumination_models
+from apx_fractal_task_collection.tasks.apply_basicpy_illumination_models import apply_basicpy_illumination_models
 from apx_fractal_task_collection.tasks.convert_channel_to_label import convert_channel_to_label
 from apx_fractal_task_collection.tasks.filter_label_by_size import filter_label_by_size
 from apx_fractal_task_collection.tasks.init_label_assignment_by_overlap import init_label_assignment_by_overlap
@@ -158,20 +160,35 @@ def test_measure_features(test_data_dir, image_list):
         f"Expected columns {expected_columns}," \
         f" but got {feature_table.var.index.tolist()}"
 
-@pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
-def test_clip_label_image(test_data_dir, component):
-    clip_label_image(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        component=component,
-        metadata={},
-        label_image_name='Label A',
+@pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
+def test_clip_label_image(test_data_dir, image_list):
+
+    image_list = [f"{test_data_dir}/{i}" for i in image_list]
+
+    parallelization_list = init_clip_label_image(
+        zarr_urls=image_list,
+        zarr_dir=test_data_dir,
+        label_name='Label A',
         clipping_mask_name='Label D',
-        output_label_cycle=0,
+        output_label_image_name="0"
+    )
+
+    zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
+    init_args = parallelization_list['parallelization_list'][0]['init_args']
+
+    clip_label_image(
+        zarr_url=zarr_url,
+        init_args=init_args,
         output_label_name='clipped_label',
         level=0,
         overwrite=True
     )
+
+    # assert whether the clipped label image was created
+    clipped_label_path = Path(zarr_url).joinpath("labels/clipped_label/0")
+    assert clipped_label_path.exists(),\
+        f"Clipped label image not found at {clipped_label_path}"
+
 
 @pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
 def test_apply_mask(test_data_dir, component):
@@ -219,6 +236,11 @@ def test_segment_secondary_objects(test_data_dir, image_list):
         overwrite=True
     )
 
+    # assert whether the label image was created
+    label_path = Path(zarr_url).joinpath("labels/watershed_result/0")
+    assert label_path.exists(), \
+        f"label image not found at {label_path}"
+
 @pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
 def test_detect_blob_centroids(test_data_dir, component):
     detect_blob_centroids(
@@ -239,26 +261,35 @@ def test_detect_blob_centroids(test_data_dir, component):
         overwrite=True
     )
 
-@pytest.mark.parametrize("component", [IMAGE_COMPONENT_2D, IMAGE_COMPONENT_3D])
-def test_illumination_correction(test_data_dir, component):
-    calculate_illumination_profiles(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        metadata={},
-        illumination_profiles_folder=test_data_dir,
+@pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
+def test_illumination_correction(test_data_dir, image_list):
+
+    image_list = [f"{test_data_dir}/{i}" for i in image_list]
+
+    parallelization_list = init_calculate_basicpy_illumination_models(
+        zarr_urls=image_list,
+        zarr_dir=test_data_dir,
         n_images=1,
-        overwrite=True
     )
 
-    apply_basicpy_illumination_model(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        component=component,
-        metadata={},
+    for channel in parallelization_list['parallelization_list']:
+        calculate_basicpy_illumination_models(
+            zarr_url=channel['zarr_url'],
+            init_args=channel['init_args'],
+            illumination_profiles_folder=test_data_dir,
+            overwrite=True
+        )
+
+    apply_basicpy_illumination_models(
+        zarr_url=image_list[0],
         illumination_profiles_folder=test_data_dir,
-        overwrite_input=True,
-        new_component=None
+        overwrite_input=False,
     )
+
+    # assert that the illumination corrected image was created
+    corrected_image_path = Path(image_list[0]).parent.joinpath("0_illum_corr")
+    assert corrected_image_path.exists(),\
+        f"Corrected image not found at {corrected_image_path}"
 
 @pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
 def test_convert_channel_to_label(test_data_dir, component):

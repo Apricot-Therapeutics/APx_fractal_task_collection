@@ -99,7 +99,8 @@ def init_segment_secondary_objects(
 
         # generate zarr_url by taking the first entry of well_list and
         # replacing the last part of the path with the output_label_image_name
-        zarr_url = Path(well_list[0]).parent.as_posix() + output_label_image_name
+        zarr_url = (Path(well_list[0]).parent.as_posix()
+                    + "/" + output_label_image_name)
 
         parallelization_list.append(
             dict(

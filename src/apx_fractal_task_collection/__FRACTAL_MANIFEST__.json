@@ -15,7 +15,7 @@
           "zarr_url": {
             "title": "Zarr Url",
             "type": "string",
-            "description": "Missing description"
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "label_image_name": {
             "title": "Label Image Name",
@@ -689,6 +689,281 @@
         }
       },
       "docs_info": "## init_label_assignment_by_overlap\nInitialized label assignment by overlap task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform label assignment based on overlap between two label images.\n## label_assignment_by_overlap\nAssign labels to each other based on overlap.\n\nTakes a parent label image and a child label image and calculates\noverlaps between their labels. Child labels will be assigned to parent\nlabels based on an overlap threshold.\n"
+    },
+    {
+      "name": "Clip Label Image",
+      "executable_non_parallel": "tasks/init_clip_label_image.py",
+      "executable_parallel": "tasks/clip_label_image.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 3750
+      },
+      "args_schema_non_parallel": {
+        "title": "InitClipLabelImage",
+        "type": "object",
+        "properties": {
+          "zarr_urls": {
+            "title": "Zarr Urls",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "zarr_dir": {
+            "title": "Zarr Dir",
+            "type": "string",
+            "description": "path of the directory where the new OME-Zarrs will be created. Not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "label_name": {
+            "title": "Label Name",
+            "type": "string",
+            "description": "Name of the label image to be clipped. Needs to exist in OME-Zarr file."
+          },
+          "clipping_mask_name": {
+            "title": "Clipping Mask Name",
+            "type": "string",
+            "description": "Name of the label image used as mask for clipping. This image will be binarized. Needs to exist in OME-Zarr file."
+          },
+          "output_label_image_name": {
+            "title": "Output Label Image Name",
+            "default": "0",
+            "type": "string",
+            "description": "Name of the zarr image that will contain the secondary segmentation. Defaults to \"0\". In case you saved, for example, illumination corrected images in the same zarr without overwriting the original images, you can specify a different name here (e.g. \"0_illum_corrected\")."
+          }
+        },
+        "required": [
+          "zarr_urls",
+          "zarr_dir",
+          "label_name",
+          "clipping_mask_name"
+        ],
+        "additionalProperties": false
+      },
+      "args_schema_parallel": {
+        "title": "ClipLabelImage",
+        "type": "object",
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "init_args": {
+            "$ref": "#/definitions/InitArgsClipLabelImage",
+            "title": "Init_Args",
+            "description": "Intialization arguments provided by `init_clip_label_image`."
+          },
+          "output_label_name": {
+            "title": "Output Label Name",
+            "type": "string",
+            "description": "Name of the output label image."
+          },
+          "level": {
+            "title": "Level",
+            "default": 0,
+            "type": "integer",
+            "description": "Resolution of the label image. Only tested for level 0."
+          },
+          "overwrite": {
+            "title": "Overwrite",
+            "default": true,
+            "type": "boolean",
+            "description": "If True, overwrite existing label image."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "init_args",
+          "output_label_name"
+        ],
+        "additionalProperties": false,
+        "definitions": {
+          "InitArgsClipLabelImage": {
+            "title": "InitArgsClipLabelImage",
+            "description": "Arguments to be passed from Clip Label Image init to compute",
+            "type": "object",
+            "properties": {
+              "label_name": {
+                "title": "Label Name",
+                "type": "string"
+              },
+              "label_zarr_url": {
+                "title": "Label Zarr Url",
+                "type": "string"
+              },
+              "clipping_mask_name": {
+                "title": "Clipping Mask Name",
+                "type": "string"
+              },
+              "clipping_mask_zarr_url": {
+                "title": "Clipping Mask Zarr Url",
+                "type": "string"
+              }
+            },
+            "required": [
+              "label_name",
+              "label_zarr_url",
+              "clipping_mask_name",
+              "clipping_mask_zarr_url"
+            ]
+          }
+        }
+      },
+      "docs_info": "## init_clip_label_image\nInitialized clip label image task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform clipping based on two label images.\n## clip_label_image\nClips a label image with a mask.\n\nTakes two label images (or a label image and a binary mask) and replaces\nall values in the first label image with 0 where the second label image has\nvalues > 0.\n"
+    },
+    {
+      "name": "Calculate BaSiCPy Illumination Models",
+      "executable_non_parallel": "tasks/init_calculate_basicpy_illumination_models.py",
+      "executable_parallel": "tasks/calculate_basicpy_illumination_models.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 3750
+      },
+      "args_schema_non_parallel": {
+        "title": "InitCalculateBasicpyIlluminationModels",
+        "type": "object",
+        "properties": {
+          "zarr_urls": {
+            "title": "Zarr Urls",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "zarr_dir": {
+            "title": "Zarr Dir",
+            "type": "string",
+            "description": "path of the directory where the new OME-Zarrs will be created. Not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "n_images": {
+            "title": "N Images",
+            "default": 150,
+            "type": "integer",
+            "description": "Number of images to use to calculate BaSiCPy model."
+          }
+        },
+        "required": [
+          "zarr_urls",
+          "zarr_dir"
+        ],
+        "additionalProperties": false
+      },
+      "args_schema_parallel": {
+        "title": "CalculateBasicpyIlluminationModels",
+        "type": "object",
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "init_args": {
+            "$ref": "#/definitions/InitArgsBaSiCPyCalculate",
+            "title": "Init_Args",
+            "description": "Intialization arguments provided by `init_calculate_basicpy_illumination_models`."
+          },
+          "illumination_profiles_folder": {
+            "title": "Illumination Profiles Folder",
+            "type": "string",
+            "description": "Path to folder where illumination profiles will be saved."
+          },
+          "overwrite": {
+            "title": "Overwrite",
+            "default": false,
+            "type": "boolean",
+            "description": "If True, overwrite existing illumination profiles."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "init_args",
+          "illumination_profiles_folder"
+        ],
+        "additionalProperties": false,
+        "definitions": {
+          "InitArgsBaSiCPyCalculate": {
+            "title": "InitArgsBaSiCPyCalculate",
+            "description": "Arguments to be passed from BaSiCPy Calculate init to compute",
+            "type": "object",
+            "properties": {
+              "channel_label": {
+                "title": "Channel Label",
+                "type": "string"
+              },
+              "channel_zarr_urls": {
+                "title": "Channel Zarr Urls",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "channel_zarr_dict": {
+                "title": "Channel Zarr Dict",
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer"
+                }
+              }
+            },
+            "required": [
+              "channel_label",
+              "channel_zarr_urls",
+              "channel_zarr_dict"
+            ]
+          }
+        }
+      },
+      "docs_info": "## init_calculate_basicpy_illumination_models\nInitialized BaSiCPy illumination correction task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform illumination correction with BaSiCPy.\n## calculate_basicpy_illumination_models\nCalculates illumination correction profiles based on a random sample\nof images of for each channel.\n"
+    },
+    {
+      "name": "Apply BaSiCPy Illumination Models",
+      "executable_parallel": "tasks/apply_basicpy_illumination_models.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 3750
+      },
+      "args_schema_parallel": {
+        "title": "ApplyBasicpyIlluminationModels",
+        "type": "object",
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "illumination_profiles_folder": {
+            "title": "Illumination Profiles Folder",
+            "type": "string",
+            "description": "Path of folder of illumination profiles. input_ROI_table: Name of the ROI table that contains the information about the location of the individual field of views (FOVs) to which the illumination correction shall be applied. Defaults to \"FOV_ROI_table\", the default name Fractal converters give the ROI tables that list all FOVs separately. If you generated your OME-Zarr with a different converter and used Import OME-Zarr to generate the ROI tables, `image_ROI_table` is the right choice if you only have 1 FOV per Zarr image and `grid_ROI_table` if you have multiple FOVs per Zarr image and set the right grid options during import."
+          },
+          "input_ROI_table": {
+            "title": "Input Roi Table",
+            "default": "FOV_ROI_table",
+            "type": "string",
+            "description": "Missing description"
+          },
+          "overwrite_input": {
+            "title": "Overwrite Input",
+            "default": true,
+            "type": "boolean",
+            "description": "If `True`, the results of this task will overwrite the input image data. If false, a new image is generated and the illumination corrected data is saved there."
+          },
+          "suffix": {
+            "title": "Suffix",
+            "default": "_illum_corr",
+            "type": "string",
+            "description": "What suffix to append to the illumination corrected images. Only relevant if `overwrite_input=False`."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "illumination_profiles_folder"
+        ],
+        "additionalProperties": false
+      },
+      "docs_info": "## apply_basicpy_illumination_models\nApplies illumination correction to the images in the OME-Zarr.\n"
     }
   ],
   "has_args_schemas": true,
