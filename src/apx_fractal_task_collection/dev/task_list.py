@@ -45,4 +45,10 @@ TASK_LIST = [
         executable="tasks/apply_basicpy_illumination_models.py",
         meta={"cpus_per_task": 1, "mem": 3750},
     ),
+    CompoundTask(
+        name="Aggregate Feature Tables",
+        executable_init="tasks/init_aggregate_feature_tables.py",
+        executable="tasks/aggregate_feature_tables.py",
+        meta={"cpus_per_task": 1, "mem": 3750},
+    ),
 ]

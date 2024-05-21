@@ -964,6 +964,104 @@
         "additionalProperties": false
       },
       "docs_info": "## apply_basicpy_illumination_models\nApplies illumination correction to the images in the OME-Zarr.\n"
+    },
+    {
+      "name": "Aggregate Feature Tables",
+      "executable_non_parallel": "tasks/init_aggregate_feature_tables.py",
+      "executable_parallel": "tasks/aggregate_feature_tables.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 3750
+      },
+      "args_schema_non_parallel": {
+        "title": "InitAggregateFeatureTables",
+        "type": "object",
+        "properties": {
+          "zarr_urls": {
+            "title": "Zarr Urls",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "zarr_dir": {
+            "title": "Zarr Dir",
+            "type": "string",
+            "description": "path of the directory where the new OME-Zarrs will be created. Not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          }
+        },
+        "required": [
+          "zarr_urls",
+          "zarr_dir"
+        ],
+        "additionalProperties": false
+      },
+      "args_schema_parallel": {
+        "title": "AggregateFeatureTables",
+        "type": "object",
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Missing description"
+          },
+          "init_args": {
+            "$ref": "#/definitions/InitArgsAggregateFeatureTables",
+            "title": "Init_Args",
+            "description": "Missing description"
+          },
+          "input_table_name": {
+            "title": "Input Table Name",
+            "type": "string",
+            "description": "Name of the feature table."
+          },
+          "output_table_name": {
+            "title": "Output Table Name",
+            "type": "string",
+            "description": "Name of the aggregated feature table. If this is the same as the input_table_name, the input table will be overwritten."
+          },
+          "output_image": {
+            "title": "Output Image",
+            "default": "0",
+            "type": "string",
+            "description": "In which zarr-image to store the aggregated feature table. By default, it is saved in the first image of the zarr. If output_table_name is the same as input_table_name, the table will be overwritten in the same image."
+          },
+          "overwrite": {
+            "title": "Overwrite",
+            "default": true,
+            "type": "boolean",
+            "description": "If True, overwrite existing feature table."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "init_args",
+          "input_table_name",
+          "output_table_name"
+        ],
+        "additionalProperties": false,
+        "definitions": {
+          "InitArgsAggregateFeatureTables": {
+            "title": "InitArgsAggregateFeatureTables",
+            "description": "Arguments to be passed from BaSiCPy Calculate init to compute",
+            "type": "object",
+            "properties": {
+              "zarr_urls": {
+                "title": "Zarr Urls",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "zarr_urls"
+            ]
+          }
+        }
+      },
+      "docs_info": "## init_aggregate_feature_tables\nInitialized clip label image task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform clipping based on two label images.\n## aggregate_feature_tables\nAggregate feature tables that were calculated per zarr-image to one\nAnndata table containing feature measurements across all zarr-images.\n"
     }
   ],
   "has_args_schemas": true,

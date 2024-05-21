@@ -25,7 +25,8 @@ from apx_fractal_task_collection.tasks.convert_channel_to_label import convert_c
 from apx_fractal_task_collection.tasks.filter_label_by_size import filter_label_by_size
 from apx_fractal_task_collection.tasks.init_label_assignment_by_overlap import init_label_assignment_by_overlap
 from apx_fractal_task_collection.tasks.label_assignment_by_overlap import label_assignment_by_overlap
-from apx_fractal_task_collection.tasks.aggregate_tables_to_well_level import aggregate_tables_to_well_level
+from apx_fractal_task_collection.tasks.aggregate_feature_tables import aggregate_feature_tables
+from apx_fractal_task_collection.tasks.init_aggregate_feature_tables import init_aggregate_feature_tables
 from apx_fractal_task_collection.tasks.chromatic_shift_correction import chromatic_shift_correction
 from apx_fractal_task_collection.tasks.compress_zarr_for_visualization import compress_zarr_for_visualization
 from apx_fractal_task_collection.tasks.init_convert_IC6000_to_ome_zarr import init_convert_IC6000_to_ome_zarr
@@ -34,6 +35,7 @@ from apx_fractal_task_collection.tasks.multiplexed_pixel_clustering import multi
 from apx_fractal_task_collection.tasks.stitch_fovs_with_overlap import stitch_fovs_with_overlap
 from apx_fractal_task_collection.tasks.detect_blob_centroids import detect_blob_centroids
 from apx_fractal_task_collection.tasks.apply_mask import apply_mask
+from apx_fractal_task_collection.tasks.calculate_registration_image_based_chi_squared_shift import calculate_registration_image_based_chi_squared_shift
 #from apx_fractal_task_collection.tasks.ashlar_stitching_and_registration import ashlar_stitching_and_registration
 #from apx_fractal_task_collection.tasks.ashlar_stitching_and_registration_pure import ashlar_stitching_and_registration
 
@@ -408,20 +410,21 @@ def test_label_assignment_by_overlap(test_data_dir, image_list):
                 f"Label assignment failed, expected {parent_label}," \
                 f" but got {value}"
 
-@pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
-def test_aggregate_tables_to_well_level(test_data_dir, component):
+@pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
+def test_aggregate_tables_to_well_level(test_data_dir, image_list):
+    image_list = [f"{test_data_dir}/{i}" for i in image_list]
 
-    # create a feature table
     measure_features(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        component=component + "/0",
-        metadata={},
+        zarr_url=image_list[0],
         label_image_name='Label B',
         measure_intensity=True,
         measure_morphology=True,
+        channels_to_include=None,
+        channels_to_exclude=[
+            ChannelInputModel(label='0_GFP', wavelength_id=None)],
         measure_texture=TextureFeatures(
-            texture_features=["haralick", "lte"],
+            haralick=True,
+            laws_texture_energy=True,
             clip_value=3000,
             clip_value_exceptions={'0_DAPI': 5000}
         ),
@@ -430,19 +433,20 @@ def test_aggregate_tables_to_well_level(test_data_dir, component):
         calculate_internal_borders=True,
         output_table_name='feature_table',
         level=0,
-        overwrite=True
+        overwrite=True,
     )
 
     measure_features(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        component=component + "/1",
-        metadata={},
+        zarr_url=image_list[1],
         label_image_name='Label B',
         measure_intensity=True,
         measure_morphology=True,
+        channels_to_include=None,
+        channels_to_exclude=[
+            ChannelInputModel(label='0_GFP', wavelength_id=None)],
         measure_texture=TextureFeatures(
-            texture_features=["haralick", "lte"],
+            haralick=True,
+            laws_texture_energy=True,
             clip_value=3000,
             clip_value_exceptions={'0_DAPI': 5000}
         ),
@@ -451,19 +455,20 @@ def test_aggregate_tables_to_well_level(test_data_dir, component):
         calculate_internal_borders=True,
         output_table_name='feature_table',
         level=0,
-        overwrite=True
+        overwrite=True,
     )
 
     measure_features(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        component=component + "/2",
-        metadata={},
+        zarr_url=image_list[2],
         label_image_name='Label B',
         measure_intensity=True,
         measure_morphology=True,
+        channels_to_include=None,
+        channels_to_exclude=[
+            ChannelInputModel(label='0_GFP', wavelength_id=None)],
         measure_texture=TextureFeatures(
-            texture_features=["haralick", "lte"],
+            haralick=True,
+            laws_texture_energy=True,
             clip_value=3000,
             clip_value_exceptions={'0_DAPI': 5000}
         ),
@@ -472,18 +477,30 @@ def test_aggregate_tables_to_well_level(test_data_dir, component):
         calculate_internal_borders=True,
         output_table_name='feature_table',
         level=0,
-        overwrite=True
+        overwrite=True,
     )
 
-    aggregate_tables_to_well_level(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        metadata={},
-        component=component,
+    parallelization_list = init_aggregate_feature_tables(
+        zarr_urls=image_list[0:3],
+        zarr_dir=test_data_dir,
+    )
+
+    zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
+    init_args = parallelization_list['parallelization_list'][0]['init_args']
+
+    aggregate_feature_tables(
+        zarr_url=zarr_url,
+        init_args=init_args,
         input_table_name='feature_table',
         output_table_name='feature_table',
+        output_image='2',
         overwrite=True
     )
+
+    # assert that the aggregated feature table exists in correct location
+    feature_table_path = Path(zarr_url).joinpath("tables/feature_table")
+    assert feature_table_path.exists(),\
+        f"Feature table not found at {feature_table_path}"
 
 @pytest.mark.parametrize("component", [IMAGE_COMPONENT_2D, IMAGE_COMPONENT_3D])
 def test_chromatic_shift_correction(test_data_dir, component):
@@ -498,6 +515,20 @@ def test_chromatic_shift_correction(test_data_dir, component):
 
     Path(os.getcwd()).joinpath("TransformParameters.0.txt").unlink(
         missing_ok=True)
+
+
+@pytest.mark.parametrize("component", [IMAGE_COMPONENT_2D, IMAGE_COMPONENT_3D])
+def test_registration(test_data_dir, component):
+    calculate_registration_image_based_chi_squared_shift(
+        input_paths=[test_data_dir],
+        output_path=test_data_dir,
+        metadata={},
+        component=component,
+        wavelength_id='A01_C01',
+        roi_table='FOV_ROI_table',
+        level=0,
+    )
+
 
 @pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
 def test_compress_zarr_for_visualization(test_data_dir, component):

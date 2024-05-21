@@ -127,3 +127,16 @@ class InitArgsBaSiCPyCalculate(BaseModel):
     channel_label: str
     channel_zarr_urls: list[str]
     channel_zarr_dict: dict[str, int]
+
+
+class InitArgsAggregateFeatureTables(BaseModel):
+    """
+
+    Arguments to be passed from BaSiCPy Calculate init to compute
+
+    Attributes:
+        zarr_urls: list of zarr urls specifying the images that
+            are present in the well.
+
+    """
+    zarr_urls: list[str]
