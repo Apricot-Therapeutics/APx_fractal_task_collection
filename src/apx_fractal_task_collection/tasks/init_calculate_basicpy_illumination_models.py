@@ -58,6 +58,7 @@ def init_calculate_basicpy_illumination_models(
         f"randomly sampled images.")
 
     channel_dict = group_by_channel(zarr_urls)
+
     # Create the parallelization list
     parallelization_list = []
 

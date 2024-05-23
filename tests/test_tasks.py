@@ -4,6 +4,7 @@ import os
 import anndata as ad
 import numpy as np
 import pandas as pd
+import dask.array as da
 
 import pytest
 from devtools import debug
@@ -23,6 +24,7 @@ from apx_fractal_task_collection.tasks.init_calculate_basicpy_illumination_model
 from apx_fractal_task_collection.tasks.apply_basicpy_illumination_models import apply_basicpy_illumination_models
 from apx_fractal_task_collection.tasks.convert_channel_to_label import convert_channel_to_label
 from apx_fractal_task_collection.tasks.filter_label_by_size import filter_label_by_size
+from apx_fractal_task_collection.tasks.init_filter_label_by_size import init_filter_label_by_size
 from apx_fractal_task_collection.tasks.init_label_assignment_by_overlap import init_label_assignment_by_overlap
 from apx_fractal_task_collection.tasks.label_assignment_by_overlap import label_assignment_by_overlap
 from apx_fractal_task_collection.tasks.aggregate_feature_tables import aggregate_feature_tables
@@ -34,7 +36,8 @@ from apx_fractal_task_collection.tasks.convert_IC6000_to_ome_zarr import convert
 from apx_fractal_task_collection.tasks.multiplexed_pixel_clustering import multiplexed_pixel_clustering
 from apx_fractal_task_collection.tasks.stitch_fovs_with_overlap import stitch_fovs_with_overlap
 from apx_fractal_task_collection.tasks.detect_blob_centroids import detect_blob_centroids
-from apx_fractal_task_collection.tasks.apply_mask import apply_mask
+from apx_fractal_task_collection.tasks.mask_label_image import mask_label_image
+from apx_fractal_task_collection.tasks.init_mask_label_image import init_mask_label_image
 from apx_fractal_task_collection.tasks.calculate_registration_image_based_chi_squared_shift import calculate_registration_image_based_chi_squared_shift
 #from apx_fractal_task_collection.tasks.ashlar_stitching_and_registration import ashlar_stitching_and_registration
 #from apx_fractal_task_collection.tasks.ashlar_stitching_and_registration_pure import ashlar_stitching_and_registration
@@ -57,6 +60,7 @@ IMAGE_LIST_3D = ["hcs_ngff_3D.zarr/A/2/0",
                  "hcs_ngff_3D.zarr/B/3/0",
                  "hcs_ngff_3D.zarr/B/3/1",
                  "hcs_ngff_3D.zarr/B/3/2"]
+
 
 @pytest.fixture(scope="function")
 def test_data_dir(tmp_path: Path) -> str:
@@ -192,20 +196,34 @@ def test_clip_label_image(test_data_dir, image_list):
         f"Clipped label image not found at {clipped_label_path}"
 
 
-@pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
-def test_apply_mask(test_data_dir, component):
-    apply_mask(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        component=component,
-        metadata={},
-        label_image_name='Label A',
-        mask_label_name='Label D',
-        output_label_cycle=0,
+@pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
+def test_mask_label_image(test_data_dir, image_list):
+
+    image_list = [f"{test_data_dir}/{i}" for i in image_list]
+
+    parallelization_list = init_mask_label_image(
+        zarr_urls=image_list,
+        zarr_dir=test_data_dir,
+        label_name='Label A',
+        mask_name='Label D',
+        output_label_image_name="0"
+    )
+
+    zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
+    init_args = parallelization_list['parallelization_list'][0]['init_args']
+
+    mask_label_image(
+        zarr_url=zarr_url,
+        init_args=init_args,
         output_label_name='masked_label',
         level=0,
         overwrite=True
     )
+
+    # assert whether the clipped label image was created
+    masked_label_path = Path(zarr_url).joinpath("labels/masked_label/0")
+    assert masked_label_path.exists(),\
+        f"Masked label image not found at {masked_label_path}"
 
 @pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
 def test_segment_secondary_objects(test_data_dir, image_list):
@@ -285,6 +303,7 @@ def test_illumination_correction(test_data_dir, image_list):
     apply_basicpy_illumination_models(
         zarr_url=image_list[0],
         illumination_profiles_folder=test_data_dir,
+        illumination_exceptions=[],
         overwrite_input=False,
     )
 
@@ -306,19 +325,47 @@ def test_convert_channel_to_label(test_data_dir, component):
         overwrite=True
     )
 
-@pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
-def test_filter_label_by_size(test_data_dir, component):
-    filter_label_by_size(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        metadata={},
-        component=component,
+
+@pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
+def test_filter_label_by_size(test_data_dir, image_list):
+
+    image_list = [f"{test_data_dir}/{i}" for i in image_list]
+
+    parallelization_list = init_filter_label_by_size(
+        zarr_urls=image_list,
+        zarr_dir=test_data_dir,
         label_name='Label A',
+        output_label_image_name="0"
+    )
+
+    zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
+    init_args = parallelization_list['parallelization_list'][0]['init_args']
+
+    filter_label_by_size(
+        zarr_url=zarr_url,
+        init_args=init_args,
         output_label_name='filtered_label',
         min_size=10,
-        max_size=100,
+        max_size=50,
+        level=0,
         overwrite=True
     )
+
+    # assert whether the clipped label image was created
+    filtered_label_path = Path(zarr_url).joinpath("labels/filtered_label/0")
+    assert filtered_label_path.exists(),\
+        f"Clipped label image not found at {filtered_label_path}"
+
+    # assert whether filtered label image contains fewer objects
+    label = da.from_zarr(Path(
+        init_args["label_zarr_url"]).joinpath("labels/Label A/0"))
+    filtered_label = da.from_zarr(filtered_label_path)
+
+    print(label.max(), filtered_label.max())
+
+    assert filtered_label.max() < label.max(), \
+        (f"Filtered label image does not contain less objects "
+         f"than original label image")
 
 @pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
 def test_label_assignment_by_overlap(test_data_dir, image_list):
@@ -600,15 +647,16 @@ def test_IC6000_conversion(test_data_dir):
     )
 
 
+@pytest.mark.parametrize("image_list", [IMAGE_LIST_2D])
+def test_multiplexed_pixel_clustering(test_data_dir, image_list):
 
-def test_multiplexed_pixel_clustering(test_data_dir):
+    image_list = [f"{test_data_dir}/{i}" for i in image_list]
+
     multiplexed_pixel_clustering(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        metadata={},
+        zarr_urls=image_list,
         label_image_name='Label A',
         channels_to_use=['0_DAPI', '0_GFP', '1_GFP'],
-        well_names=['A/2', 'B/3'],
+        well_names=['A2', 'B3'],
         som_shape=(10, 10),
         phenograph_neighbours=15,
         enforce_equal_object_count=True,
@@ -619,61 +667,65 @@ def test_multiplexed_pixel_clustering(test_data_dir):
         overwrite=True
     )
 
+    # assert that output table was created
+    mcu_table_path = Path(image_list[0]).parents[2].joinpath("tables/mcu_table")
+    assert mcu_table_path.exists(),\
+        f"MCU table not found at {mcu_table_path}"
+
+    # assert that the mcu label image was created
+    mcu_label_path = Path(image_list[0]).parent.joinpath("0/labels/mcu_label/0")
+    assert mcu_label_path.exists(),\
+        f"MCU label image not found at {mcu_label_path}"
+
 
 def test_stitch_fovs_with_overlap(test_data_dir):
 
-    create_ome_zarr_multiplex_IC6000(
-        input_paths=[
-            Path(test_data_dir).joinpath("IC6000_data/cycle_0").as_posix(),
-            Path(test_data_dir).joinpath("IC6000_data/cycle_1").as_posix()],
-        output_path=Path(test_data_dir).joinpath("IC6000_data").as_posix(),
-        metadata={},
-        allowed_channels={'0': [OmeroChannel(label='0_DAPI',
-                                             wavelength_id='UV - DAPI'),
-                                OmeroChannel(label='0_GFP',
-                                             wavelength_id='Blue - FITC'),
-                                OmeroChannel(label='0_RFP',
-                                             wavelength_id='Green - dsRed'),
-                                OmeroChannel(label='0_FR',
-                                             wavelength_id='Red - Cy5')],
-                          '1': [OmeroChannel(label='1_DAPI',
-                                             wavelength_id='UV - DAPI'),
-                                OmeroChannel(label='1_GFP',
-                                             wavelength_id='Blue - FITC'),
-                                OmeroChannel(label='1_RFP',
-                                             wavelength_id='Green - dsRed'),
-                                OmeroChannel(label='1_FR',
-                                             wavelength_id='Red - Cy5')
-                                ]
-                          },
+    parallelization_list = init_convert_IC6000_to_ome_zarr(
+        zarr_urls=[],
+        zarr_dir=test_data_dir,
+        acquisitions={"0":
+            MultiplexingAcquisition(
+                image_dir=Path(test_data_dir).joinpath(
+                    "IC6000_data/cycle_0").as_posix(),
+                allowed_channels=[
+                    OmeroChannel(label='0_DAPI',
+                                 wavelength_id='UV - DAPI'),
+                    OmeroChannel(label='0_GFP',
+                                 wavelength_id='Blue - FITC'),
+                    OmeroChannel(label='0_RFP',
+                                 wavelength_id='Green - dsRed'),
+                    OmeroChannel(label='0_FR',
+                                 wavelength_id='Red - Cy5')]),
+            "1":
+                MultiplexingAcquisition(
+                    image_dir=Path(test_data_dir).joinpath(
+                        "IC6000_data/cycle_1").as_posix(),
+                    allowed_channels=[
+                        OmeroChannel(label='1_DAPI',
+                                     wavelength_id='UV - DAPI'),
+                        OmeroChannel(label='1_GFP',
+                                     wavelength_id='Blue - FITC'),
+                        OmeroChannel(label='1_RFP',
+                                     wavelength_id='Green - dsRed'),
+                        OmeroChannel(label='1_FR',
+                                     wavelength_id='Red - Cy5')])},
         image_glob_patterns=None,
         num_levels=5,
         coarsening_xy=2,
         image_extension='tif',
-        overwrite=True
+        overwrite=True,
     )
 
-    IC6000_to_ome_zarr(
-        input_paths=[Path(test_data_dir).joinpath("IC6000_data").as_posix()],
-        output_path=Path(test_data_dir).joinpath("IC6000_data").as_posix(),
-        component="test_plate.zarr/C/03/0",
-        metadata={
-            'original_paths': [
-                Path(test_data_dir).joinpath("IC6000_data",
-                                             "cycle_0").as_posix(),
-                Path(test_data_dir).joinpath("IC6000_data",
-                                             "cycle_1").as_posix()
-            ],
-            'image_extension': 'tif',
-            'image_glob_patterns': None,
-        },
-        overwrite=True
+    zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
+    init_args = parallelization_list['parallelization_list'][0]['init_args']
+
+    convert_IC6000_to_ome_zarr(
+        zarr_url=zarr_url,
+        init_args=init_args,
     )
+
     stitch_fovs_with_overlap(
-        input_paths=[Path(test_data_dir).joinpath("IC6000_data").as_posix()],
-        output_path=Path(test_data_dir).joinpath("IC6000_data").as_posix(),
-        component="test_plate.zarr/C/03/0",
-        metadata={},
+        zarr_url=f"{test_data_dir}/test_plate.zarr/C/03/0",
         overlap=0.1,
         filter_sigma=10
     )

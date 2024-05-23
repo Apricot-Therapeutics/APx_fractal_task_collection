@@ -24,7 +24,7 @@ def group_by_well(zarr_urls: list[str]):
     """
     well_dict = {}
     for zarr_url in zarr_urls:
-        well_id = str(Path(zarr_url).parent)
+        well_id = zarr_url.rsplit("/", 1)[0]
 
         if well_id not in well_dict:
             well_dict[well_id] = [zarr_url]

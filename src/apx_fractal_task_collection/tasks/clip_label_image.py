@@ -15,15 +15,12 @@
 # Zurich.
 
 import logging
-from pathlib import Path
-from typing import Any, Dict, Sequence
 
 import dask.array as da
 import fractal_tasks_core
 import numpy as np
 import zarr
 
-from apx_fractal_task_collection.utils import get_label_image_from_well
 from apx_fractal_task_collection.io_models import InitArgsClipLabelImage
 from fractal_tasks_core.labels import prepare_label_group
 from fractal_tasks_core.utils import rescale_datasets
@@ -165,7 +162,7 @@ def clip_label_image(  # noqa: C901
     # Starting from on-disk highest-resolution data, build and write to disk a
     # pyramid of coarser levels
     build_pyramid(
-        zarrurl=f"{zarr_url}/labels/{output_label_name}",
+        zarrurl=out.rsplit("/", 1)[0],
         overwrite=overwrite,
         num_levels=num_levels,
         coarsening_xy=coarsening_xy,

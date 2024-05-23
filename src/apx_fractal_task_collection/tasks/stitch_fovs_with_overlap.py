@@ -12,8 +12,6 @@ import logging
 import itertools
 from pathlib import Path
 import tempfile
-from typing import Any
-from typing import Sequence
 
 import dask.array as da
 import numpy as np
@@ -30,11 +28,8 @@ logger = logging.getLogger(__name__)
 @validate_arguments
 def stitch_fovs_with_overlap(
     *,
-    # Standard arguments
-    input_paths: Sequence[str],
-    output_path: str,
-    component: str,
-    metadata: dict[str, Any],
+    # Default arguments for fractal tasks:
+    zarr_url: str,
     # Task-specific arguments
     overlap: float = 0.1,
     filter_sigma: float = 10
@@ -44,35 +39,20 @@ def stitch_fovs_with_overlap(
     Stitches FOVs with overlap using ASHLAR (https://github.com/labsyspharm/ashlar).
 
     Args:
-        input_paths: List of input paths where the image data is stored as
-            OME-Zarrs. Should point to the parent folder containing one or many
-            OME-Zarr files, not the actual OME-Zarr file. Example:
-            `["/some/path/"]`. This task only supports a single input path.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        output_path: Path were the output of this task is stored. Examples:
-            `"/some/path/"` => puts the new OME-Zarr file in the same folder as
-            the input OME-Zarr file; `"/some/new_path"` => puts the new
-            OME-Zarr file into a new folder at `/some/new_path`.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        component: Path to the OME-Zarr image in the OME-Zarr plate that is
-            processed. Example: `"some_plate.zarr/B/03/0"`.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        metadata: This parameter is not used by this task.
+        zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
         overlap: The overlap between FOVs in percent (0-1).
         filter_sigma: The sigma of the Gaussian filter used to filter the
             FOVs for stitching. Can help to improve the stitching performance.
     """
-    in_path = Path(input_paths[0])
-    zarrurl = in_path.joinpath(component)
 
     # get pixel size
-    ngff_image_meta = load_NgffImageMeta(zarrurl)
+    ngff_image_meta = load_NgffImageMeta(zarr_url)
     pixel_size_yx = ngff_image_meta.get_pixel_sizes_zyx(level=0)[-1]
     num_levels = ngff_image_meta.num_levels
     coarsening_xy = ngff_image_meta.coarsening_xy
 
-    data_czyx = da.from_zarr(zarrurl.joinpath('0'))
+    data_czyx = da.from_zarr(f"{zarr_url}/0")
 
     height = data_czyx.blocks.shape[-2]
     width = data_czyx.blocks.shape[-1]
@@ -152,7 +132,7 @@ def stitch_fovs_with_overlap(
 
     # Write to disk
     data_czyx_out.to_zarr(
-        url=zarrurl.joinpath('0'),
+        url=f"{zarr_url}/0",
         compute=True,
         overwrite=True,
         dimension_separator="/"
@@ -161,7 +141,7 @@ def stitch_fovs_with_overlap(
     logger.info("build pyramids")
 
     build_pyramid(
-        zarrurl=zarrurl,
+        zarrurl=zarr_url,
         overwrite=True,
         num_levels=num_levels,
         coarsening_xy=coarsening_xy,

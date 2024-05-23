@@ -108,6 +108,43 @@ class InitArgsClipLabelImage(BaseModel):
     clipping_mask_zarr_url: str
 
 
+class InitArgsMaskLabelImage(BaseModel):
+    """
+
+    Arguments to be passed from Mask Label Image init to compute
+
+    Attributes:
+        label_name: Name of the label image to be masked.
+            Needs to exist in OME-Zarr file.
+        label_zarr_url: Zarr url indicating the zarr image containing the
+            label image.
+        mask_name: Name of the label image used as mask.
+            This image will be binarized. Needs to exist in OME-Zarr file.
+        mask_zarr_url: Zarr url indicating the zarr image containing
+            the mask image.
+    """
+
+    label_name: str
+    label_zarr_url: str
+    mask_name: str
+    mask_zarr_url: str
+
+
+class InitArgsFilterLabelBySize(BaseModel):
+    """
+
+    Arguments to be passed from Filter Label by Size init to compute
+
+    Attributes:
+        label_name: Name of the label image to be filtered by size.
+            Needs to exist in OME-Zarr file.
+        label_zarr_url: Zarr url indicating the zarr image containing the
+            label image.
+    """
+
+    label_name: str
+    label_zarr_url: str
+
 class InitArgsBaSiCPyCalculate(BaseModel):
     """
 

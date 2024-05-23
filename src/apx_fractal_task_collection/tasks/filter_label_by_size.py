@@ -13,16 +13,13 @@ import zarr
 import numpy as np
 import dask.array as da
 
-from typing import Any
-from typing import Sequence
 from typing import Optional
 from skimage.morphology import remove_small_objects
-from pathlib import Path
 from skimage.morphology import label
 from pydantic.decorator import validate_arguments
 
 
-from apx_fractal_task_collection.utils import get_label_image_from_well
+from apx_fractal_task_collection.io_models import InitArgsFilterLabelBySize
 
 import fractal_tasks_core
 from fractal_tasks_core.utils import rescale_datasets
@@ -56,58 +53,43 @@ def remove_large_objects(img, max_size):
 @validate_arguments
 def filter_label_by_size(
     *,
-    # Standard arguments
-    input_paths: Sequence[str],
-    output_path: str,
-    metadata: dict[str, Any],
-    component: str,
+    # Default arguments for fractal tasks:
+    zarr_url: str,
+    init_args: InitArgsFilterLabelBySize,
     # Task-specific arguments
-    label_name: str,
-    output_label_name: Optional[str] = None,
+    output_label_name: str,
     min_size: Optional[int] = None,
     max_size: Optional[int] = None,
-    overwrite: bool = False,
+    level: int = 0,
+    overwrite: bool = True,
 ) -> None:
 
     """
     Filter objects in a label image by size.
 
     Args:
-        input_paths: List of input paths where the image data is stored as
-            OME-Zarrs. Should point to the parent folder containing one or many
-            OME-Zarr files, not the actual OME-Zarr file. Example:
-            `["/some/path/"]`. This task only supports a single input path.
+        zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
-        output_path: Path were the output of this task is stored. Examples:
-            `"/some/path/"` => puts the new OME-Zarr file in the same folder as
-            the input OME-Zarr file; `"/some/new_path"` => puts the new
-            OME-Zarr file into a new folder at `/some/new_path`.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        metadata: This parameter is not used by this task.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        component: Path to the OME-Zarr image in the OME-Zarr plate that is
-            processed. Example: `"some_plate.zarr/B/03/0"`
-            (standard argument for Fractal tasks, managed by Fractal server).
-        label_name: Name of the label image in the OME-Zarr file.
-        output_label_name: Name of the output label image. If None, the input
-            label image is overwritten.
+        init_args: Intialization arguments provided by
+            `init_filter_label_by_size`.
+        output_label_name: Name of the output label image.
         min_size: Minimum size of objects to keep. If None, no minimum size
             filter is applied.
         max_size: Maximum size of objects to keep. If None, no maximum size
             filter is applied.
+        level: Resolution of the label image.
+            Only tested for level 0.
+        overwrite: If True, overwrite existing label image.
     """
-    logger.info(f"Filtering label image '{label_name}' by size.")
-    in_path = Path(input_paths[0])
-    zarrurl = in_path.joinpath(component)
+    logger.info(f"Filtering label image '{init_args.label_name}' by size.")
+    label_image = da.from_zarr(f"{zarr_url}/labels/"
+                               f"{init_args.label_name}/{level}")
 
-    data_zyx, img_zarr_path = get_label_image_from_well(
-        zarrurl, label_name, level=0)
-
-    ngff_image_meta = load_NgffImageMeta(img_zarr_path)
+    ngff_image_meta = load_NgffImageMeta(zarr_url)
     num_levels = ngff_image_meta.num_levels
     coarsening_xy = ngff_image_meta.coarsening_xy
 
-    label_img = data_zyx.compute()
+    label_img = label_image.compute()
     if min_size is not None:
         logger.info(f"Removing objects smaller than {min_size} pixels")
         label_img = remove_small_objects(label_img, min_size=min_size)
@@ -116,118 +98,107 @@ def filter_label_by_size(
         label_img = remove_large_objects(label_img, max_size=max_size)
 
     # relabel to preserve consecutive labels
-    label_img = label(label_img)
+    new_label_image = label(label_img)
 
-    if output_label_name == label_name or output_label_name is None:
+    if output_label_name == init_args.label_name:
 
         logger.info(f"Overwriting label image '{label_name}' "
                     f"with size filtered image.")
-
-        out_path = img_zarr_path.joinpath(f'labels/{label_name}/0')
-
-        out_zarr = zarr.create(
-            shape=data_zyx.shape,
-            chunks=data_zyx.chunksize,
-            dtype=data_zyx.dtype,
-            store=out_path,
-            overwrite=overwrite,
-            dimension_separator="/",
-        )
-
-        # Write to disk
-        da.array(label_img).to_zarr(
-            url=out_zarr,
-            compute=True,
-            overwrite=overwrite
-        )
-
-        # Starting from on-disk highest-resolution data, build and write
-        # to disk a pyramid of coarser levels
-
-        build_pyramid(
-            zarrurl=out_path.parent,
-            overwrite=overwrite,
-            num_levels=num_levels,
-            coarsening_xy=coarsening_xy,
-            aggregation_function=np.max,
-        )
 
     else:
 
         logger.info(f"Creating new label image '{output_label_name}'")
 
-        # Rescale datasets (only relevant for level>0)
-        if ngff_image_meta.axes_names[0] != "c":
-            raise ValueError(
-                "Cannot set `remove_channel_axis=True` for multiscale "
-                f"metadata with axes={ngff_image_meta.axes_names}. "
-                'First axis should have name "c".'
-            )
-        new_datasets = rescale_datasets(
-            datasets=[ds.dict() for ds in ngff_image_meta.datasets],
-            coarsening_xy=coarsening_xy,
-            reference_level=0,
-            remove_channel_axis=True,
+    # Rescale datasets (only relevant for level>0)
+    if ngff_image_meta.axes_names[0] != "c":
+        raise ValueError(
+            "Cannot set `remove_channel_axis=True` for multiscale "
+            f"metadata with axes={ngff_image_meta.axes_names}. "
+            'First axis should have name "c".'
         )
+    new_datasets = rescale_datasets(
+        datasets=[ds.dict() for ds in ngff_image_meta.datasets],
+        coarsening_xy=coarsening_xy,
+        reference_level=0,
+        remove_channel_axis=True,
+    )
 
-        label_attrs = {
-            "image-label": {
+    label_attrs = {
+        "image-label": {
+            "version": __OME_NGFF_VERSION__,
+            "source": {"image": "../../"},
+        },
+        "multiscales": [
+            {
+                "name": output_label_name,
                 "version": __OME_NGFF_VERSION__,
-                "source": {"image": "../../"},
-            },
-            "multiscales": [
-                {
-                    "name": output_label_name,
-                    "version": __OME_NGFF_VERSION__,
-                    "axes": [
-                        ax.dict()
-                        for ax in ngff_image_meta.multiscale.axes
-                        if ax.type != "channel"
-                    ],
-                    "datasets": new_datasets,
-                }
-            ],
-        }
+                "axes": [
+                    ax.dict()
+                    for ax in ngff_image_meta.multiscale.axes
+                    if ax.type != "channel"
+                ],
+                "datasets": new_datasets,
+            }
+        ],
+    }
 
-        image_group = zarr.group(img_zarr_path)
-        label_group = prepare_label_group(
-            image_group,
-            output_label_name,
-            overwrite=overwrite,
-            label_attrs=label_attrs,
-            logger=logger,
-        )
+    image_group = zarr.group(zarr_url)
+    label_group = prepare_label_group(
+        image_group,
+        output_label_name,
+        overwrite=overwrite,
+        label_attrs=label_attrs,
+        logger=logger,
+    )
 
-        label_url = img_zarr_path.joinpath(f'labels/{output_label_name}/0')
-        store = zarr.storage.FSStore(img_zarr_path.joinpath(f'labels/{output_label_name}/0').as_posix())
-        label_dtype = np.uint32
+    logger.info(
+        f"Helper function `prepare_label_group` returned {label_group=}"
+    )
+    out = f"{zarr_url}/labels/{output_label_name}/0"
+    logger.info(f"Output label path: {out}")
+    store = zarr.storage.FSStore(str(out))
+    label_dtype = np.uint32
 
-        label_zarr = zarr.create(
-            shape=data_zyx.shape,
-            chunks=data_zyx.chunksize,
-            dtype=label_dtype,
-            store=store,
-            overwrite=overwrite,
-            dimension_separator="/",
-        )
+    shape = label_image.shape
+    if len(shape) == 2:
+        shape = (1, *shape)
+    chunks = label_image.chunksize
+    if len(chunks) == 2:
+        chunks = (1, *chunks)
+    mask_zarr = zarr.create(
+        shape=shape,
+        chunks=chunks,
+        dtype=label_dtype,
+        store=store,
+        overwrite=overwrite,
+        dimension_separator="/",
+    )
 
-        # Write to disk
-        da.array(label_img).to_zarr(
-            url=label_zarr,
-            compute=True,
-            overwrite=overwrite
-        )
+    logger.info(
+        f"mask will have shape {label_image.shape} "
+        f"and chunks {label_image.chunks}"
+    )
 
-        # Starting from on-disk highest-resolution data, build and write to disk a
-        # pyramid of coarser levels
+    # Compute and store 0-th level to disk
+    da.array(new_label_image).to_zarr(
+        url=mask_zarr,
+        compute=True,
+    )
 
-        build_pyramid(
-            zarrurl=label_url.parent,
-            overwrite=overwrite,
-            num_levels=num_levels,
-            coarsening_xy=coarsening_xy,
-            aggregation_function=np.max,
-        )
+    logger.info(
+        f"Size filtering done for {out}."
+        "now building pyramids."
+    )
+
+    # Starting from on-disk highest-resolution data, build and write to disk a
+    # pyramid of coarser levels
+    build_pyramid(
+        zarrurl=out.rsplit("/", 1)[0],
+        overwrite=overwrite,
+        num_levels=num_levels,
+        coarsening_xy=coarsening_xy,
+        aggregation_function=np.max,
+    )
 
 if __name__ == "__main__":
     from fractal_tasks_core.tasks._utils import run_fractal_task

@@ -17,7 +17,7 @@ TASK_LIST = [
         meta={"cpus_per_task": 1, "mem": 3750},
     ),
     CompoundTask(
-        name="Convert IC600 to OME-Zarr",
+        name="Convert IC6000 to OME-Zarr",
         executable_init="tasks/init_convert_IC6000_to_ome_zarr.py",
         executable="tasks/convert_IC6000_to_ome_zarr.py",
         meta={"cpus_per_task": 1, "mem": 3750},
@@ -35,6 +35,18 @@ TASK_LIST = [
         meta={"cpus_per_task": 1, "mem": 3750},
     ),
     CompoundTask(
+        name="Mask Label Image",
+        executable_init="tasks/init_mask_label_image.py",
+        executable="tasks/mask_label_image.py",
+        meta={"cpus_per_task": 1, "mem": 3750},
+    ),
+    CompoundTask(
+        name="Filter Label by Size",
+        executable_init="tasks/init_filter_label_by_size.py",
+        executable="tasks/filter_label_by_size.py",
+        meta={"cpus_per_task": 1, "mem": 3750},
+    ),
+    CompoundTask(
         name="Calculate BaSiCPy Illumination Models",
         executable_init="tasks/init_calculate_basicpy_illumination_models.py",
         executable="tasks/calculate_basicpy_illumination_models.py",
@@ -42,13 +54,27 @@ TASK_LIST = [
     ),
     ParallelTask(
         name="Apply BaSiCPy Illumination Models",
+        input_types=dict(illumination_corrected=False),
         executable="tasks/apply_basicpy_illumination_models.py",
+        output_types=dict(illumination_corrected=True),
         meta={"cpus_per_task": 1, "mem": 3750},
     ),
     CompoundTask(
         name="Aggregate Feature Tables",
         executable_init="tasks/init_aggregate_feature_tables.py",
         executable="tasks/aggregate_feature_tables.py",
+        meta={"cpus_per_task": 1, "mem": 3750},
+    ),
+    ParallelTask(
+        name="Stitch FOVs with Overlap",
+        input_types=dict(stitched=False),
+        executable="tasks/stitch_fovs_with_overlap.py",
+        output_types=dict(stitched=True),
+        meta={"cpus_per_task": 1, "mem": 3750},
+    ),
+    NonParallelTask(
+        name="Multiplexed Pixel Clustering",
+        executable="tasks/multiplexed_pixel_clustering.py",
         meta={"cpus_per_task": 1, "mem": 3750},
     ),
 ]

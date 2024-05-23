@@ -77,7 +77,9 @@ def correct(
     new_img_stack = (img_stack - darkfield) / flatfield [None, None, :, :]
 
     # Background subtraction
-    new_img_stack = np.where(new_img_stack > baseline, new_img_stack - baseline, 0,)
+    new_img_stack = np.where(new_img_stack > baseline,
+                             new_img_stack - baseline,
+                             0)
 
     # Handle edge case: corrected image may have values beyond the limit of
     # the encoding, e.g. beyond 65535 for 16bit images. This clips values
@@ -102,6 +104,7 @@ def apply_basicpy_illumination_models(
     zarr_url: str,
     # Task-specific arguments
     illumination_profiles_folder: str,
+    illumination_exceptions: list[str],
     input_ROI_table: str = "FOV_ROI_table",
     overwrite_input: bool = True,
     suffix: str = "_illum_corr",
@@ -114,7 +117,9 @@ def apply_basicpy_illumination_models(
         zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
         illumination_profiles_folder: Path of folder of illumination profiles.
-       input_ROI_table: Name of the ROI table that contains the information
+        illumination_exceptions: List of channel labels that should not be
+            corrected.
+        input_ROI_table: Name of the ROI table that contains the information
             about the location of the individual field of views (FOVs) to
             which the illumination correction shall be applied. Defaults to
             "FOV_ROI_table", the default name Fractal converters give the ROI
@@ -159,6 +164,9 @@ def apply_basicpy_illumination_models(
     channels: list[OmeroChannel] = get_omero_channel_list(
         image_zarr_path=zarr_url
     )
+    # Filter out channels that should not be corrected
+    channels = [c for c in channels if c.label not in illumination_exceptions]
+
     num_channels = len(channels)
 
     # Read FOV ROIs
