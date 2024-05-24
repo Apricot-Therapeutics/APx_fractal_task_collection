@@ -23,19 +23,22 @@ from apx_fractal_task_collection.tasks.calculate_basicpy_illumination_models imp
 from apx_fractal_task_collection.tasks.init_calculate_basicpy_illumination_models import init_calculate_basicpy_illumination_models
 from apx_fractal_task_collection.tasks.apply_basicpy_illumination_models import apply_basicpy_illumination_models
 from apx_fractal_task_collection.tasks.convert_channel_to_label import convert_channel_to_label
+from apx_fractal_task_collection.tasks.init_convert_channel_to_label import init_convert_channel_to_label
 from apx_fractal_task_collection.tasks.filter_label_by_size import filter_label_by_size
 from apx_fractal_task_collection.tasks.init_filter_label_by_size import init_filter_label_by_size
 from apx_fractal_task_collection.tasks.init_label_assignment_by_overlap import init_label_assignment_by_overlap
 from apx_fractal_task_collection.tasks.label_assignment_by_overlap import label_assignment_by_overlap
 from apx_fractal_task_collection.tasks.aggregate_feature_tables import aggregate_feature_tables
 from apx_fractal_task_collection.tasks.init_aggregate_feature_tables import init_aggregate_feature_tables
-from apx_fractal_task_collection.tasks.chromatic_shift_correction import chromatic_shift_correction
+from apx_fractal_task_collection.tasks.correct_chromatic_shift import correct_chromatic_shift
+from apx_fractal_task_collection.tasks.init_correct_chromatic_shift import init_correct_chromatic_shift
 from apx_fractal_task_collection.tasks.compress_zarr_for_visualization import compress_zarr_for_visualization
 from apx_fractal_task_collection.tasks.init_convert_IC6000_to_ome_zarr import init_convert_IC6000_to_ome_zarr
 from apx_fractal_task_collection.tasks.convert_IC6000_to_ome_zarr import convert_IC6000_to_ome_zarr
 from apx_fractal_task_collection.tasks.multiplexed_pixel_clustering import multiplexed_pixel_clustering
 from apx_fractal_task_collection.tasks.stitch_fovs_with_overlap import stitch_fovs_with_overlap
 from apx_fractal_task_collection.tasks.detect_blob_centroids import detect_blob_centroids
+from apx_fractal_task_collection.tasks.init_detect_blob_centroids import init_detect_blob_centroids
 from apx_fractal_task_collection.tasks.mask_label_image import mask_label_image
 from apx_fractal_task_collection.tasks.init_mask_label_image import init_mask_label_image
 from apx_fractal_task_collection.tasks.calculate_registration_image_based_chi_squared_shift import calculate_registration_image_based_chi_squared_shift
@@ -261,25 +264,40 @@ def test_segment_secondary_objects(test_data_dir, image_list):
     assert label_path.exists(), \
         f"label image not found at {label_path}"
 
-@pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
-def test_detect_blob_centroids(test_data_dir, component):
+
+@pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
+def test_detect_blob_centroids(test_data_dir, image_list):
+
+    image_list = [f"{test_data_dir}/{i}" for i in image_list]
+
+    parallelization_list = init_detect_blob_centroids(
+        zarr_urls=image_list,
+        zarr_dir=test_data_dir,
+        channel_label='0_DAPI',
+        output_label_image_name="0",
+    )
+
+    zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
+    init_args = parallelization_list['parallelization_list'][0]['init_args']
+
     detect_blob_centroids(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        component=component,
-        metadata={},
-        channel=ChannelInputModel(label='0_DAPI', wavelength_id=None),
+        zarr_url=zarr_url,
+        init_args=init_args,
         ROI_table_name='FOV_ROI_table',
         min_sigma=1,
         max_sigma=10,
         num_sigma=1,
         threshold=0.002,
-        output_label_cycle=0,
         output_label_name='blobs_centroids',
         level=0,
         relabeling=True,
         overwrite=True
     )
+
+    # assert whether the label image was created
+    label_path = Path(zarr_url).joinpath("labels/blobs_centroids")
+    assert label_path.exists(), \
+        f"label image not found at {label_path}"
 
 @pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
 def test_illumination_correction(test_data_dir, image_list):
@@ -312,18 +330,32 @@ def test_illumination_correction(test_data_dir, image_list):
     assert corrected_image_path.exists(),\
         f"Corrected image not found at {corrected_image_path}"
 
-@pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
-def test_convert_channel_to_label(test_data_dir, component):
-    convert_channel_to_label(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        component=component,
-        metadata={},
+@pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
+def test_convert_channel_to_label(test_data_dir, image_list):
+
+    image_list = [f"{test_data_dir}/{i}" for i in image_list]
+
+    parallelization_list = init_convert_channel_to_label(
+        zarr_urls=image_list,
+        zarr_dir=test_data_dir,
         channel_label='0_DAPI',
+        output_label_image_name="0",
+    )
+
+    zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
+    init_args = parallelization_list['parallelization_list'][0]['init_args']
+
+    convert_channel_to_label(
+        zarr_url=zarr_url,
+        init_args=init_args,
         output_label_name='DAPI',
-        output_cycle=0,
         overwrite=True
     )
+
+    # assert whether the label image was created
+    label_path = Path(zarr_url).joinpath("labels/DAPI")
+    assert label_path.exists(), \
+        f"label image not found at {label_path}"
 
 
 @pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
@@ -549,19 +581,34 @@ def test_aggregate_tables_to_well_level(test_data_dir, image_list):
     assert feature_table_path.exists(),\
         f"Feature table not found at {feature_table_path}"
 
-@pytest.mark.parametrize("component", [IMAGE_COMPONENT_2D, IMAGE_COMPONENT_3D])
-def test_chromatic_shift_correction(test_data_dir, component):
-    chromatic_shift_correction(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        metadata={},
-        component=component,
-        correction_channel_labels=['0_DAPI', '0_GFP'],
-        reference_channel_label='0_DAPI'
+@pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
+def test_correct_chromatic_shift(test_data_dir, image_list):
+
+    image_list = [f"{test_data_dir}/{i}" for i in image_list]
+
+    parallelization_list = init_correct_chromatic_shift(
+        zarr_urls=image_list,
+        zarr_dir=test_data_dir,
+        reference_zarr_image="0",
+        reference_channel_label='0_DAPI',
+    )
+
+    zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
+    init_args = parallelization_list['parallelization_list'][0]['init_args']
+    print(f"zarr_url is {zarr_url}")
+    correct_chromatic_shift(
+        zarr_url=zarr_url,
+        init_args=init_args,
+        overwrite_input=False,
     )
 
     Path(os.getcwd()).joinpath("TransformParameters.0.txt").unlink(
         missing_ok=True)
+
+    # assert that the corrected image was created
+    corrected_image_path = Path(zarr_url).parent.joinpath("0_chromatic_shift_corr")
+    assert corrected_image_path.exists(),\
+        f"Corrected image not found at {corrected_image_path}"
 
 
 @pytest.mark.parametrize("component", [IMAGE_COMPONENT_2D, IMAGE_COMPONENT_3D])
@@ -577,30 +624,30 @@ def test_registration(test_data_dir, component):
     )
 
 
-@pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
-def test_compress_zarr_for_visualization(test_data_dir, component):
-
-    copy_ome_zarr(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        metadata={'plate': 'hcs_ngff',
-                  'well': ['A/2', 'B/3'],
-                  'image': ['0', '1', '2']},
-        project_to_2D=False,
-        suffix="vis",
-        ROI_table_names=("well_ROI_table", "FOV_ROI_table")
-    )
-
-    compress_zarr_for_visualization(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        metadata={'plate': 'hcs_ngff',
-                  'copy_ome_zarr': {'suffix': 'vis'}},
-        component=component,
-        output_zarr_path=Path(test_data_dir).joinpath(
-            "hcs_ngff_vis.zarr").as_posix(),
-        overwrite=True
-    )
+# @pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
+# def test_compress_zarr_for_visualization(test_data_dir, component):
+#
+#     copy_ome_zarr(
+#         input_paths=[test_data_dir],
+#         output_path=test_data_dir,
+#         metadata={'plate': 'hcs_ngff',
+#                   'well': ['A/2', 'B/3'],
+#                   'image': ['0', '1', '2']},
+#         project_to_2D=False,
+#         suffix="vis",
+#         ROI_table_names=("well_ROI_table", "FOV_ROI_table")
+#     )
+#
+#     compress_zarr_for_visualization(
+#         input_paths=[test_data_dir],
+#         output_path=test_data_dir,
+#         metadata={'plate': 'hcs_ngff',
+#                   'copy_ome_zarr': {'suffix': 'vis'}},
+#         component=component,
+#         output_zarr_path=Path(test_data_dir).joinpath(
+#             "hcs_ngff_vis.zarr").as_posix(),
+#         overwrite=True
+#     )
 
 def test_IC6000_conversion(test_data_dir):
 
@@ -647,7 +694,7 @@ def test_IC6000_conversion(test_data_dir):
     )
 
 
-@pytest.mark.parametrize("image_list", [IMAGE_LIST_2D])
+@pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
 def test_multiplexed_pixel_clustering(test_data_dir, image_list):
 
     image_list = [f"{test_data_dir}/{i}" for i in image_list]
@@ -727,8 +774,15 @@ def test_stitch_fovs_with_overlap(test_data_dir):
     stitch_fovs_with_overlap(
         zarr_url=f"{test_data_dir}/test_plate.zarr/C/03/0",
         overlap=0.1,
-        filter_sigma=10
+        filter_sigma=10,
+        overwrite_input=False,
     )
+
+    # assert whether stitched images was saved in a new zarr image
+    stitched_image_path = Path(test_data_dir).joinpath(
+        "test_plate.zarr/C/03/0_stitched")
+    assert stitched_image_path.exists(),\
+        f"Stitched image not found at {stitched_image_path}"
 
 #
 # def test_ashlar_stitching_and_registration(test_data_dir):

@@ -4,6 +4,7 @@ from typing import Optional
 from pydantic import BaseModel
 from pydantic import Field
 from pydantic import validator
+from SimpleITK.SimpleITK import ParameterMap
 
 from fractal_tasks_core.channels import ChannelInputModel
 from fractal_tasks_core.channels import OmeroChannel
@@ -177,3 +178,52 @@ class InitArgsAggregateFeatureTables(BaseModel):
 
     """
     zarr_urls: list[str]
+
+
+class InitArgsCorrectChromaticShift(BaseModel):
+    """
+
+    Arguments to be passed from Correct Chromatic Shift init to compute
+
+    Attributes:
+        zarr_urls: list of zarr urls to be processed.
+        transformation_maps: transformation maps dictionary to be applied to
+            the images. Key is the wavelength id of the channel to be
+            corrected. Value is  another dictionary containing the
+            transformation map (value) for each ROI (key).
+
+    """
+    zarr_urls: list[str]
+    transformation_maps: dict[str, dict]
+
+
+class InitArgsConvertChannelToLabel(BaseModel):
+    """
+
+    Arguments to be passed from Convert Channel to Label init to compute
+
+    Attributes:
+        channel_label: label of the channel to convert into a label image.
+        channel_zarr_url: list of zarr urls specifying the images that
+            contain the channel and will be converted to a label image.
+
+    """
+
+    channel_label: str
+    channel_zarr_url: str
+
+
+class InitArgsDetectBlobCentroids(BaseModel):
+    """
+
+    Arguments to be passed from Convert Channel to Label init to compute
+
+    Attributes:
+        channel_label: label of the channel to convert into a label image.
+        channel_zarr_url: list of zarr urls specifying the images that
+            contain the channel and will be converted to a label image.
+
+    """
+
+    channel_label: str
+    channel_zarr_url: str

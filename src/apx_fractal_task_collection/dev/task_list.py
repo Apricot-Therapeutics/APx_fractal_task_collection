@@ -77,4 +77,24 @@ TASK_LIST = [
         executable="tasks/multiplexed_pixel_clustering.py",
         meta={"cpus_per_task": 1, "mem": 3750},
     ),
+    CompoundTask(
+        name="Correct Chromatic Shift",
+        input_types=dict(chromatic_shift_corrected=False),
+        executable_init="tasks/init_correct_chromatic_shift.py",
+        executable="tasks/correct_chromatic_shift.py",
+        output_types=dict(chromatic_shift_corrected=True),
+        meta={"cpus_per_task": 1, "mem": 3750},
+    ),
+    CompoundTask(
+        name="Convert Channel to Label",
+        executable_init="tasks/init_convert_channel_to_label.py",
+        executable="tasks/convert_channel_to_label.py",
+        meta={"cpus_per_task": 1, "mem": 3750},
+    ),
+    CompoundTask(
+        name="Detect Blob Centroids",
+        executable_init="tasks/init_detect_blob_centroids.py",
+        executable="tasks/detect_blob_centroids.py",
+        meta={"cpus_per_task": 1, "mem": 3750},
+    ),
 ]

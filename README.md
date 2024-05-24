@@ -34,6 +34,5 @@ Please note that all tasks pass basic tests based on 2D and 3D OME-ZARR files. H
 | Measure Features | Measures features for a given label image. Currently, four feature sets are available: intensity featues, morphology features, population context features and texture features (Haralick and Law's Texture Energy). |☑️|☑️|☑️|✖️|
 | Label Assignment by Overlap | Assigns child labels to parent labels by their overlap. Relationship is saved in the observations of the feature table. |☑️|☑️|☑️|✖️|
 | Aggregate Tables to Well Level | Aggregates/Concatenates feature tables from all acquisitions. Can be saved either on the well level or in the first aqcuisition. |☑️|☑️|☑️|✖️|
-| Compress Zarr for Visualization | (EXPERIMENTAL) Strong compression of OME-Zarr file for easier visualization in napari. |☑️|☑️|☑️|✖️|
 | Multiplexed Pixel Clustering | Applies multiplexed pixel clustering to selected images. |☑️|☑️|☑️|✖️|
 

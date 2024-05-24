@@ -17,8 +17,6 @@
 """
 
 import logging
-from pathlib import Path
-from typing import Any, Dict, Sequence
 
 import dask.array as da
 import fractal_tasks_core
@@ -28,19 +26,17 @@ import anndata as ad
 from skimage.feature import blob_log
 from skimage.morphology import label
 
-from apx_fractal_task_collection.utils import (
-    get_channel_image_from_well,
-)
+from apx_fractal_task_collection.io_models import InitArgsDetectBlobCentroids
 
 from fractal_tasks_core.labels import prepare_label_group
 from fractal_tasks_core.utils import rescale_datasets
 from fractal_tasks_core.ngff import load_NgffImageMeta
 from fractal_tasks_core.pyramids import build_pyramid
-from fractal_tasks_core.channels import ChannelInputModel
 from fractal_tasks_core.roi import check_valid_ROI_indices
 from fractal_tasks_core.roi import (
     convert_ROI_table_to_indices,
 )
+from fractal_tasks_core.channels import get_channel_from_image_zarr
 
 from pydantic.decorator import validate_arguments
 
@@ -81,18 +77,14 @@ def blob_detection(intensity_image,
 def detect_blob_centroids(  # noqa: C901
     *,
     # Default arguments for fractal tasks:
-    input_paths: Sequence[str],
-    output_path: str,
-    component: str,
-    metadata: Dict[str, Any],
+    zarr_url: str,
+    init_args: InitArgsDetectBlobCentroids,
     # Task-specific arguments:
-    channel: ChannelInputModel,
     ROI_table_name: str,
     min_sigma: int = 1,
     max_sigma: int = 10,
     num_sigma: int = 3,
     threshold: float = 0.002,
-    output_label_cycle: int,
     output_label_name: str,
     level: int = 0,
     relabeling: bool = True,
@@ -103,22 +95,11 @@ def detect_blob_centroids(  # noqa: C901
     label image..
 
     Args:
-        input_paths: Path to the parent folder of the NGFF image.
-            This task only supports a single input path.
+        zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
-        output_path: This argument is not used in this task.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        component: Path of the NGFF image, relative to `input_paths[0]`.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        metadata: This argument is not used in this task.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        label_image_name: Name of the label image that contains the seeds.
-            Needs to exist in OME-Zarr file.
-        channel: Name of the intensity image used to detect blobs.
-            Needs to exist in OME-Zarr file.
+        init_args: Intialization arguments provided by
+            `init_detect_blob_centroids`.
         ROI_table_name: Name of the table containing the ROIs.
-        output_label_cycle: indicates in which acquisition to store the result.
-            If the experiment is not multiplexed, this should be always 0.
         output_label_name: Name of the output label image.
         level: Resolution of the label image to calculate overlap.
             Only tested for level 0.
@@ -127,17 +108,19 @@ def detect_blob_centroids(  # noqa: C901
         overwrite: If True, overwrite existing label image.
     """
 
-    in_path = Path(input_paths[0])
-    well_url = in_path.joinpath(component)
+    tmp_channel: OmeroChannel = get_channel_from_image_zarr(
+        image_zarr_path=init_args.channel_zarr_url,
+        wavelength_id=None,
+        label=init_args.channel_label
+    )
 
-    # update components
-    output_component = component + "/" + str(output_label_cycle)
-    data_zyx, intensity_image_path = get_channel_image_from_well(
-        well_url, channel.label, level)
+    ind_channel = tmp_channel.index
+    data_zyx = \
+        da.from_zarr(f"{init_args.channel_zarr_url}/0")[ind_channel]
 
 
     # prepare label image
-    ngff_image_meta = load_NgffImageMeta(intensity_image_path)
+    ngff_image_meta = load_NgffImageMeta(zarr_url)
     num_levels = ngff_image_meta.num_levels
     coarsening_xy = ngff_image_meta.coarsening_xy
     full_res_pxl_sizes_zyx = ngff_image_meta.get_pixel_sizes_zyx(level=0)
@@ -177,7 +160,7 @@ def detect_blob_centroids(  # noqa: C901
         ],
     }
 
-    image_group = zarr.group(in_path.joinpath(output_component))
+    image_group = zarr.group(zarr_url)
     label_group = prepare_label_group(
         image_group,
         output_label_name,
@@ -189,7 +172,7 @@ def detect_blob_centroids(  # noqa: C901
     logger.info(
         f"Helper function `prepare_label_group` returned {label_group=}"
     )
-    out = f"{output_path}/{output_component}/labels/{output_label_name}/0"
+    out = f"{zarr_url}/labels/{output_label_name}/0"
     logger.info(f"Output label path: {out}")
     store = zarr.storage.FSStore(str(out))
     label_dtype = np.uint32
@@ -215,8 +198,8 @@ def detect_blob_centroids(  # noqa: C901
     )
 
     # load ROI table
-    ROI_table = ad.read_zarr(intensity_image_path.joinpath("tables",
-                                              ROI_table_name))
+    ROI_table = ad.read_zarr(f"{init_args.channel_zarr_url}/"
+                             f"tables/{ROI_table_name}")
     # Create list of indices for 3D FOVs spanning the entire Z direction
     list_indices = convert_ROI_table_to_indices(
         ROI_table,
@@ -289,7 +272,7 @@ def detect_blob_centroids(  # noqa: C901
     # Starting from on-disk highest-resolution data, build and write to disk a
     # pyramid of coarser levels
     build_pyramid(
-        zarrurl=f"{output_path}/{output_component}/labels/{output_label_name}",
+        zarrurl=out.rsplit("/", 1)[0],
         overwrite=overwrite,
         num_levels=num_levels,
         coarsening_xy=coarsening_xy,
