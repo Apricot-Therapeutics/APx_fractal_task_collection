@@ -15,15 +15,13 @@
 # Zurich.
 
 import logging
-from pathlib import Path
-from typing import Any, Dict, Sequence
 
 import dask.array as da
 import fractal_tasks_core
 import numpy as np
 import zarr
 
-from apx_fractal_task_collection.utils import get_label_image_from_well
+from apx_fractal_task_collection.io_models import InitArgsClipLabelImage
 from fractal_tasks_core.labels import prepare_label_group
 from fractal_tasks_core.utils import rescale_datasets
 from fractal_tasks_core.ngff import load_NgffImageMeta
@@ -41,15 +39,10 @@ logger = logging.getLogger(__name__)
 def clip_label_image(  # noqa: C901
     *,
     # Default arguments for fractal tasks:
-    input_paths: Sequence[str],
-    output_path: str,
-    component: str,
-    metadata: Dict[str, Any],
+    zarr_url: str,
+    init_args: InitArgsClipLabelImage,
     # Task-specific arguments:
-    label_image_name: str,
-    clipping_mask_name: str,
     output_label_name: str,
-    output_label_cycle: int,
     level: int = 0,
     overwrite: bool = True,
 ) -> None:
@@ -61,44 +54,23 @@ def clip_label_image(  # noqa: C901
     values > 0.
 
     Args:
-        input_paths: Path to the parent folder of the NGFF image.
-            This task only supports a single input path.
+        zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
-        output_path: This argument is not used in this task.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        component: Path of the NGFF image, relative to `input_paths[0]`.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        metadata: This argument is not used in this task.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        label_image_name: Name of the label image to be clipped.
-            Needs to exist in OME-Zarr file.
-        clipping_mask_name: Name of the label image used as mask for clipping. This
-            image will be binarized. Needs to exist in OME-Zarr file.
-        output_label_cycle:  indicates in which cycle to store the result.
+        init_args: Intialization arguments provided by
+            `init_clip_label_image`.
         output_label_name: Name of the output label image.
         level: Resolution of the label image.
             Only tested for level 0.
         overwrite: If True, overwrite existing label image.
     """
-
-    # update the component for the label image if multiplexed experiment
-
-    in_path = Path(input_paths[0])
-    well_url = in_path.joinpath(component)
-
-    # load images
-    label_image, label_image_path = get_label_image_from_well(
-        well_url,
-        label_image_name,
-        level)
-
-    clipping_mask, clipping_mask_path = get_label_image_from_well(
-        well_url,
-        clipping_mask_name,
-        level)
+    # Load label image and clipping mask
+    label_image = da.from_zarr(f"{init_args.label_zarr_url}/labels/"
+                               f"{init_args.label_name}/{level}")
+    clipping_mask = da.from_zarr(f"{init_args.clipping_mask_zarr_url}/labels/"
+                                 f"{init_args.clipping_mask_name}/{level}")
 
     # prepare label image
-    ngff_image_meta = load_NgffImageMeta(label_image_path)
+    ngff_image_meta = load_NgffImageMeta(zarr_url)
     num_levels = ngff_image_meta.num_levels
     coarsening_xy = ngff_image_meta.coarsening_xy
 
@@ -136,8 +108,7 @@ def clip_label_image(  # noqa: C901
         ],
     }
 
-    image_group = zarr.group(in_path.joinpath(component,
-                                              str(output_label_cycle)))
+    image_group = zarr.group(zarr_url)
     label_group = prepare_label_group(
         image_group,
         output_label_name,
@@ -149,10 +120,7 @@ def clip_label_image(  # noqa: C901
     logger.info(
         f"Helper function `prepare_label_group` returned {label_group=}"
     )
-    out = in_path.joinpath(component,
-                                 str(output_label_cycle),
-                                 "labels",
-                                 output_label_name, '0')
+    out = f"{zarr_url}/labels/{output_label_name}/0"
     logger.info(f"Output label path: {out}")
     store = zarr.storage.FSStore(str(out))
     label_dtype = np.uint32
@@ -194,13 +162,12 @@ def clip_label_image(  # noqa: C901
     # Starting from on-disk highest-resolution data, build and write to disk a
     # pyramid of coarser levels
     build_pyramid(
-        zarrurl=out.parent,
+        zarrurl=out.rsplit("/", 1)[0],
         overwrite=overwrite,
         num_levels=num_levels,
         coarsening_xy=coarsening_xy,
         aggregation_function=np.max,
     )
-
 
 
 if __name__ == "__main__":

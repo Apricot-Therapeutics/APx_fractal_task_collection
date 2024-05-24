@@ -15,12 +15,9 @@ import SimpleITK as sitk
 import dask.array as da
 import anndata as ad
 
-from typing import Any
-from typing import Sequence
-from skimage import exposure
-from pathlib import Path
-from scipy.ndimage import gaussian_filter
 from pydantic.decorator import validate_arguments
+
+from apx_fractal_task_collection.io_models import InitArgsCorrectChromaticShift
 
 from fractal_tasks_core.channels import get_omero_channel_list
 from fractal_tasks_core.pyramids import build_pyramid
@@ -31,6 +28,8 @@ from fractal_tasks_core.roi import check_valid_ROI_indices
 from fractal_tasks_core.roi import (
     convert_ROI_table_to_indices,
 )
+from fractal_tasks_core.tasks._zarr_utils import _copy_hcs_ome_zarr_metadata
+from fractal_tasks_core.tasks._zarr_utils import _copy_tables_from_zarr_url
 
 logger = logging.getLogger(__name__)
 
@@ -73,49 +72,6 @@ def get_channel_image_from_zarr(zarrurl, channel_label):
     return np.stack(img), tmp_channel.wavelength_id
 
 
-def correct_background(image_stack):
-
-    background = gaussian_filter(np.mean(image_stack, axis=0, keepdims=True),
-                                 sigma=10).astype('uint16')
-    corrected_stack = np.where(background < image_stack,
-                               image_stack - background, 0)
-    corrected_img = np.sum(
-        corrected_stack, axis=0, keepdims=True).astype('uint16')
-
-    return corrected_img
-
-
-def register_channel(channel_images, ref_images):
-
-    ref = correct_background(ref_images)
-    img = correct_background(channel_images)
-    img = exposure.match_histograms(img, ref).astype('uint16')
-
-    if len(np.squeeze(ref).shape) == 2:
-        ref = sitk.GetImageFromArray(ref[0, 0, :, :])
-        ref.SetOrigin([0, 0])
-
-        img = sitk.GetImageFromArray(img[0, 0, :, :])
-        img.SetOrigin([0, 0])
-
-    elif len(np.squeeze(ref).shape) == 3:
-        ref = sitk.GetImageFromArray(ref[0, :, :, :])
-        ref.SetOrigin([0, 0, 0])
-
-        img = sitk.GetImageFromArray(img[0, :, :, :])
-        img.SetOrigin([0, 0, 0])
-
-    elastixImageFilter = sitk.ElastixImageFilter()
-    elastixImageFilter.SetFixedImage(ref)
-    elastixImageFilter.SetMovingImage(img)
-    elastixImageFilter.SetParameterMap(sitk.GetDefaultParameterMap("affine"))
-    elastixImageFilter.Execute()
-
-    map = elastixImageFilter.GetTransformParameterMap()[0]
-
-    return map
-
-
 def register_image(img, transformation_map):
 
     if len(np.squeeze(img).shape) == 2:
@@ -139,61 +95,49 @@ def register_image(img, transformation_map):
 
 
 @validate_arguments
-def chromatic_shift_correction(
+def correct_chromatic_shift(
     *,
-    # Standard arguments
-    input_paths: Sequence[str],
-    output_path: str,
-    metadata: dict[str, Any],
-    component: str,
+    # Default arguments for fractal tasks:
+    zarr_url: str,
+    init_args: InitArgsCorrectChromaticShift,
     # Task-specific arguments
-    correction_channel_labels: Sequence[str],
-    reference_channel_label: str
+    overwrite_input: bool = True,
+    suffix: str = "_chromatic_shift_corr",
 ) -> None:
 
     """
-    Correct chromatic shift based on reference images (for example fluorescnet
+    Correct chromatic shift based on reference images (for example fluorescent
     beads) and apply it to all images.
 
     Args:
-        input_paths: List of input paths where the image data is stored as
-            OME-Zarrs. Should point to the parent folder containing one or many
-            OME-Zarr files, not the actual OME-Zarr file. Example:
-            `["/some/path/"]`. This task only supports a single input path.
+        zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
-        output_path: Path were the output of this task is stored. Examples:
-            `"/some/path/"` => puts the new OME-Zarr file in the same folder as
-            the input OME-Zarr file; `"/some/new_path"` => puts the new
-            OME-Zarr file into a new folder at `/some/new_path`.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        metadata: This parameter is not used by this task.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        component: Path to the OME-Zarr image in the OME-Zarr plate that is
-            processed. Example: `"some_plate.zarr/B/03/0"`
-            (standard argument for Fractal tasks, managed by Fractal server).
-        correction_channel_labels: List of channel labels that contain
-            images used for chromatic shift correction. (This can include
-            or exclude the reference channel.)
-        reference_channel_label: Label of the channel that is used as
-            reference. (This channel is not corrected.)
+        init_args: Intialization arguments provided by
+            `init_correct_chromatic_shift.py`.
+        overwrite_input:
+            If `True`, the results of this task will overwrite the input image
+            data. If false, a new image is generated and the chromatic shift
+            corrected data is saved there.
+        suffix: What suffix to append to the illumination corrected images.
+            Only relevant if `overwrite_input=False`.
     """
-    logger.info("Correcting chromatic shift based on reference images.")
-    in_path = Path(input_paths[0])
-    zarrurl = in_path.joinpath(in_path.joinpath(component))
 
-    img_group = zarr.open(zarrurl.joinpath('0'))
-    # make sure that reference channel is not in correction channels
-    correction_channel_labels = [c for c in correction_channel_labels if
-                           reference_channel_label not in c]
+    # Define old/new zarrurls
+    if overwrite_input:
+        zarr_url_new = zarr_url.rstrip("/")
+    else:
+        zarr_url_new = zarr_url.rstrip("/") + suffix
+
+    logger.info("Correcting chromatic shift based on reference images.")
 
      # Read attributes from NGFF metadata
-    ngff_image_meta = load_NgffImageMeta(zarrurl)
+    ngff_image_meta = load_NgffImageMeta(zarr_url)
     num_levels = ngff_image_meta.num_levels
     coarsening_xy = ngff_image_meta.coarsening_xy
     full_res_pxl_sizes_zyx = ngff_image_meta.get_pixel_sizes_zyx(level=0)
 
     # Read FOV ROIs
-    FOV_ROI_table = ad.read_zarr(f"{zarrurl}/tables/FOV_ROI_table")
+    FOV_ROI_table = ad.read_zarr(f"{zarr_url}/tables/FOV_ROI_table")
 
     # Create list of indices for 3D FOVs spanning the entire Z direction
     list_indices = convert_ROI_table_to_indices(
@@ -218,49 +162,40 @@ def chromatic_shift_correction(
                 )
     img_size_y, img_size_x = img_size[:]
 
+    # load image data
+    data_czyx = \
+        da.from_zarr(f"{zarr_url}/0")
+
+    # Create zarr for output
+    if overwrite_input:
+        new_zarr = zarr.open(f"{zarr_url_new}/0")
+    else:
+        new_zarr = zarr.create(
+            shape=data_czyx.shape,
+            chunks=data_czyx.chunksize,
+            dtype=data_czyx.dtype,
+            store=zarr.storage.FSStore(f"{zarr_url_new}/0"),
+            overwrite=False,
+            dimension_separator="/",
+        )
+        _copy_hcs_ome_zarr_metadata(zarr_url, zarr_url_new)
+        # Copy ROI tables from the old zarr_url to keep ROI tables and other
+        # tables available in the new Zarr
+        _copy_tables_from_zarr_url(zarr_url, zarr_url_new)
+
     # Iterate over FOV ROIs
     num_ROIs = len(list_indices)
 
-    # get reference images
-    ref_images, ref_wavelength_id = \
-        get_channel_image_from_zarr(zarrurl.parents[2], reference_channel_label)
-
-    # get transformation maps
-    transformation_maps = {}
-    for corr_channel in correction_channel_labels:
-        ROI_maps = {}
-        channel_images, wavelength_id = \
-            get_channel_image_from_zarr(zarrurl.parents[2], corr_channel)
-        for i_ROI, indices in enumerate(list_indices):
-            # Define region
-            s_z, e_z, s_y, e_y, s_x, e_x = indices[:]
-            region = (
-                slice(0, channel_images.shape[0]),
-                slice(s_z, e_z),
-                slice(s_y, e_y),
-                slice(s_x, e_x),
-            )
-            logger.info(f'calculating correction map for channel {corr_channel} '
-                        f'for ROI {i_ROI+1}/{num_ROIs}')
-
-            transformation_map = register_channel(
-                channel_images[region].compute(),
-                ref_images[region].compute())
-            ROI_maps[i_ROI] = transformation_map
-        transformation_maps[wavelength_id] = ROI_maps
-
     # apply transformation maps to all images
-    channel_list = get_omero_channel_list(image_zarr_path=zarrurl)
+    channel_list = get_omero_channel_list(image_zarr_path=zarr_url)
     channel_list = [c for c in channel_list if
-                    c.wavelength_id != ref_wavelength_id]
+                    c.wavelength_id in init_args.transformation_maps.keys()]
     for channel in channel_list:
         tmp_channel: OmeroChannel = get_channel_from_image_zarr(
-            image_zarr_path=zarrurl,
+            image_zarr_path=zarr_url,
             wavelength_id=None,
             label=channel.label
         )
-        data_czyx = \
-            da.from_zarr(zarrurl.joinpath('0'))
 
         for i_ROI, indices in enumerate(list_indices):
             # Define region
@@ -276,13 +211,15 @@ def chromatic_shift_correction(
 
             corrected_fov = da.zeros(data_czyx[region].shape,
                                      dtype=data_czyx.dtype)
+
+            print(f"data_czyx shape: {data_czyx[region].shape}")
             corrected_fov[0, :, :, :] = register_image(
                 data_czyx[region],
-                transformation_maps[tmp_channel.wavelength_id][i_ROI])
+                init_args.transformation_maps[tmp_channel.wavelength_id][i_ROI])
 
             # Write to disk
             da.array(corrected_fov).to_zarr(
-                url=img_group,
+                url=new_zarr,
                 region=region,
                 compute=True,
             )
@@ -290,19 +227,28 @@ def chromatic_shift_correction(
         # Starting from on-disk highest-resolution data, build and write
         # to disk a pyramid of coarser levels
         build_pyramid(
-            zarrurl=zarrurl,
+            zarrurl=zarr_url_new,
             overwrite=True,
             num_levels=num_levels,
             coarsening_xy=coarsening_xy,
             chunksize=data_czyx.chunksize,
         )
 
+        if overwrite_input:
+            image_list_updates = dict(
+                image_list_updates=[dict(zarr_url=zarr_url)])
+        else:
+            image_list_updates = dict(
+                image_list_updates=[
+                    dict(zarr_url=zarr_url_new, origin=zarr_url)]
+            )
+        return image_list_updates
 
 if __name__ == "__main__":
     from fractal_tasks_core.tasks._utils import run_fractal_task
 
     run_fractal_task(
-        task_function=chromatic_shift_correction,
+        task_function=correct_chromatic_shift,
         logger_name=logger.name,
     )
 

@@ -9,17 +9,17 @@
 # Zurich.
 
 import logging
-from pathlib import Path
-from typing import Any, Dict, Sequence
 
 import anndata as ad
 import fractal_tasks_core
 import numpy as np
 import pandas as pd
 import zarr
+import dask.array as da
 from skimage.measure import regionprops_table
+from pathlib import Path
 
-from apx_fractal_task_collection.utils import get_label_image_from_well
+from apx_fractal_task_collection.io_models import InitArgsLabelAssignment
 from fractal_tasks_core.tables import write_table
 
 from pydantic.decorator import validate_arguments
@@ -87,13 +87,9 @@ def assign_objects(
 def label_assignment_by_overlap(  # noqa: C901
     *,
     # Default arguments for fractal tasks:
-    input_paths: Sequence[str],
-    output_path: str,
-    component: str,
-    metadata: Dict[str, Any],
+    zarr_url: str,
+    init_args: InitArgsLabelAssignment,
     # Task-specific arguments:
-    parent_label_image: str,
-    child_label_image: str,
     child_table_name: str,
     level: int = 0,
     overlap_threshold: float = 1.0,
@@ -106,25 +102,10 @@ def label_assignment_by_overlap(  # noqa: C901
     labels based on an overlap threshold.
 
     Args:
-        input_paths: List of input paths where the image data is stored as
-            OME-Zarrs. Should point to the parent folder containing one or many
-            OME-Zarr files, not the actual OME-Zarr file. Example:
-            `["/some/path/"]`. This task only supports a single input path.
+        zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
-        output_path: This parameter is not used by this task.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        component: Path to the OME-Zarr image in the OME-Zarr plate that is
-            processed. Example: `"some_plate.zarr/B/03/0"`.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        metadata: dictionary containing metadata about the OME-Zarr. This task
-            requires the following elements to be present in the metadata.
-            `coarsening_xy (int)`: coarsening factor in XY of the downsampling
-            when building the pyramid. (standard argument for Fractal tasks,
-            managed by Fractal server).
-        parent_label_image: Name of the parent label image.
-            Needs to exist in OME-Zarr file.
-        child_label_image: Name of the child label image.
-            Needs to exist in OME-Zarr file.
+        init_args: Intialization arguments provided by
+            `init_label_assignment_by_overlap`.
         child_table_name: Name of the feature table associated with
             the child label image.
         level: Resolution of the label image to calculate overlap.
@@ -133,20 +114,20 @@ def label_assignment_by_overlap(  # noqa: C901
             label object that must be contained in parent label object to
              be considered a match.
     """
+    
+    parent_label_name = init_args.parent_label_name
+    child_label_name = init_args.child_label_name
+    parent_label_zarr_url = init_args.parent_label_zarr_url
+    child_label_zarr_url = init_args.child_label_zarr_url
 
-    in_path = Path(input_paths[0])
-    well_url = in_path.joinpath(component)
-    well_group = zarr.open(well_url, mode="r")
-
-    parent_label, parent_label_path = get_label_image_from_well(
-        well_url,
-        parent_label_image,
-        level)
-
-    child_label, child_label_path = get_label_image_from_well(
-        well_url,
-        child_label_image,
-        level)
+    # load parent and child label image
+    parent_label = da.from_zarr(
+        f"{parent_label_zarr_url}/labels/"
+        f"{parent_label_name}/{level}")
+    
+    child_label = da.from_zarr(
+        f"{child_label_zarr_url}/labels/"
+        f"{child_label_name}/{level}")
 
     # if there are no child labels, assignments will be all NaN
     if np.unique(child_label).compute().size == 1:
@@ -161,17 +142,18 @@ def label_assignment_by_overlap(  # noqa: C901
                                      )
 
     assignments.rename(
-        columns={'parent_label': f'{parent_label_image}_label',
-                 'overlap': f'{child_label_image}_{parent_label_image}_overlap'},
+        columns={'parent_label': f'{parent_label_name}_label',
+                 'overlap': f'{child_label_name}_{parent_label_name}_overlap'},
     inplace=True)
 
     # loop over images and write the assignments to the child table
+    well_group = zarr.open_group(zarr_url, mode='r')
     for image in well_group.attrs['well']["images"]:
 
         # define path to feature table
-        child_feature_path = well_url.joinpath(image['path'],
-                                               'tables',
-                                               child_table_name)
+        child_feature_path = Path(zarr_url).joinpath(image['path'],
+                                                     'tables',
+                                                     child_table_name)
 
         # load the child feature table
         try:
@@ -179,10 +161,10 @@ def label_assignment_by_overlap(  # noqa: C901
         except:
             continue
 
-        if f'{parent_label_image}_label' in child_features.obs.columns:
+        if f'{parent_label_name}_label' in child_features.obs.columns:
             child_features.obs.drop(
-                columns=[f'{parent_label_image}_label',
-                         f'{child_label_image}_{parent_label_image}_overlap'],
+                columns=[f'{parent_label_name}_label',
+                         f'{child_label_name}_{parent_label_name}_overlap'],
                                     inplace=True)
 
         # remove these two columns that snuck in at some point (to make

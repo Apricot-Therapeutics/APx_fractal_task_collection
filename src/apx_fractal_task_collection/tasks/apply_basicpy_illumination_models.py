@@ -17,8 +17,6 @@ import time
 import warnings
 from pathlib import Path
 from typing import Any
-from typing import Optional
-from typing import Sequence
 
 import anndata as ad
 import dask.array as da
@@ -35,6 +33,9 @@ from fractal_tasks_core.roi import check_valid_ROI_indices
 from fractal_tasks_core.roi import (
     convert_ROI_table_to_indices,
 )
+
+from fractal_tasks_core.tasks._zarr_utils import _copy_hcs_ome_zarr_metadata
+from fractal_tasks_core.tasks._zarr_utils import _copy_tables_from_zarr_url
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +77,9 @@ def correct(
     new_img_stack = (img_stack - darkfield) / flatfield [None, None, :, :]
 
     # Background subtraction
-    new_img_stack = np.where(new_img_stack > baseline, new_img_stack - baseline, 0,)
+    new_img_stack = np.where(new_img_stack > baseline,
+                             new_img_stack - baseline,
+                             0)
 
     # Handle edge case: corrected image may have values beyond the limit of
     # the encoding, e.g. beyond 65535 for 16bit images. This clips values
@@ -95,87 +98,59 @@ def correct(
 
 
 @validate_arguments
-def apply_basicpy_illumination_model(
+def apply_basicpy_illumination_models(
     *,
-    # Standard arguments
-    input_paths: Sequence[str],
-    output_path: str,
-    component: str,
-    metadata: dict[str, Any],
+    # Default arguments for fractal tasks:
+    zarr_url: str,
     # Task-specific arguments
     illumination_profiles_folder: str,
+    illumination_exceptions: list[str],
+    input_ROI_table: str = "FOV_ROI_table",
     overwrite_input: bool = True,
-    new_component: Optional[str] = None,
+    suffix: str = "_illum_corr",
 ) -> dict[str, Any]:
 
     """
     Applies illumination correction to the images in the OME-Zarr.
 
     Args:
-        input_paths: List of input paths where the image data is stored as
-            OME-Zarrs. Should point to the parent folder containing one or many
-            OME-Zarr files, not the actual OME-Zarr file. Example:
-            `["/some/path/"]`. This task only supports a single input path.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        output_path: Path were the output of this task is stored. Examples:
-            `"/some/path/"` => puts the new OME-Zarr file in the same folder as
-            the input OME-Zarr file; `"/some/new_path"` => puts the new
-            OME-Zarr file into a new folder at `/some/new_path`.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        component: Path to the OME-Zarr image in the OME-Zarr plate that is
-            processed. Example: `"some_plate.zarr/B/03/0"`.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        metadata: This parameter is not used by this task.
+        zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
         illumination_profiles_folder: Path of folder of illumination profiles.
+        illumination_exceptions: List of channel labels that should not be
+            corrected.
+        input_ROI_table: Name of the ROI table that contains the information
+            about the location of the individual field of views (FOVs) to
+            which the illumination correction shall be applied. Defaults to
+            "FOV_ROI_table", the default name Fractal converters give the ROI
+            tables that list all FOVs separately. If you generated your
+            OME-Zarr with a different converter and used Import OME-Zarr to
+            generate the ROI tables, `image_ROI_table` is the right choice if
+            you only have 1 FOV per Zarr image and `grid_ROI_table` if you
+            have multiple FOVs per Zarr image and set the right grid options
+            during import.
         overwrite_input:
             If `True`, the results of this task will overwrite the input image
-            data. In the current version, `overwrite_input=False` is not
-            implemented.
-        new_component: Not implemented yet. This is not implemented well in
-            Fractal server at the moment, it's unclear how a user would specify
-            fitting new components. If the results shall not overwrite the
-            input data and the output path is the same as the input path, a new
-            component needs to be provided.
-            Example: `myplate_new_name.zarr/B/03/0/`.
+            data. If false, a new image is generated and the illumination
+            corrected data is saved there.
+        suffix: What suffix to append to the illumination corrected images.
+            Only relevant if `overwrite_input=False`.
     """
 
-    # Preliminary checks
-    if len(input_paths) > 1:
-        raise NotImplementedError
-    if (overwrite_input and new_component is not None) or (
-        new_component is None and not overwrite_input
-    ):
-        raise ValueError(f"{overwrite_input=}, but {new_component=}")
-
-    if not overwrite_input:
-        msg = (
-            "We still have to harmonize illumination_correction("
-            "overwrite_input=False) with replicate_zarr_structure(..., "
-            "suffix=..)"
-        )
-        raise NotImplementedError(msg)
-
-    # Defione old/new zarrurls
-    plate, well = component.split(".zarr/")
-    in_path = Path(input_paths[0])
-    zarrurl_old = (in_path / component).as_posix()
+    # Define old/new zarrurls
     if overwrite_input:
-        zarrurl_new = zarrurl_old
+        zarr_url_new = zarr_url.rstrip("/")
     else:
-        new_plate, new_well = new_component.split(".zarr/")
-        if new_well != well:
-            raise ValueError(f"{well=}, {new_well=}")
-        zarrurl_new = (Path(output_path) / new_component).as_posix()
+        zarr_url_new = zarr_url.rstrip("/") + suffix
 
     t_start = time.perf_counter()
     logger.info("Start illumination_correction")
     logger.info(f"  {overwrite_input=}")
-    logger.info(f"  {zarrurl_old=}")
-    logger.info(f"  {zarrurl_new=}")
+    logger.info(f"  {zarr_url=}")
+    logger.info(f"  {zarr_url_new=}")
 
     # Read attributes from NGFF metadata
-    ngff_image_meta = load_NgffImageMeta(zarrurl_old)
+    ngff_image_meta = load_NgffImageMeta(zarr_url)
     num_levels = ngff_image_meta.num_levels
     coarsening_xy = ngff_image_meta.coarsening_xy
     full_res_pxl_sizes_zyx = ngff_image_meta.get_pixel_sizes_zyx(level=0)
@@ -187,12 +162,15 @@ def apply_basicpy_illumination_model(
 
     # Read channels from .zattrs
     channels: list[OmeroChannel] = get_omero_channel_list(
-        image_zarr_path=zarrurl_old
+        image_zarr_path=zarr_url
     )
+    # Filter out channels that should not be corrected
+    channels = [c for c in channels if c.label not in illumination_exceptions]
+
     num_channels = len(channels)
 
     # Read FOV ROIs
-    FOV_ROI_table = ad.read_zarr(f"{zarrurl_old}/tables/FOV_ROI_table")
+    FOV_ROI_table = ad.read_zarr(f"{zarr_url}/tables/{input_ROI_table}")
 
     # Create list of indices for 3D FOVs spanning the entire Z direction
     list_indices = convert_ROI_table_to_indices(
@@ -201,7 +179,7 @@ def apply_basicpy_illumination_model(
         coarsening_xy=coarsening_xy,
         full_res_pxl_sizes_zyx=full_res_pxl_sizes_zyx,
     )
-    check_valid_ROI_indices(list_indices, "FOV_ROI_table")
+    check_valid_ROI_indices(list_indices, input_ROI_table)
 
     # Extract image size from FOV-ROI indices. Note: this works at level=0,
     # where FOVs should all be of the exact same size (in pixels)
@@ -217,24 +195,25 @@ def apply_basicpy_illumination_model(
                 )
     img_size_y, img_size_x = img_size[:]
 
-
     # Lazily load highest-res level from original zarr array
-    data_czyx = da.from_zarr(f"{zarrurl_old}/0")
+    data_czyx = da.from_zarr(f"{zarr_url}/0")
 
     # Create zarr for output
     if overwrite_input:
-        fov_path = zarrurl_old
-        new_zarr = zarr.open(f"{zarrurl_old}/0")
+        new_zarr = zarr.open(f"{zarr_url_new}/0")
     else:
-        fov_path = zarrurl_new
         new_zarr = zarr.create(
             shape=data_czyx.shape,
             chunks=data_czyx.chunksize,
             dtype=data_czyx.dtype,
-            store=zarr.storage.FSStore(f"{zarrurl_new}/0"),
+            store=zarr.storage.FSStore(f"{zarr_url_new}/0"),
             overwrite=False,
             dimension_separator="/",
         )
+        _copy_hcs_ome_zarr_metadata(zarr_url, zarr_url_new)
+        # Copy ROI tables from the old zarr_url to keep ROI tables and other
+        # tables available in the new Zarr
+        _copy_tables_from_zarr_url(zarr_url, zarr_url_new)
 
     # Iterate over FOV ROIs
     num_ROIs = len(list_indices)
@@ -256,10 +235,9 @@ def apply_basicpy_illumination_model(
                 slice(s_x, e_x),
             )
             logger.info(
-                f"Now processing ROI {i_ROI+1}/{num_ROIs} "
-                f"for channel {i_c+1}/{num_channels}"
+                f"Now processing ROI {i_ROI + 1}/{num_ROIs} "
+                f"for channel {i_c + 1}/{num_channels}"
             )
-
             # Execute illumination correction
             corrected_fov = correct(
                 img_stack=data_czyx[region].compute(),
@@ -277,7 +255,7 @@ def apply_basicpy_illumination_model(
     # Starting from on-disk highest-resolution data, build and write to disk a
     # pyramid of coarser levels
     build_pyramid(
-        zarrurl=fov_path,
+        zarrurl=zarr_url_new,
         overwrite=True,
         num_levels=num_levels,
         coarsening_xy=coarsening_xy,
@@ -285,15 +263,21 @@ def apply_basicpy_illumination_model(
     )
 
     t_end = time.perf_counter()
-    logger.info(f"End illumination_correction, elapsed: {t_end-t_start}")
+    logger.info(f"End illumination_correction, elapsed: {t_end - t_start}")
 
-    return {}
+    if overwrite_input:
+        image_list_updates = dict(image_list_updates=[dict(zarr_url=zarr_url)])
+    else:
+        image_list_updates = dict(
+            image_list_updates=[dict(zarr_url=zarr_url_new, origin=zarr_url)]
+        )
+    return image_list_updates
 
 
 if __name__ == "__main__":
     from fractal_tasks_core.tasks._utils import run_fractal_task
 
     run_fractal_task(
-        task_function=apply_basicpy_illumination_model,
+        task_function=apply_basicpy_illumination_models,
         logger_name=logger.name,
     )

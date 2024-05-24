@@ -9,8 +9,10 @@
 # Zurich.
 
 import logging
-from typing import Any, Dict, Sequence
-import warnings
+from pathlib import Path
+
+from apx_fractal_task_collection.io_models import (
+    InitArgsAggregateFeatureTables)
 
 import fractal_tasks_core
 import zarr
@@ -42,22 +44,21 @@ def concat_features(feature_tables):
     return feature_table
 
 @validate_arguments
-def aggregate_tables_to_well_level(  # noqa: C901
+def aggregate_feature_tables(  # noqa: C901
         *,
         # Default arguments for fractal tasks:
-        input_paths: Sequence[str],
-        output_path: str,
-        component: str,
-        metadata: Dict[str, Any],
+        zarr_url: str,
+        init_args: InitArgsAggregateFeatureTables,
         # Task-specific arguments:
         input_table_name: str,
         output_table_name: str,
-        output_component: str = 'image',
+        output_image: str = '0',
         overwrite: bool = True
 
 ) -> None:
     """
-    Aggregate acquisition (image) based features to the well level.
+    Aggregate feature tables that were calculated per zarr-image to one
+    Anndata table containing feature measurements across all zarr-images.
 
     Args:
         input_paths: Path to the parent folder of the NGFF image.
@@ -70,15 +71,16 @@ def aggregate_tables_to_well_level(  # noqa: C901
         metadata: This argument is not used in this task.
             (standard argument for Fractal tasks, managed by Fractal server).
         input_table_name: Name of the feature table.
-        output_table_name: Name of the aggregated feature table.
+        output_table_name: Name of the aggregated feature table. If this is the
+            same as the input_table_name, the input table will be overwritten.
         tables_to_merge: List of feature tables to merge into the main
             feature table. For example, if the input feature table is the table
             for cells, tables to merge could include nuclei and cytoplasm.
             Only use this option if you ran Label Assignment by Overlap first.
-        output_component: In which component to store the aggregated feature
-            table. Can take values "image" (the table will be saved in the 
-            first image/acquisition (0) folder) or "well" (the table will be 
-            saved in the well folder).
+        output_image: In which zarr-image to store the aggregated feature
+            table. By default, it is saved in the first image of the zarr. If
+            output_table_name is the same as input_table_name, the table will
+            be overwritten in the same image.
         overwrite: If True, overwrite existing feature table.
     """
 
@@ -86,42 +88,23 @@ def aggregate_tables_to_well_level(  # noqa: C901
         f"Aggregating features from feature table"
         f" {input_table_name} to well level.")
 
-    # collect paths to all feature tables
-    in_path = input_paths[0]
-    well_zarr_path = f"{in_path}/{component}"
-    well_group = zarr.open_group(well_zarr_path, mode="r+")
-    image_paths = [image["path"] for image in
-                   well_group.attrs["well"]["images"]]
-
     feature_tables = [
         ad.read_zarr(
-            f"{in_path}/{component}/{image}/tables/{input_table_name}"
-        ) for image in image_paths
+            f"{z_url}/tables/{input_table_name}"
+        ) for z_url in init_args.zarr_urls
     ]
 
     well_table = concat_features(feature_tables)
+    out_zarr_path = f"{Path(zarr_url).parent}/{output_image}"
 
-    if output_component == "well":
-        out_zarr_path = f"{output_path}/{component}"
-    elif output_component == "image":
-        out_zarr_path = f"{output_path}/{component}/{image_paths[0]}"
-    else:
-        warnings.warn(f"Unknown output component {output_component}."
-                      f" Please choose between 'image' and 'well'.")
-        pass
 
     out_group = zarr.open_group(out_zarr_path, mode="r+")
 
     # get original table attributes
     table_group = zarr.open_group(
-        f"{in_path}/{component}/0/tables/{input_table_name}",
+        f"{zarr_url}/tables/{input_table_name}",
         mode='r')
     orig_attrs = table_group.attrs.asdict()
-
-    if output_component == "well":
-        # update orig_attrs
-        orig_attrs["region"]["path"] = \
-            orig_attrs["region"]["path"].replace("../../", "../")
 
     # Write to zarr group
     write_table(
@@ -137,7 +120,7 @@ if __name__ == "__main__":
     from fractal_tasks_core.tasks._utils import run_fractal_task
 
     run_fractal_task(
-        task_function=aggregate_tables_to_well_level,
+        task_function=aggregate_feature_tables,
         logger_name=logger.name,
     )
 

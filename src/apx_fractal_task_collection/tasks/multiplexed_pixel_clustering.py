@@ -17,14 +17,15 @@ import dask.array as da
 import pandas as pd
 import anndata as ad
 
-from natsort import natsorted
 from phenograph import cluster
 from minisom import MiniSom
-from pathlib import Path
-from typing import Any, Dict, Sequence, Optional
+from typing import Sequence, Optional
 
 from sklearn.preprocessing import (StandardScaler,
                                    FunctionTransformer)
+
+from apx_fractal_task_collection.init_utils import (group_by_well,
+                                                    get_label_zarr_url)
 
 from fractal_tasks_core.labels import prepare_label_group
 from fractal_tasks_core.channels import OmeroChannel
@@ -43,12 +44,14 @@ __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 logger = logging.getLogger(__name__)
 
 
-def get_image_from_zarr(zarr_path: str, well_name: str,
+def get_image_from_zarr(well_list: list[str], well_name: str,
                         coords: list, level: int = 0):
     """
-    Get image from zarr file.
+    Get numpy array with all channels across multiplexing cycles
+    from specified well.
+
     Args:
-        zarr_path: path to zarr file to use.
+        well_list: list of urls of zarr-images in well.
         well_name: name of the well to use.
         coords: Image coordinates to use.
                 Format: [y_start, y_end, x_start, x_end].
@@ -59,28 +62,21 @@ def get_image_from_zarr(zarr_path: str, well_name: str,
 
     """
 
-    zarr_path = Path(zarr_path)
-    well_zarr_path = zarr_path.joinpath(f"{well_name[0]}/{well_name[1:]}")
-    well_group = zarr.open_group(well_zarr_path, mode="r+")
     img = []
-    img_paths = natsorted(
-        [image['path'] for image in well_group.attrs['well']["images"]])
-
     channel_names = []
-    for img_path in img_paths:
+    for zarr_url in well_list:
         omero_channels = get_omero_channel_list(
-            image_zarr_path=well_zarr_path.joinpath(img_path))
+            image_zarr_path=zarr_url)
 
         for channel in omero_channels:
             tmp_channel: OmeroChannel = get_channel_from_image_zarr(
-                image_zarr_path=well_zarr_path.joinpath(img_path),
+                image_zarr_path=zarr_url,
                 wavelength_id=None,
                 label=channel.label
             )
 
             channel_names.append(channel.label)
-            current_img = da.from_zarr(
-                well_zarr_path.joinpath(f"{img_path}/{level}"))[
+            current_img = da.from_zarr(f"{zarr_url}/{level}")[
                        tmp_channel.index, 0, coords[0]:coords[1],
                        coords[2]:coords[3]]
             img.append(current_img.compute())
@@ -94,42 +90,8 @@ def get_image_from_zarr(zarr_path: str, well_name: str,
                 f"loaded channel: {channel.label} from well {well_name} \n"
                 f"from coordinates {actual_shape} at level {level}")
 
-
     return np.squeeze(np.stack(img, axis=0)), channel_names
 
-
-def get_label_from_zarr(zarr_path: str, well_name: str, label_name: str,
-                        coords: list, level: int = 0):
-    """
-    Get label from zarr file.
-    Args:
-        image_zarr_path: path to zarr file to use (well folder).
-        label_name: name of label to use.
-        coords: Image coordinates to use.
-                Format: [y_start, y_end, x_start, x_end].
-        level: pyramid level to use.
-
-    Returns: numpy array of shape (coords[0]:coords[1], coords[2]:coords[3]).
-
-    """
-
-    zarr_path = Path(zarr_path)
-    well_zarr_path = zarr_path.joinpath(f"{well_name[0]}/{well_name[1:]}")
-    well_group = zarr.open_group(well_zarr_path, mode="r+")
-    img_paths = natsorted(
-        [image['path'] for image in well_group.attrs['well']["images"]])
-
-    for img_path in img_paths:
-        try:
-            label_path = f"{img_path}/labels/{label_name}/{level}"
-            label = da.from_zarr(
-                well_zarr_path.joinpath(label_path))[
-                    0,coords[0]:coords[1], coords[2]:coords[3]].compute()
-            actual_img_path = img_path
-        except:
-            continue
-
-    return label, actual_img_path
 
 
 def get_mpps(intensity_image: np.array, labels: np.array, channel_names: list,
@@ -272,9 +234,7 @@ def get_image_from_mpps(mpps: pd.DataFrame, well_name: str,
 def multiplexed_pixel_clustering(  # noqa: C901
         *,
         # Default arguments for fractal tasks:
-        input_paths: Sequence[str],
-        output_path: str,
-        metadata: Dict[str, Any],
+        zarr_urls: list[str],
         # Task-specific arguments:
         label_image_name: str,
         channels_to_use: Optional[list[str]] = None,
@@ -283,6 +243,7 @@ def multiplexed_pixel_clustering(  # noqa: C901
         som_shape: Sequence[int] = (20, 20),
         phenograph_neighbours: int = 15,
         enforce_equal_object_count: bool = False,
+        seed: Optional[int] = None,
         coords: Optional[list[int]] = None,
         level: int = 0,
         output_table_name: str,
@@ -297,12 +258,8 @@ def multiplexed_pixel_clustering(  # noqa: C901
 
     Args:
         Args:
-        input_paths: Path to the parent folder of the NGFF image.
-            This task only supports a single input path.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        output_path: This argument is not used in this task.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        metadata: This argument is not used in this task.
+        zarr_urls: List of paths or urls to the individual OME-Zarr image to
+            be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
         label_image_name: Name of label image to use. Only pixels that are part
             of a label will be considered for clustering.
@@ -310,12 +267,15 @@ def multiplexed_pixel_clustering(  # noqa: C901
                 If None, all channels are used.
         channels_to_exclude: List of channel labels to exclude from clustering.
                 If None, no channels are excluded.
-        wells_names: List of wells to use for pixel clustering.
+        wells_names: List of wells to use for pixel clustering. For example
+            ["C03", "C04"].
         som_shape: Shape of the self-organizing map (SOM) to use for clustering.
         phenograph_neighbours: Number of nearest neighbors to use in first
                 step of graph construction.
         enforce_equal_object_count: If True, the same number of objects from
             the label images will be used to extract pixels for clustering.
+        seed: Random seed for selection of objects if enforce_equal_object_count
+            is True.
         coords: Image coordinates to use. If None, the whole well will be used.
                 Format: [y_start, y_end, x_start, x_end].
         level: pyramid level to use.
@@ -325,27 +285,34 @@ def multiplexed_pixel_clustering(  # noqa: C901
         overwrite: If True, overwrite existing output table.
     """
 
-    in_path = Path(input_paths[0])
-    list_plates = list(Path(in_path).glob("*.zarr"))
-    zarr_path = list_plates[0]
+    # filter the image list to only include images in wells that were specified
+    zarr_urls = [zarr_url for zarr_url in zarr_urls
+                    if zarr_url.rsplit("/", 3)[1] + zarr_url.rsplit("/", 2)[1] in well_names]
+
+    well_dict = group_by_well(zarr_urls)
     mpps_list = []
 
     # if coords is None, use the whole well:
     if coords is None:
         coords = [0, None, 0, None]
 
+    for well_name, well_list in well_dict.items():
 
-    for well_name in well_names:
-        img, channel_names = get_image_from_zarr(zarr_path=zarr_path,
-                                                 well_name=well_name,
+        well_id = well_name.rsplit("/", 2)[1] + well_name.rsplit("/", 1)[1]
+
+        # get image of all channels of the specified region in the well
+        img, channel_names = get_image_from_zarr(well_list=well_list,
+                                                 well_name=well_id,
                                                  level=level,
                                                  coords=coords)
 
-        label, label_path = get_label_from_zarr(zarr_path=zarr_path,
-                                                well_name=well_name,
-                                                label_name=label_image_name,
-                                                level=level,
-                                                coords=coords)
+        # get the label image
+        label_zarr_url = get_label_zarr_url(well_list, label_image_name)
+        label = da.from_zarr(f"{label_zarr_url}/labels/"
+                             f"{label_image_name}/{level}")[
+                0,
+                coords[0]:coords[1],
+                coords[2]:coords[3]].compute()
 
         # calculate multiplexed pixel profiles (label is cast to uint16
         # to save memory)
@@ -366,6 +333,11 @@ def multiplexed_pixel_clustering(  # noqa: C901
     mpps.index.rename(names=new_index, inplace=True)
 
     if enforce_equal_object_count:
+        # set numpy.random seed
+        if seed is not None:
+            np.random.seed(seed=seed)
+            logger.info(f"Using seed {seed} for random selection of objects.")
+
         # enforce that the same number of cells are used per well
         n_cells = mpps.reset_index().groupby(['well'])['label'].nunique()
         min_cells = n_cells.min()
@@ -463,7 +435,8 @@ def multiplexed_pixel_clustering(  # noqa: C901
 
 
     # save results
-    image_group = zarr.group(f"{zarr_path}")
+    plate_path = zarr_urls[0].rsplit("/", 3)[0]
+    image_group = zarr.group(plate_path)
     write_table(
         image_group,
         output_table_name,
@@ -471,20 +444,18 @@ def multiplexed_pixel_clustering(  # noqa: C901
         overwrite=overwrite,
         table_attrs={"type": "feature_table",
                      "region": {
-                         "path": f"../../{label_path}/"
+                         "path": f"../../{label_zarr_url.split('/')[-1]}/"
                                  f"labels/{output_label_name}"},
                      "instance_key": "label"}
     )
 
     # save MCU label map to labels
     # prepare label image
-    well_zarr_path = zarr_path.joinpath(
-        f"{well_names[0][0]}/{well_names[0][1:]}")
-    label_component = well_zarr_path.joinpath(label_path)
-    data_zyx = da.from_zarr(
-                label_component.joinpath(f"labels/{label_image_name}/{level}"))
 
-    ngff_image_meta = load_NgffImageMeta(label_component)
+    data_zyx = da.from_zarr(f"{label_zarr_url}/labels/"
+                            f"{label_image_name}/{level}")
+
+    ngff_image_meta = load_NgffImageMeta(label_zarr_url)
     num_levels = ngff_image_meta.num_levels
     coarsening_xy = ngff_image_meta.coarsening_xy
     full_res_pxl_sizes_zyx = ngff_image_meta.get_pixel_sizes_zyx(level=0)
@@ -533,18 +504,19 @@ def multiplexed_pixel_clustering(  # noqa: C901
         chunks = (1, *chunks)
 
     # Compute and store 0-th level to disk
-    for well_name in well_names:
+    for well_name, well_list in well_dict.items():
+
+        well_id = well_name.rsplit("/", 2)[1] + well_name.rsplit("/", 1)[1]
         # get the label map for multiplexed units
         mcu_labels = get_image_from_mpps(mpps,
-                                         well_name=well_name,
+                                         well_name=well_id,
                                          shape=shape,
                                          column='pheno_cluster')
 
-        well_zarr_path = zarr_path.joinpath(
-            f"{well_name[0]}/{well_name[1:]}")
-        label_component = well_zarr_path.joinpath(label_path)
+        label_zarr_url = get_label_zarr_url(well_list, label_image_name)
 
-        image_group = zarr.group(label_component)
+        image_group = zarr.group(label_zarr_url)
+
         label_group = prepare_label_group(
             image_group,
             output_label_name,
@@ -556,7 +528,8 @@ def multiplexed_pixel_clustering(  # noqa: C901
         logger.info(
             f"Helper function `prepare_label_group` returned {label_group=}"
         )
-        out = f"{label_component}/labels/{output_label_name}/0"
+
+        out = f"{label_zarr_url}/labels/{output_label_name}/0"
         logger.info(f"Output label path: {out}")
         store = zarr.storage.FSStore(str(out))
 
@@ -587,7 +560,7 @@ def multiplexed_pixel_clustering(  # noqa: C901
         # Starting from on-disk highest-resolution data, build and write to
         # disk a pyramid of coarser levels
         build_pyramid(
-            zarrurl=f"{label_component}/labels/{output_label_name}",
+            zarrurl=out.rsplit("/", 1)[0],
             overwrite=overwrite,
             num_levels=num_levels,
             coarsening_xy=coarsening_xy,

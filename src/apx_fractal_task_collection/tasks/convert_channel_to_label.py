@@ -13,20 +13,17 @@ import zarr
 import numpy as np
 import dask.array as da
 
-
-from typing import Any
-from typing import Sequence
-from pathlib import Path
 from skimage.morphology import label
 from pydantic.decorator import validate_arguments
 
-from apx_fractal_task_collection.utils import get_channel_image_from_well
+from apx_fractal_task_collection.io_models import InitArgsConvertChannelToLabel
 
 import fractal_tasks_core
 from fractal_tasks_core.utils import rescale_datasets
 from fractal_tasks_core.labels import prepare_label_group
 from fractal_tasks_core.pyramids import build_pyramid
 from fractal_tasks_core.ngff import load_NgffImageMeta
+from fractal_tasks_core.channels import get_channel_from_image_zarr
 
 
 logger = logging.getLogger(__name__)
@@ -35,19 +32,14 @@ logger = logging.getLogger(__name__)
 __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
 
-
 @validate_arguments
 def convert_channel_to_label(
     *,
-    # Standard arguments
-    input_paths: Sequence[str],
-    output_path: str,
-    component: str,
-    metadata: dict[str, Any],
+    # Default arguments for fractal tasks:
+    zarr_url: str,
+    init_args: InitArgsConvertChannelToLabel,
     # Task-specific arguments
-    channel_label: str,
     output_label_name: str,
-    output_cycle: int,
     overwrite: bool = False,
 ) -> None:
 
@@ -55,43 +47,32 @@ def convert_channel_to_label(
     Convert a channel of an OME-Zarr image to a label image.
 
     Args:
-        input_paths: List of input paths where the image data is stored as
-            OME-Zarrs. Should point to the parent folder containing one or many
-            OME-Zarr files, not the actual OME-Zarr file. Example:
-            `["/some/path/"]`. This task only supports a single input path.
+        zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
-        output_path: Path were the output of this task is stored. Examples:
-            `"/some/path/"` => puts the new OME-Zarr file in the same folder as
-            the input OME-Zarr file; `"/some/new_path"` => puts the new
-            OME-Zarr file into a new folder at `/some/new_path`.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        metadata: This parameter is not used by this task.
-            (standard argument for Fractal tasks, managed by Fractal server).
-         component: Path to the OME-Zarr image in the OME-Zarr plate that is
-            processed. Example: `"some_plate.zarr/B/03/0"`
-        channel_label: Label of the channel to convert to a label image.
+        init_args: Intialization arguments provided by
+        `init_convert_channel_to_label`.
         output_label_name: Name of the label to be created.
-        output_cycle: Acquisition in which to store the new label image.
         overwrite: If True, overwrite existing label image with same name.
     """
-    input_path = Path(input_paths[0])
-    well_url = input_path.joinpath(component)
 
-
-    ngff_image_meta = load_NgffImageMeta(well_url.joinpath(str(output_cycle)))
+    ngff_image_meta = load_NgffImageMeta(zarr_url)
     num_levels = ngff_image_meta.num_levels
     coarsening_xy = ngff_image_meta.coarsening_xy
 
-    img, img_path = get_channel_image_from_well(well_url, channel_label, level=0)
+    tmp_channel: OmeroChannel = get_channel_from_image_zarr(
+        image_zarr_path=init_args.channel_zarr_url,
+        wavelength_id=None,
+        label=init_args.channel_label
+    )
+
+    ind_channel = tmp_channel.index
+    img = \
+        da.from_zarr(f"{init_args.channel_zarr_url}/0")[ind_channel]
 
     # relabel in case the segmentation was created by FOV
     relabeled_img = label(img)
 
-    label_url = well_url.joinpath(str(output_cycle),
-                                  'labels',
-                                  output_label_name)
-
-    logger.info(f"Converting channel '{channel_label}' to "
+    logger.info(f"Converting channel '{init_args.channel_label}' to "
                 f"label image '{output_label_name}'.")
 
     # Rescale datasets (only relevant for level>0)
@@ -127,7 +108,7 @@ def convert_channel_to_label(
         ],
     }
 
-    image_group = zarr.group(well_url.joinpath(str(output_cycle)))
+    image_group = zarr.group(zarr_url)
     label_group = prepare_label_group(
         image_group,
         output_label_name,
@@ -136,7 +117,8 @@ def convert_channel_to_label(
         logger=logger,
     )
 
-    store = zarr.storage.FSStore(label_url.joinpath('0').as_posix())
+    out = f"{zarr_url}/labels/{output_label_name}/0"
+    store = zarr.storage.FSStore(out)
     label_dtype = np.uint32
 
     label_zarr = zarr.create(
@@ -158,7 +140,7 @@ def convert_channel_to_label(
     # Starting from on-disk highest-resolution data, build and write to disk a
     # pyramid of coarser levels
     build_pyramid(
-        zarrurl=label_url,
+        zarrurl=out.rsplit("/", 1)[0],
         overwrite=overwrite,
         num_levels=num_levels,
         coarsening_xy=coarsening_xy,
