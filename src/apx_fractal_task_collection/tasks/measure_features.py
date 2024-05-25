@@ -153,13 +153,19 @@ def measure_features(  # noqa: C901
             f" {ROI_table_name}."
         )
 
-        # make morphology measurements
         # load label image
         logger.info(f"{label_image_url}")
         label_image = da.from_zarr(
             f"{label_image_url}/labels/"
             f"{label_image_name}/{level}")[region[1:]].compute()
 
+        # check whether there is objects in the label image and skip if not
+        if np.max(label_image) == 0:
+            logger.info(f"No objects found in {label_image_name}. "
+                        f"Skipping ROI.")
+            continue
+
+        # make morphology measurements
         if measure_morphology:
             logger.info(f"Calculating morphology features for "
                         f"{label_image_name}.")
@@ -341,32 +347,36 @@ def measure_features(  # noqa: C901
 
         obs_list.append(ROI_obs)
 
-    obs = pd.concat(obs_list, axis=0)
-    merged_features = pd.concat(feature_list, axis=0)
+    if feature_list:
+        obs = pd.concat(obs_list, axis=0)
+        merged_features = pd.concat(feature_list, axis=0)
 
-    merged_features.set_index('label', inplace=True)
-    #obs.set_index('label', inplace=True)
-    obs.index = np.arange(0, len(obs))
+        merged_features.set_index('label', inplace=True)
+        #obs.set_index('label', inplace=True)
+        obs.index = np.arange(0, len(obs))
 
-    # save features as AnnData table
-    feature_table = ad.AnnData(X=merged_features.reset_index(drop=True),
-                               obs=obs,
-                               dtype='float32')
+        # save features as AnnData table
+        feature_table = ad.AnnData(X=merged_features.reset_index(drop=True),
+                                   obs=obs,
+                                   dtype='float32')
 
-    # Write to zarr group
-    image_group = zarr.group(zarr_url)
-    write_table(
-        image_group,
-        output_table_name,
-        feature_table,
-        overwrite=overwrite,
-        table_attrs={"type": "feature_table",
-                     "region": {
-                         "path": f"../../{label_image_cycle}/"
-                                 f"labels/{label_image_name}"},
-                     "instance_key": "label"}
-    )
+        # Write to zarr group
+        image_group = zarr.group(zarr_url)
+        write_table(
+            image_group,
+            output_table_name,
+            feature_table,
+            overwrite=overwrite,
+            table_attrs={"type": "feature_table",
+                         "region": {
+                             "path": f"../../{label_image_cycle}/"
+                                     f"labels/{label_image_name}"},
+                         "instance_key": "label"}
+        )
 
+    else:
+        logger.info(f"No features calculated for {label_image_name}. Likely,"
+                    f" there are no objects in the label image.")
 
 if __name__ == "__main__":
     from fractal_tasks_core.tasks._utils import run_fractal_task
