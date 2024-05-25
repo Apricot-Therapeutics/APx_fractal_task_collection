@@ -133,6 +133,9 @@ def init_convert_IC6000_to_ome_zarr(
         # metadata file instead
         xml_path = list(Path(acq_input.image_dir).glob("*.xdce"))[0]
 
+        plate = parse_platename(xml_path)
+        plate_prefix = ""
+
         actual_wavelength_ids = []
         plates = []
         plate_prefixes = []
@@ -145,20 +148,18 @@ def init_convert_IC6000_to_ome_zarr(
             folder=acq_input.image_dir,
             patterns=patterns,
         )
+
         for fn in input_filenames:
             try:
                 filename_metadata = parse_filename(Path(fn).name)
-                #plate = filename_metadata["plate"]
-                plate = parse_platename(xml_path)
                 plates.append(plate)
-                #plate_prefix = filename_metadata["plate_prefix"]
-                plate_prefix = ""
                 plate_prefixes.append(plate_prefix)
                 actual_wavelength_ids.append(filename_metadata['C'])
             except ValueError as e:
                 logger.warning(
                     f'Skipping "{Path(fn).name}". Original error: ' + str(e)
                 )
+
         plates = sorted(list(set(plates)))
         actual_wavelength_ids = sorted(list(set(actual_wavelength_ids)))
 
@@ -222,6 +223,8 @@ def init_convert_IC6000_to_ome_zarr(
             "actual_wavelength_ids"
         ] = actual_wavelength_ids
 
+        dict_acquisitions[acquisition]["input_filenames"] = input_filenames
+
     # create parallelization list
     parallelization_list = []
     acquisitions_sorted = sorted(list(acquisitions.keys()))
@@ -277,14 +280,15 @@ def init_convert_IC6000_to_ome_zarr(
             raise ValueError(pixel_size_z, pixel_size_y, pixel_size_x)
 
         # Identify all wells
-        plate_prefix = dict_acquisitions[acquisition]["plate_prefix"]
-        patterns = [f"{plate_prefix}*.{image_extension}"]
-        if image_glob_patterns:
-            patterns.extend(image_glob_patterns)
-        plate_images = glob_with_multiple_patterns(
-            folder=str(image_folder),
-            patterns=patterns,
-        )
+        # patterns = [f"*.{image_extension}"]
+        # if image_glob_patterns:
+        #     patterns.extend(image_glob_patterns)
+        # plate_images = glob_with_multiple_patterns(
+        #     folder=str(image_folder),
+        #     patterns=patterns,
+        # )
+
+        plate_images = dict_acquisitions[acquisition]["input_filenames"]
 
         wells = [
             parse_filename(os.path.basename(fn))["well"] for fn in
@@ -298,13 +302,16 @@ def init_convert_IC6000_to_ome_zarr(
         actual_channels = dict_acquisitions[acquisition]["actual_channels"]
 
         for well in wells:
-            patterns = [f"*{well[0]} - {well[1:]}(*.{image_extension}"]
-            if image_glob_patterns:
-                patterns.extend(image_glob_patterns)
-            well_images = glob_with_multiple_patterns(
-                folder=str(image_folder),
-                patterns=patterns,
-            )
+            # patterns = [f"*{well[0]} - {well[1:]}(*.{image_extension}"]
+            # if image_glob_patterns:
+            #     patterns.extend(image_glob_patterns)
+            # well_images = glob_with_multiple_patterns(
+            #     folder=str(image_folder),
+            #     patterns=patterns,
+            # )
+
+            well_images = [img for img in plate_images if
+                           f"{well[0]} - {well[1:]}(" in img]
 
             well_wavelength_ids = []
             for fpath in well_images:
