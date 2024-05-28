@@ -314,14 +314,14 @@ def test_illumination_correction(test_data_dir, image_list):
         calculate_basicpy_illumination_models(
             zarr_url=channel['zarr_url'],
             init_args=channel['init_args'],
-            illumination_profiles_folder=test_data_dir,
+            illumination_profiles_folder=f"{test_data_dir}/illumination_profiles",
             overwrite=True
         )
 
     apply_basicpy_illumination_models(
         zarr_url=image_list[0],
-        illumination_profiles_folder=test_data_dir,
-        illumination_exceptions=[],
+        illumination_profiles_folder=f"{test_data_dir}/illumination_profiles",
+        illumination_exceptions=["0_DAPI"],
         overwrite_input=False,
     )
 
@@ -329,6 +329,21 @@ def test_illumination_correction(test_data_dir, image_list):
     corrected_image_path = Path(image_list[0]).parent.joinpath("0_illum_corr")
     assert corrected_image_path.exists(),\
         f"Corrected image not found at {corrected_image_path}"
+
+    # assert that illumination profiles folder was created
+    illumination_profiles_folder = Path(f"{test_data_dir}/illumination_profiles")
+    assert illumination_profiles_folder.exists(),\
+        f"Illumination profiles not found at {illumination_profiles_folder}"
+
+    # assert that illumination profiles folder contains the expected subfolders
+    expected_subfolders = ['0_DAPI', '0_GFP',
+                           '1_DAPI', '1_GFP',
+                           '2_DAPI', '2_GFP']
+    subfolders = [f.name for f in illumination_profiles_folder.iterdir()]
+    assert sorted(subfolders) == sorted(expected_subfolders), \
+        f"Expected subfolders {expected_subfolders}," \
+        f" but got {subfolders}"
+
 
 @pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
 def test_convert_channel_to_label(test_data_dir, image_list):

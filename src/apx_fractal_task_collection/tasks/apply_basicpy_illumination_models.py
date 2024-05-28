@@ -16,7 +16,7 @@ import logging
 import time
 import warnings
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import anndata as ad
 import dask.array as da
@@ -104,7 +104,7 @@ def apply_basicpy_illumination_models(
     zarr_url: str,
     # Task-specific arguments
     illumination_profiles_folder: str,
-    illumination_exceptions: list[str],
+    illumination_exceptions: Optional[list[str]] = None,
     input_ROI_table: str = "FOV_ROI_table",
     overwrite_input: bool = True,
     suffix: str = "_illum_corr",
@@ -164,8 +164,10 @@ def apply_basicpy_illumination_models(
     channels: list[OmeroChannel] = get_omero_channel_list(
         image_zarr_path=zarr_url
     )
-    # Filter out channels that should not be corrected
-    channels = [c for c in channels if c.label not in illumination_exceptions]
+
+    if illumination_exceptions is not None:
+        # Filter out channels that should not be corrected
+        channels = [c for c in channels if c.label not in illumination_exceptions]
 
     num_channels = len(channels)
 

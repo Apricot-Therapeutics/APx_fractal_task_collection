@@ -75,7 +75,7 @@ def init_calculate_basicpy_illumination_models(
 
         # generate zarr_url by taking the first entry of well_list and
         # replacing the last part of the path with the output_label_image_name
-        zarr_url = ""
+        zarr_url = zarr_urls[0] # never really used
 
         parallelization_list.append(
             dict(
