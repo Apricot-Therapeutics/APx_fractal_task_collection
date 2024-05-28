@@ -1211,8 +1211,7 @@
         },
         "required": [
           "zarr_url",
-          "illumination_profiles_folder",
-          "illumination_exceptions"
+          "illumination_profiles_folder"
         ],
         "additionalProperties": false
       },
@@ -1700,6 +1699,148 @@
         }
       },
       "docs_info": "## init_convert_channel_to_label\nInitialized Filter Label by Size task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform Convert Channel to Label task.\n## convert_channel_to_label\nConvert a channel of an OME-Zarr image to a label image.\n\nArgs:\n    zarr_url: Path or url to the individual OME-Zarr image to be processed.\n        (standard argument for Fractal tasks, managed by Fractal server).\n    init_args: Intialization arguments provided by\n    `init_convert_channel_to_label`.\n    output_label_name: Name of the label to be created.\n    overwrite: If True, overwrite existing label image with same name.\n"
+    },
+    {
+      "name": "Detect Blob Centroids",
+      "executable_non_parallel": "tasks/init_detect_blob_centroids.py",
+      "executable_parallel": "tasks/detect_blob_centroids.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 3750
+      },
+      "args_schema_non_parallel": {
+        "title": "InitDetectBlobCentroids",
+        "type": "object",
+        "properties": {
+          "zarr_urls": {
+            "title": "Zarr Urls",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "zarr_dir": {
+            "title": "Zarr Dir",
+            "type": "string",
+            "description": "path of the directory where the new OME-Zarrs will be created. Not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "channel_label": {
+            "title": "Channel Label",
+            "type": "string",
+            "description": "Label of the channel in which blobs will be detected."
+          },
+          "output_label_image_name": {
+            "title": "Output Label Image Name",
+            "default": "0",
+            "type": "string",
+            "description": "Name of the zarr image that will contain the label image with detected blob centroids. Defaults to \"0\". In case you saved, for example, illumination corrected images in the same zarr without overwriting the original images, you can specify a different name here (e.g. \"0_illum_corrected\")."
+          }
+        },
+        "required": [
+          "zarr_urls",
+          "zarr_dir",
+          "channel_label"
+        ],
+        "additionalProperties": false
+      },
+      "args_schema_parallel": {
+        "title": "DetectBlobCentroids",
+        "type": "object",
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "init_args": {
+            "$ref": "#/definitions/InitArgsDetectBlobCentroids",
+            "title": "Init_Args",
+            "description": "Intialization arguments provided by `init_detect_blob_centroids`."
+          },
+          "ROI_table_name": {
+            "title": "Roi Table Name",
+            "type": "string",
+            "description": "Name of the table containing the ROIs."
+          },
+          "min_sigma": {
+            "title": "Min Sigma",
+            "default": 1,
+            "type": "integer",
+            "description": "Missing description"
+          },
+          "max_sigma": {
+            "title": "Max Sigma",
+            "default": 10,
+            "type": "integer",
+            "description": "Missing description"
+          },
+          "num_sigma": {
+            "title": "Num Sigma",
+            "default": 3,
+            "type": "integer",
+            "description": "Missing description"
+          },
+          "threshold": {
+            "title": "Threshold",
+            "default": 0.002,
+            "type": "number",
+            "description": "Missing description"
+          },
+          "output_label_name": {
+            "title": "Output Label Name",
+            "type": "string",
+            "description": "Name of the output label image."
+          },
+          "level": {
+            "title": "Level",
+            "default": 0,
+            "type": "integer",
+            "description": "Resolution of the label image to calculate overlap. Only tested for level 0."
+          },
+          "relabeling": {
+            "title": "Relabeling",
+            "default": true,
+            "type": "boolean",
+            "description": "If True, relabel the label image to keep unique label across all ROIs"
+          },
+          "overwrite": {
+            "title": "Overwrite",
+            "default": true,
+            "type": "boolean",
+            "description": "If True, overwrite existing label image."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "init_args",
+          "ROI_table_name",
+          "output_label_name"
+        ],
+        "additionalProperties": false,
+        "definitions": {
+          "InitArgsDetectBlobCentroids": {
+            "title": "InitArgsDetectBlobCentroids",
+            "description": "Arguments to be passed from Convert Channel to Label init to compute",
+            "type": "object",
+            "properties": {
+              "channel_label": {
+                "title": "Channel Label",
+                "type": "string"
+              },
+              "channel_zarr_url": {
+                "title": "Channel Zarr Url",
+                "type": "string"
+              }
+            },
+            "required": [
+              "channel_label",
+              "channel_zarr_url"
+            ]
+          }
+        }
+      },
+      "docs_info": "## init_detect_blob_centroids\nInitialized Filter Label by Size task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform Convert Channel to Label task.\n## detect_blob_centroids\nDetects blob centroids in an intensity image and stores the result as a\nlabel image..\n"
     }
   ],
   "has_args_schemas": true,
