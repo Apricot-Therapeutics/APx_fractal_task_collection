@@ -1056,7 +1056,7 @@
       "executable_parallel": "tasks/calculate_basicpy_illumination_models.py",
       "meta_parallel": {
         "cpus_per_task": 1,
-        "mem": 3750
+        "mem": 10000
       },
       "args_schema_non_parallel": {
         "title": "InitCalculateBasicpyIlluminationModels",
@@ -1360,6 +1360,11 @@
             "default": "_stitched",
             "type": "string",
             "description": "What suffix to append to the stitched images. Only relevant if `overwrite_input=False`."
+          },
+          "tmp_dir": {
+            "title": "Tmp Dir",
+            "type": "string",
+            "description": "Optional path to where the temporary directory should be created. Might be necessary if the default temporary directory (/tmp/) on the cluster has too little space left."
           }
         },
         "required": [

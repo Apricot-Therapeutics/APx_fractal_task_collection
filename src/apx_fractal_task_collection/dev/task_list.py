@@ -50,7 +50,7 @@ TASK_LIST = [
         name="Calculate BaSiCPy Illumination Models",
         executable_init="tasks/init_calculate_basicpy_illumination_models.py",
         executable="tasks/calculate_basicpy_illumination_models.py",
-        meta={"cpus_per_task": 1, "mem": 3750},
+        meta={"cpus_per_task": 1, "mem": 10000},
     ),
     ParallelTask(
         name="Apply BaSiCPy Illumination Models",

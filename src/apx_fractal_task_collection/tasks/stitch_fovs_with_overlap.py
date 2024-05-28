@@ -14,6 +14,8 @@ from pathlib import Path
 import tempfile
 import zarr
 
+from typing import Optional
+
 import dask.array as da
 import numpy as np
 from skimage import io
@@ -38,6 +40,7 @@ def stitch_fovs_with_overlap(
     filter_sigma: float = 10,
     overwrite_input: bool = True,
     suffix: str = "_stitched",
+    tmp_dir: Optional[str] = None,
 ) -> None:
 
     """
@@ -55,6 +58,9 @@ def stitch_fovs_with_overlap(
              data is saved there.
         suffix: What suffix to append to the stitched images.
             Only relevant if `overwrite_input=False`.
+        tmp_dir: Optional path to where the temporary directory should be
+            created. Might be necessary if the default temporary directory
+            (/tmp/) on the cluster has too little space left.
     """
 
     # Define old/new zarrurls
@@ -75,7 +81,7 @@ def stitch_fovs_with_overlap(
     width = data_czyx.blocks.shape[-1]
 
     data_czyx_out = []
-    with tempfile.TemporaryDirectory() as tmpdirname:
+    with tempfile.TemporaryDirectory(dir=tmp_dir) as tmpdirname:
 
         logger.info(f'created temporary directory {tmpdirname}')
         tmpdir = Path(tmpdirname)

@@ -791,6 +791,7 @@ def test_stitch_fovs_with_overlap(test_data_dir):
         overlap=0.1,
         filter_sigma=10,
         overwrite_input=False,
+        tmp_dir=None,
     )
 
     # assert whether stitched images was saved in a new zarr image
