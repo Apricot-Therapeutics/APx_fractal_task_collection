@@ -184,6 +184,7 @@ def stitch_fovs_with_overlap(
         overwrite=True,
         num_levels=num_levels,
         coarsening_xy=coarsening_xy,
+        chunksize=data_czyx.chunksize,
     )
 
     if overwrite_input:
