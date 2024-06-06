@@ -70,7 +70,7 @@ TASK_LIST = [
         input_types=dict(stitched=False),
         executable="tasks/stitch_fovs_with_overlap.py",
         output_types=dict(stitched=True),
-        meta={"cpus_per_task": 1, "mem": 3750},
+        meta={"cpus_per_task": 1, "mem": 10000},
     ),
     NonParallelTask(
         name="Multiplexed Pixel Clustering",
