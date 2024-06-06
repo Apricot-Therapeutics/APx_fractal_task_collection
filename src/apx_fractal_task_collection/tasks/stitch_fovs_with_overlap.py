@@ -81,6 +81,7 @@ def stitch_fovs_with_overlap(
     width = data_czyx.blocks.shape[-1]
 
     data_czyx_out = []
+
     with tempfile.TemporaryDirectory(dir=tmp_dir) as tmpdirname:
 
         logger.info(f'created temporary directory {tmpdirname}')
