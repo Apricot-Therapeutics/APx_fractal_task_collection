@@ -1326,7 +1326,7 @@
       "executable_parallel": "tasks/stitch_fovs_with_overlap.py",
       "meta_parallel": {
         "cpus_per_task": 1,
-        "mem": 3750
+        "mem": 10000
       },
       "args_schema_parallel": {
         "title": "StitchFovsWithOverlap",
