@@ -20,7 +20,7 @@ Please note that all tasks pass basic tests based on 2D and 3D OME-ZARR files. H
 
 | Task | Description | 2D Tests Passing | 2D Output validated | 3D Tests Passing | 3D Output validated |
 | --- | --- | :---: | :---: | :---: | :---: |
-| IC6000 to OME-Zarr | Converts output images from IN Cell Analyzer 6000 (GE Healthcare) to OME-Zarr. |☑️|☑️|✖️|✖️|
+| Convert IC6000 to OME-Zarr | Converts output images from IN Cell Analyzer 6000 (GE Healthcare) to OME-Zarr. |☑️|☑️|✖️|✖️|
 | Calculate BaSiCPy Illumination Models | Calculates illumination correction model based on [BaSiCPy](https://github.com/peng-lab/BaSiCPy) for each available channel. |☑️|☑️|☑️|✖️|
 | Apply BaSiCPy Illumination Model | Applies BaSiCPy illumination models to a OME-Zarr file. Use after "Calculate BaSiCPy Illumination Models" |☑️|☑️|☑️|✖️|
 | Correct Chromatic Shift | Corrects chromatic shift in OME-Zarr file per wavelength id. Requires reference images (for example fluorescent beads) |☑️|☑️|☑️|✖️|
