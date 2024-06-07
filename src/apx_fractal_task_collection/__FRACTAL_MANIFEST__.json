@@ -1080,6 +1080,12 @@
             "default": 150,
             "type": "integer",
             "description": "Number of images to use to calculate BaSiCPy model."
+          },
+          "compute_per_well": {
+            "title": "Compute Per Well",
+            "default": false,
+            "type": "boolean",
+            "description": "If True, calculate illumination profiles per well. This can be useful if your experiment contains different stainings in each well (e.g., different antibodies with varying intensity ranges). Defaults to False."
           }
         },
         "required": [
@@ -1143,12 +1149,17 @@
                 "additionalProperties": {
                   "type": "integer"
                 }
+              },
+              "compute_per_well": {
+                "title": "Compute Per Well",
+                "type": "boolean"
               }
             },
             "required": [
               "channel_label",
               "channel_zarr_urls",
-              "channel_zarr_dict"
+              "channel_zarr_dict",
+              "compute_per_well"
             ]
           }
         }
@@ -1326,7 +1337,7 @@
       "executable_parallel": "tasks/stitch_fovs_with_overlap.py",
       "meta_parallel": {
         "cpus_per_task": 1,
-        "mem": 10000
+        "mem": 30000
       },
       "args_schema_parallel": {
         "title": "StitchFovsWithOverlap",

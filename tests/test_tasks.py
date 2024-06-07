@@ -303,11 +303,13 @@ def test_detect_blob_centroids(test_data_dir, image_list):
 def test_illumination_correction(test_data_dir, image_list):
 
     image_list = [f"{test_data_dir}/{i}" for i in image_list]
+    compute_per_well = False
 
     parallelization_list = init_calculate_basicpy_illumination_models(
         zarr_urls=image_list,
         zarr_dir=test_data_dir,
         n_images=1,
+        compute_per_well=compute_per_well,
     )
 
     for channel in parallelization_list['parallelization_list']:
@@ -336,9 +338,26 @@ def test_illumination_correction(test_data_dir, image_list):
         f"Illumination profiles not found at {illumination_profiles_folder}"
 
     # assert that illumination profiles folder contains the expected subfolders
-    expected_subfolders = ['0_DAPI', '0_GFP',
-                           '1_DAPI', '1_GFP',
-                           '2_DAPI', '2_GFP']
+
+    if compute_per_well:
+        expected_subfolders = ['well_A2_ch_lbl_2_DAPI',
+                               'well_A2_ch_lbl_0_GFP',
+                               'well_A2_ch_lbl_0_DAPI',
+                               'well_A2_ch_lbl_1_GFP',
+                               'well_A2_ch_lbl_1_DAPI',
+                               'well_B3_ch_lbl_2_GFP',
+                               'well_B3_ch_lbl_1_DAPI',
+                               'well_B3_ch_lbl_1_GFP',
+                               'well_A2_ch_lbl_2_GFP',
+                               'well_B3_ch_lbl_0_GFP',
+                               'well_B3_ch_lbl_2_DAPI',
+                               'well_B3_ch_lbl_0_DAPI']
+    else:
+        expected_subfolders = ['0_DAPI', '0_GFP',
+                               '1_DAPI', '1_GFP',
+                               '2_DAPI', '2_GFP']
+
+
     subfolders = [f.name for f in illumination_profiles_folder.iterdir()]
     assert sorted(subfolders) == sorted(expected_subfolders), \
         f"Expected subfolders {expected_subfolders}," \

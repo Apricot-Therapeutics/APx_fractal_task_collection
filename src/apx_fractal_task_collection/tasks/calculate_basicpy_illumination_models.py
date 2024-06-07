@@ -58,9 +58,17 @@ def calculate_basicpy_illumination_models(
         overwrite: If True, overwrite existing illumination profiles.
     """
 
+    # take care of channel label init arg (has well name in it if
+    # compute_per_well)
+    if init_args.compute_per_well:
+        channel_label = init_args.channel_label.split("_ch_lbl_")[1]
+    else:
+        channel_label = init_args.channel_label
+
     logger.info(
         f"Calculating illumination profile for channel"
-        f" {init_args.channel_label}.")
+        f" {channel_label}.")
+
 
     # Read attributes from NGFF metadata
     ngff_image_meta = load_NgffImageMeta(init_args.channel_zarr_urls[0])
@@ -104,7 +112,7 @@ def calculate_basicpy_illumination_models(
         tmp_channel: OmeroChannel = get_channel_from_image_zarr(
             image_zarr_path=zarr_url,
             wavelength_id=None,
-            label=init_args.channel_label,
+            label=channel_label,
         )
         ind_channel = tmp_channel.index
         data_zyx = \
@@ -133,7 +141,7 @@ def calculate_basicpy_illumination_models(
 
     # calculate illumination correction profile
     logger.info(f"Now calculating illumination correction for channel"
-                f" {init_args.channel_label}.")
+                f" {channel_label}.")
     basic = BaSiC(get_darkfield=True, smoothness_flatfield=1)
     if np.shape(ROI_data)[0] == 1:
         basic.fit(ROI_data[0, :, :, :])
@@ -141,11 +149,11 @@ def calculate_basicpy_illumination_models(
         basic.fit(np.squeeze(ROI_data))
     logger.info(
         f"Finished calculating illumination correction for channel"
-        f" {init_args.channel_label}.")
+        f" {channel_label}.")
 
     # save illumination correction model
     logger.info(f"Now saving illumination correction model for channel"
-                f" {init_args.channel_label}.")
+                f" {channel_label}.")
     illum_path = Path(illumination_profiles_folder)
     illum_path.mkdir(parents=True, exist_ok=True)
     filename = illum_path.joinpath(init_args.channel_label)

@@ -13,7 +13,7 @@ Initializes the parallelization list for BaSiCPy illumination correction.
 """
 import logging
 from typing import Any, Optional
-from apx_fractal_task_collection.init_utils import group_by_channel
+from apx_fractal_task_collection.init_utils import group_by_channel, group_by_well_and_channel
 import random
 from pydantic.decorator import validate_arguments
 import pandas as pd
@@ -27,7 +27,8 @@ def init_calculate_basicpy_illumination_models(
     zarr_urls: list[str],
     zarr_dir: str,
     # Core parameters
-    n_images: int=150,
+    n_images: int = 150,
+    compute_per_well: bool = False,
 ) -> dict[str, list[dict[str, Any]]]:
     """
     Initialized BaSiCPy illumination correction task
@@ -43,6 +44,10 @@ def init_calculate_basicpy_illumination_models(
             created. Not used by this task.
             (standard argument for Fractal tasks, managed by Fractal server).
         n_images: Number of images to use to calculate BaSiCPy model.
+        compute_per_well: If True, calculate illumination profiles per well.
+            This can be useful if your experiment contains different stainings
+            in each well (e.g., different antibodies with varying intensity
+            ranges). Defaults to False.
 
     Returns:
         task_output: Dictionary for Fractal server that contains a
@@ -57,7 +62,10 @@ def init_calculate_basicpy_illumination_models(
         f"Calculating illumination profiles based on {n_images} "
         f"randomly sampled images.")
 
-    channel_dict = group_by_channel(zarr_urls)
+    if compute_per_well:
+        channel_dict = group_by_well_and_channel(zarr_urls)
+    else:
+        channel_dict = group_by_channel(zarr_urls)
 
     # Create the parallelization list
     parallelization_list = []
@@ -84,6 +92,7 @@ def init_calculate_basicpy_illumination_models(
                     channel_label=channel,
                     channel_zarr_urls=channel_zarr_urls,
                     channel_zarr_dict=channel_zarr_dict,
+                    compute_per_well=compute_per_well,
                 ),
             )
         )

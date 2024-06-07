@@ -143,6 +143,19 @@ def apply_basicpy_illumination_models(
     else:
         zarr_url_new = zarr_url.rstrip("/") + suffix
 
+    # check whether illumination profile folder contains well+channel profiles
+    # or only channel profiles
+
+    # get all folders in illumination_profiles_folder
+    profile_names = [f for f in Path(illumination_profiles_folder).iterdir()
+                     if f.is_dir()]
+    sample = str(profile_names[0])
+
+    if "well_" in sample and "_ch_lbl_" in sample:
+        compute_per_well = True
+    else:
+        compute_per_well = False
+
     t_start = time.perf_counter()
     logger.info("Start illumination_correction")
     logger.info(f"  {overwrite_input=}")
@@ -225,8 +238,14 @@ def apply_basicpy_illumination_models(
             f"loading illumination model for channel {channel.label}"
         )
         basic = BaSiC()
-        basic = basic.load_model(
-            illumination_profiles_folder + f"/{channel.label}")
+        if compute_per_well:
+            well_id = zarr_url.rsplit("/", 3)[1] + zarr_url.rsplit("/", 3)[2]
+            basic = basic.load_model(
+                illumination_profiles_folder +
+                f"/well_{well_id}_ch_lbl_{channel.label}")
+        else:
+            basic = basic.load_model(
+                illumination_profiles_folder + f"/{channel.label}")
         for i_ROI, indices in enumerate(list_indices):
             # Define region
             s_z, e_z, s_y, e_y, s_x, e_x = indices[:]

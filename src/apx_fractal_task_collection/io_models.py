@@ -159,12 +159,17 @@ class InitArgsBaSiCPyCalculate(BaseModel):
             model.
         channel_zarr_dict: dictionary specifying how often each zarr url
             should be sampled.
+        compute_per_well: If True, calculate illumination profiles per well.
+            This can be useful if your experiment contains different stainings
+            in each well (e.g., different antibodies with varying intensity
+            ranges). Defaults to False.
 
     """
 
     channel_label: str
     channel_zarr_urls: list[str]
     channel_zarr_dict: dict[str, int]
+    compute_per_well: bool
 
 
 class InitArgsAggregateFeatureTables(BaseModel):
