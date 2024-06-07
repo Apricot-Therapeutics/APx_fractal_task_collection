@@ -20,19 +20,19 @@ Please note that all tasks pass basic tests based on 2D and 3D OME-ZARR files. H
 
 | Task | Description | 2D Tests Passing | 2D Output validated | 3D Tests Passing | 3D Output validated |
 | --- | --- | :---: | :---: | :---: | :---: |
-| Create OME-Zarr Multiplex IC6000 | Generates a OME-Zarr file based on the output of a IN Cell Analyzer 6000 (GE Healthcare). |☑️|☑️|☑️|✖️|
-| IC6000 to OME-Zarr |Converts output images from IC6000 microscopy to OME-Zarr. Use after "Create OME-Zarr Multiplex IC6000". |☑️|☑️|☑️|✖️|
-| Calculate Illumination Profiles | Calculates illumination correction model based on [BaSiCPy](https://github.com/peng-lab/BaSiCPy) for each available channel. |☑️|☑️|☑️|✖️|
-| Apply BaSiCPy Illumination Model | Applies BaSiCPy illumination models to a OME-Zarr file. Use after "Calculate Illumination Profiles" |☑️|☑️|☑️|✖️|
-| Chromatic Shift Correction | Corrects chromatic shift in OME-Zarr file per wavelength id. Requires reference images (for example fluorescent beads) |☑️|☑️|☑️|✖️|
-| Stitch FOVs with Overlap | Stitches FOVs that were imaged with overlap, using [ASHLAR](https://github.com/labsyspharm/ashlar). |☑️|☑️|☑️|✖️|
-| Calculate Registration (image-based) [chi-squared shift] | Calculates shift between acquisitions based on chi-squared shift algorithm from the python package [image registration](https://image-registration.readthedocs.io/en/latest/api/image_registration.chi2_shifts.chi2_shift.html) |☑️|☑️|☑️|✖️|
+| IC6000 to OME-Zarr | Converts output images from IN Cell Analyzer 6000 (GE Healthcare) to OME-Zarr. |☑️|☑️|✖️|✖️|
+| Calculate BaSiCPy Illumination Models | Calculates illumination correction model based on [BaSiCPy](https://github.com/peng-lab/BaSiCPy) for each available channel. |☑️|☑️|☑️|✖️|
+| Apply BaSiCPy Illumination Model | Applies BaSiCPy illumination models to a OME-Zarr file. Use after "Calculate BaSiCPy Illumination Models" |☑️|☑️|☑️|✖️|
+| Correct Chromatic Shift | Corrects chromatic shift in OME-Zarr file per wavelength id. Requires reference images (for example fluorescent beads) |☑️|☑️|☑️|✖️|
+| Stitch FOVs with Overlap | Stitches FOVs that were imaged with overlap, using [ASHLAR](https://github.com/labsyspharm/ashlar). |☑️|☑️|✖️|✖️|
 | Segment Secondary Object | Segments secondary objects in images. Requires a label image that provides seeds and an intensity image. |☑️|☑️|☑️|✖️|
+| Detect Blob Centroids | Performs blob detection using [scikit-image](https://scikit-image.org/docs/stable/api/skimage.feature.html#skimage.feature.blob_log) |☑️|☑️|☑️|✖️|
 | Clip Label Image | Clips a label image with a secondary label image. For example, this can be used to clip cell segmentations with nuclear segmentations to receive the cytoplasm. |☑️|☑️|☑️|✖️|
+| Mask Label Image | Applies a mask to a label image based on a secondary label image. |☑️|☑️|☑️|✖️|
 | Convert Channel to Label | Utility task to convert a channel from a OME-Zarr file to a label image. Can be used to import an external label image into Fractal without creating a new task. |☑️|☑️|☑️|✖️|
 | Filter Label by Size | Filters a label image by size and removes objects larger/smaller than a given threshold. |☑️|☑️|☑️|✖️|
 | Measure Features | Measures features for a given label image. Currently, four feature sets are available: intensity featues, morphology features, population context features and texture features (Haralick and Law's Texture Energy). |☑️|☑️|☑️|✖️|
 | Label Assignment by Overlap | Assigns child labels to parent labels by their overlap. Relationship is saved in the observations of the feature table. |☑️|☑️|☑️|✖️|
-| Aggregate Tables to Well Level | Aggregates/Concatenates feature tables from all acquisitions. Can be saved either on the well level or in the first aqcuisition. |☑️|☑️|☑️|✖️|
+| Aggregate Feature Tables | Aggregates/Concatenates feature tables from all multiplexing acquisitions. Can be saved either on the well level or in the first aqcuisition. |☑️|☑️|☑️|✖️|
 | Multiplexed Pixel Clustering | Applies multiplexed pixel clustering to selected images. |☑️|☑️|☑️|✖️|
 
