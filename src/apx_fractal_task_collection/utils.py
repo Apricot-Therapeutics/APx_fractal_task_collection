@@ -5,8 +5,8 @@ from pathlib import Path
 from fractal_tasks_core.channels import get_omero_channel_list
 from fractal_tasks_core.channels import get_channel_from_image_zarr
 import dask.array as da
-from pydantic import BaseModel, root_validator, Field
-from typing import Sequence, Literal, Optional
+from pydantic import BaseModel, model_validator
+from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
 
@@ -304,14 +304,14 @@ class TextureFeatures(BaseModel):
     clip_value: int = 5000
     clip_value_exceptions: dict[str, int] = {}
 
-    @root_validator
-    def validate_conditions(cls, values):
+    @model_validator(mode="after")
+    def validate_conditions(self: Self) -> Self:
         # Extract values
-        haralick = values.get("haralick")
-        laws_texture_energy = values.get("laws_texture_engery")
-        lower_percentile = values.get("clip_value")
-        upper_percentile = values.get("clip_value_exceptions")
+        haralick = self.haralick
+        laws_texture_energy = self.laws_texture_energy
+        lower_percentile = self.clip_value
+        upper_percentile = self.clip_value_exceptions
 
-        return values
+        return self
 
 

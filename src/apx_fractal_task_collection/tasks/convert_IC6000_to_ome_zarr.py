@@ -20,7 +20,7 @@ import dask.array as da
 import zarr
 from anndata import read_zarr
 from dask.array.image import imread
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 
 from apx_fractal_task_collection.init_utils import parse_filename
 from apx_fractal_task_collection.io_models import InitArgsIC6000
@@ -56,7 +56,7 @@ def sort_fun(filename: str) -> list[int]:
     return [site, z_index]
 
 
-@validate_arguments
+@validate_call
 def convert_IC6000_to_ome_zarr(
     *,
     zarr_url: str,

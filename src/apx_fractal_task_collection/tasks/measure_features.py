@@ -35,7 +35,7 @@ from fractal_tasks_core.ngff import load_NgffImageMeta
 from fractal_tasks_core.tables import write_table
 from fractal_tasks_core.channels import OmeroChannel, ChannelInputModel
 from fractal_tasks_core.channels import get_channel_from_image_zarr
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 from fractal_tasks_core.roi import check_valid_ROI_indices
 from fractal_tasks_core.roi import (
     convert_ROI_table_to_indices,
@@ -47,7 +47,7 @@ __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 logger = logging.getLogger(__name__)
 
 
-@validate_arguments
+@validate_call
 def measure_features(  # noqa: C901
         *,
         # Default arguments for fractal tasks:

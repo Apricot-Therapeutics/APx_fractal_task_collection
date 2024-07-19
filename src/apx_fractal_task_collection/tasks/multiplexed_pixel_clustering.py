@@ -35,7 +35,7 @@ from fractal_tasks_core.pyramids import build_pyramid
 from fractal_tasks_core.tables import write_table
 from fractal_tasks_core.channels import get_channel_from_image_zarr
 from fractal_tasks_core.channels import get_omero_channel_list
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 
 
 __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
@@ -230,7 +230,7 @@ def get_image_from_mpps(mpps: pd.DataFrame, well_name: str,
     return mpps_array
 
 
-@validate_arguments
+@validate_call
 def multiplexed_pixel_clustering(  # noqa: C901
         *,
         # Default arguments for fractal tasks:

@@ -16,7 +16,7 @@ import dask.array as da
 from typing import Optional
 from skimage.morphology import remove_small_objects
 from skimage.morphology import label
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 
 
 from apx_fractal_task_collection.io_models import InitArgsFilterLabelBySize
@@ -50,7 +50,7 @@ def remove_large_objects(img, max_size):
     return img
 
 
-@validate_arguments
+@validate_call
 def filter_label_by_size(
     *,
     # Default arguments for fractal tasks:

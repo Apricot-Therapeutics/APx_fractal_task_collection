@@ -25,7 +25,7 @@ from typing import Union
 import numcodecs
 
 from fractal_tasks_core.ngff import load_NgffImageMeta
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 
 
 __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
@@ -136,7 +136,7 @@ def build_pyramid(
             compressor=codec,
         )
 
-@validate_arguments
+@validate_call
 def compress_zarr_for_visualization(  # noqa: C901
         *,
         # Default arguments for fractal tasks:

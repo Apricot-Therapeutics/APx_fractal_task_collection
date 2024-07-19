@@ -23,7 +23,7 @@ import dask.array as da
 import numpy as np
 import zarr
 from basicpy import BaSiC
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 
 from fractal_tasks_core.channels import get_omero_channel_list
 from fractal_tasks_core.channels import OmeroChannel
@@ -97,7 +97,7 @@ def correct(
     return new_img_stack.astype(dtype)
 
 
-@validate_arguments
+@validate_call
 def apply_basicpy_illumination_models(
     *,
     # Default arguments for fractal tasks:

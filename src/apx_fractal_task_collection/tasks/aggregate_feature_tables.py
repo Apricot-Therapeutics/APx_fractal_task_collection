@@ -18,7 +18,7 @@ import fractal_tasks_core
 import zarr
 import anndata as ad
 from fractal_tasks_core.tables import write_table
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 
 
 __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
@@ -43,7 +43,7 @@ def concat_features(feature_tables):
 
     return feature_table
 
-@validate_arguments
+@validate_call
 def aggregate_feature_tables(  # noqa: C901
         *,
         # Default arguments for fractal tasks:

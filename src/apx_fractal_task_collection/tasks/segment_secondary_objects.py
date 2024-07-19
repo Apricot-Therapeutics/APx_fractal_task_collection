@@ -40,7 +40,7 @@ from fractal_tasks_core.roi import (
     convert_ROI_table_to_indices,
 )
 
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 
 
 __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
@@ -105,7 +105,7 @@ def watershed(intensity_image, label_image,
 
         return regions.astype('uint32')
 
-@validate_arguments
+@validate_call
 def segment_secondary_objects(  # noqa: C901
     *,
     # Default arguments for fractal tasks:

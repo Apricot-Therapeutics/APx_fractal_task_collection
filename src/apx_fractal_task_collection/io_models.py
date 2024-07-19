@@ -1,13 +1,6 @@
-from typing import Literal
 from typing import Optional
-
 from pydantic import BaseModel
-from pydantic import Field
-from pydantic import validator
-from SimpleITK.SimpleITK import ParameterMap
 
-from fractal_tasks_core.channels import ChannelInputModel
-from fractal_tasks_core.channels import OmeroChannel
 
 
 class InitArgsSegmentSecondary(BaseModel):

@@ -28,7 +28,7 @@ from fractal_tasks_core.utils import rescale_datasets
 from fractal_tasks_core.ngff import load_NgffImageMeta
 from fractal_tasks_core.pyramids import build_pyramid
 
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 
 
 __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
@@ -36,7 +36,7 @@ __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
 logger = logging.getLogger(__name__)
 
-@validate_arguments
+@validate_call
 def mask_label_image(  # noqa: C901
     *,
     # Default arguments for fractal tasks:

@@ -38,7 +38,7 @@ from fractal_tasks_core.roi import (
 )
 from fractal_tasks_core.channels import get_channel_from_image_zarr
 
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 
 
 __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
@@ -73,7 +73,7 @@ def blob_detection(intensity_image,
 
     return labels
 
-@validate_arguments
+@validate_call
 def detect_blob_centroids(  # noqa: C901
     *,
     # Default arguments for fractal tasks:
