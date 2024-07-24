@@ -33,17 +33,20 @@
               "haralick": {
                 "default": false,
                 "title": "Haralick",
-                "type": "boolean"
+                "type": "boolean",
+                "description": "Flag to calculate Haralick texture features."
               },
               "laws_texture_energy": {
                 "default": false,
                 "title": "Laws Texture Energy",
-                "type": "boolean"
+                "type": "boolean",
+                "description": "Flag to calculate Law's Texture Energy features."
               },
               "clip_value": {
                 "default": 5000,
                 "title": "Clip Value",
-                "type": "integer"
+                "type": "integer",
+                "description": "Value to which to clip the intensity image for haralick texture feature calculation. Will be applied to all channels except the ones specified in clip_value_exceptions."
               },
               "clip_value_exceptions": {
                 "additionalProperties": {
@@ -51,7 +54,8 @@
                 },
                 "default": {},
                 "title": "Clip Value Exceptions",
-                "type": "object"
+                "type": "object",
+                "description": "Dictionary of exceptions for the clip value. The dictionary should have the channel name as key and the clip value as value."
               }
             },
             "title": "TextureFeatures",
@@ -1102,6 +1106,148 @@
       },
       "args_schema_parallel": {
         "$defs": {
+          "BaSiCPyModelParams": {
+            "description": "Advanced parameters for BaSiCPy illumination correction.",
+            "properties": {
+              "autosegment": {
+                "default": false,
+                "title": "Autosegment",
+                "type": "boolean",
+                "description": "When not False, automatically segment the image before fitting.When True, threshold_otsu from scikit-image is used and the brighter pixels are taken.When a callable is given, it is used as the segmentation function."
+              },
+              "autosegment_margin": {
+                "default": 10,
+                "title": "Autosegment Margin",
+                "type": "integer",
+                "description": "Margin of the segmentation mask to the thresholded region."
+              },
+              "epsilon": {
+                "default": 0.1,
+                "title": "Epsilon",
+                "type": "number",
+                "description": "Weight regularization term."
+              },
+              "fitting_mode": {
+                "default": "ladmap",
+                "enum": [
+                  "ladmap",
+                  "approximate"
+                ],
+                "title": "Fitting Mode",
+                "type": "string",
+                "description": "Must be one of [\u2018ladmap\u2019, \u2018approximate\u2019]"
+              },
+              "get_darkfield": {
+                "default": true,
+                "title": "Get Darkfield",
+                "type": "boolean",
+                "description": "When True, will estimate the darkfield shading component."
+              },
+              "max_iterations": {
+                "default": 500,
+                "title": "Max Iterations",
+                "type": "integer",
+                "description": "Maximum number of iterations for single optimization."
+              },
+              "max_mu_coef": {
+                "default": 10000000.0,
+                "title": "Max Mu Coef",
+                "type": "number",
+                "description": "Maximum allowed value of mu, divided by the initial value."
+              },
+              "max_reweight_iterations": {
+                "default": 10,
+                "title": "Max Reweight Iterations",
+                "type": "integer",
+                "description": "Maximum number of reweighting iterations."
+              },
+              "max_reweight_iterations_baseline": {
+                "default": 5,
+                "title": "Max Reweight Iterations Baseline",
+                "type": "integer",
+                "description": "Maximum number of reweighting iterations for baseline."
+              },
+              "max_workers": {
+                "default": 2,
+                "title": "Max Workers",
+                "type": "integer",
+                "description": "Maximum number of threads used for processing."
+              },
+              "mu_coef": {
+                "default": 12.5,
+                "title": "Mu Coef",
+                "type": "number",
+                "description": "Coefficient for initial mu value."
+              },
+              "optimization_tol": {
+                "default": 0.001,
+                "title": "Optimization Tol",
+                "type": "number",
+                "description": "Optimization tolerance."
+              },
+              "optimization_tol_diff": {
+                "default": 0.01,
+                "title": "Optimization Tol Diff",
+                "type": "number",
+                "description": "Optimization tolerance for update diff."
+              },
+              "resize_mode": {
+                "default": "jax",
+                "enum": [
+                  "jax",
+                  "skimage",
+                  "skimage_dask"
+                ],
+                "title": "Resize Mode",
+                "type": "string",
+                "description": "Resize mode to use when downsampling images. Must be one of \u2018jax\u2019, \u2018skimage\u2019, and \u2018skimage_dask\u2019"
+              },
+              "reweighting_tol": {
+                "default": 0.01,
+                "title": "Reweighting Tol",
+                "type": "number",
+                "description": "Reweighting tolerance in mean absolute difference of images."
+              },
+              "rho": {
+                "default": 1.5,
+                "title": "Rho",
+                "type": "number",
+                "description": "Parameter rho for mu update."
+              },
+              "smoothness_darkfield": {
+                "default": 1.0,
+                "title": "Smoothness Darkfield",
+                "type": "number",
+                "description": "Weight of the darkfield term in the Lagrangian."
+              },
+              "smoothness_flatfield": {
+                "default": 1.0,
+                "title": "Smoothness Flatfield",
+                "type": "number",
+                "description": "Weight of the flatfield term in the Lagrangian."
+              },
+              "sort_intensity": {
+                "default": false,
+                "title": "Sort Intensity",
+                "type": "boolean",
+                "description": "Whether or not to sort the intensities of the image."
+              },
+              "sparse_cost_darkfield": {
+                "default": 0.01,
+                "title": "Sparse Cost Darkfield",
+                "type": "number",
+                "description": "Size for running computations. None means no rescaling."
+              },
+              "working_size": {
+                "default": 128,
+                "title": "Working Size",
+                "type": "integer",
+                "description": "Working"
+              }
+            },
+            "title": "BaSiCPyModelParams",
+            "type": "object"
+          },
           "InitArgsBaSiCPyCalculate": {
             "description": "Arguments to be passed from BaSiCPy Calculate init to compute",
             "properties": {
@@ -1154,6 +1300,11 @@
             "title": "Illumination Profiles Folder",
             "type": "string",
             "description": "Path to folder where illumination profiles will be saved."
+          },
+          "advanced_basicpy_model_params": {
+            "$ref": "#/$defs/BaSiCPyModelParams",
+            "title": "Advanced Basicpy Model Params",
+            "description": "Advanced parameters for the BaSiC model."
           },
           "overwrite": {
             "default": false,

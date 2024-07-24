@@ -13,7 +13,7 @@ from fractal_tasks_core.channels import OmeroChannel
 from fractal_tasks_core.tasks.io_models import MultiplexingAcquisition
 #from fractal_tasks_core.tasks.copy_ome_zarr import copy_ome_zarr
 
-from apx_fractal_task_collection.utils import TextureFeatures, FEATURE_LABELS
+from apx_fractal_task_collection.utils import TextureFeatures, FEATURE_LABELS, BaSiCPyModelParams
 from apx_fractal_task_collection.tasks.measure_features import measure_features
 from apx_fractal_task_collection.tasks.clip_label_image import clip_label_image
 from apx_fractal_task_collection.tasks.init_clip_label_image import init_clip_label_image
@@ -317,6 +317,7 @@ def test_illumination_correction(test_data_dir, image_list):
             zarr_url=channel['zarr_url'],
             init_args=channel['init_args'],
             illumination_profiles_folder=f"{test_data_dir}/illumination_profiles",
+            advanced_basicpy_model_params=BaSiCPyModelParams(),
             overwrite=True
         )
 

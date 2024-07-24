@@ -6,7 +6,8 @@ from fractal_tasks_core.channels import get_omero_channel_list
 from fractal_tasks_core.channels import get_channel_from_image_zarr
 import dask.array as da
 from pydantic import BaseModel, model_validator
-from typing_extensions import Self
+from typing_extensions import Self, Literal
+from basicpy.basicpy import FittingMode, ResizeMode
 
 logger = logging.getLogger(__name__)
 
@@ -313,5 +314,59 @@ class TextureFeatures(BaseModel):
         upper_percentile = self.clip_value_exceptions
 
         return self
+
+
+class BaSiCPyModelParams(BaseModel):
+    """
+    Advanced parameters for BaSiCPy illumination correction.
+
+    Attributes:
+        autosegment: When not False, automatically segment the image before fitting.When True, threshold_otsu from scikit-image is used and the brighter pixels are taken.When a callable is given, it is used as the segmentation function.
+        autosegment_margin: Margin of the segmentation mask to the thresholded region.
+        epsilon: Weight regularization term.
+        fitting_mode: Must be one of [‘ladmap’, ‘approximate’]
+        get_darkfield: When True, will estimate the darkfield shading component.
+        max_iterations: Maximum number of iterations for single optimization.
+        max_mu_coef: Maximum allowed value of mu, divided by the initial value.
+        max_reweight_iterations: Maximum number of reweighting iterations.
+        max_reweight_iterations_baseline: Maximum number of reweighting iterations for baseline.
+        max_workers: Maximum number of threads used for processing.
+        mu_coef: Coefficient for initial mu value.
+        optimization_tol: Optimization tolerance.
+        optimization_tol_diff: Optimization tolerance for update diff.
+        resize_mode: Resize mode to use when downsampling images. Must be one of ‘jax’, ‘skimage’, and ‘skimage_dask’
+        #resize_params: Parameters for the resize function when downsampling images.
+        reweighting_tol: Reweighting tolerance in mean absolute difference of images.
+        rho: Parameter rho for mu update.
+        smoothness_darkfield: Weight of the darkfield term in the Lagrangian.
+        smoothness_flatfield: Weight of the flatfield term in the Lagrangian.
+        sort_intensity: Whether or not to sort the intensities of the image.
+        sparse_cost_darkfield: Size for running computations. None means no rescaling.
+        working_size: Working
+    """
+
+    autosegment: bool = False
+    autosegment_margin: int = 10
+    epsilon: float = 0.1
+    fitting_mode: Literal[FittingMode.ladmap, FittingMode.approximate] = FittingMode.ladmap
+    get_darkfield: bool = True
+    max_iterations: int = 500
+    max_mu_coef: float = 10000000.0
+    max_reweight_iterations: int = 10
+    max_reweight_iterations_baseline: int = 5
+    max_workers: int = 2
+    mu_coef: float = 12.5
+    optimization_tol: float = 0.001
+    optimization_tol_diff: float = 0.01
+    resize_mode: Literal[ResizeMode.jax, ResizeMode.skimage, ResizeMode.skimage_dask] = ResizeMode.jax
+    #resize_params: dict[str, Any] = {}
+    reweighting_tol: float = 0.01
+    rho: float = 1.5
+    smoothness_darkfield: float = 1.0
+    smoothness_flatfield: float = 1.0
+    sort_intensity: bool = False
+    sparse_cost_darkfield: float = 0.01
+    working_size: int = 128
+
 
 

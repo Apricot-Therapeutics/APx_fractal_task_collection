@@ -4,4 +4,8 @@ from fractal_tasks_core.dev.create_manifest import create_manifest
 
 if __name__ == "__main__":
     PACKAGE = "apx_fractal_task_collection"
-    create_manifest(package=PACKAGE)
+    create_manifest(package=PACKAGE,
+                    custom_pydantic_models=[
+                        ("apx_fractal_task_collection", "utils.py", "TextureFeatures"),
+                        ("apx_fractal_task_collection", "utils.py", "BaSiCPyModelParams"),
+                    ])

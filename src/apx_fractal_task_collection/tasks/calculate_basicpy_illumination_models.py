@@ -18,9 +18,11 @@ from basicpy import BaSiC
 import dask.array as da
 import numpy as np
 
+from pydantic import Field
 from pydantic import validate_call
 
 from apx_fractal_task_collection.io_models import InitArgsBaSiCPyCalculate
+from apx_fractal_task_collection.utils import BaSiCPyModelParams
 
 from fractal_tasks_core.channels import OmeroChannel
 from fractal_tasks_core.ngff import load_NgffImageMeta
@@ -41,6 +43,8 @@ def calculate_basicpy_illumination_models(
     init_args: InitArgsBaSiCPyCalculate,
     # Task-specific arguments
     illumination_profiles_folder: str,
+    advanced_basicpy_model_params: BaSiCPyModelParams = Field(
+        default_factory=BaSiCPyModelParams),
     overwrite: bool = False,
 ) -> dict[str, Any]:
 
@@ -55,6 +59,7 @@ def calculate_basicpy_illumination_models(
             `init_calculate_basicpy_illumination_models`.
         illumination_profiles_folder: Path to folder where illumination
             profiles will be saved.
+        advanced_basicpy_model_params: Advanced parameters for the BaSiC model.
         overwrite: If True, overwrite existing illumination profiles.
     """
 
@@ -142,7 +147,31 @@ def calculate_basicpy_illumination_models(
     # calculate illumination correction profile
     logger.info(f"Now calculating illumination correction for channel"
                 f" {channel_label}.")
-    basic = BaSiC(get_darkfield=True, smoothness_flatfield=1)
+    basic = BaSiC(
+        autosegment=advanced_basicpy_model_params.autosegment,
+        autosegment_margin=advanced_basicpy_model_params.autosegment_margin,
+        epsilon=advanced_basicpy_model_params.epsilon,
+        fitting_mode=advanced_basicpy_model_params.fitting_mode,
+        get_darkfield=advanced_basicpy_model_params.get_darkfield,
+        max_iterations=advanced_basicpy_model_params.max_iterations,
+        max_mu_coef=advanced_basicpy_model_params.max_mu_coef,
+        max_reweight_iterations=advanced_basicpy_model_params.max_reweight_iterations,
+        max_reweight_iterations_baseline=advanced_basicpy_model_params.max_reweight_iterations_baseline,
+        max_workers=advanced_basicpy_model_params.max_workers,
+        mu_coef=advanced_basicpy_model_params.mu_coef,
+        optimization_tol=advanced_basicpy_model_params.optimization_tol,
+        optimization_tol_diff=advanced_basicpy_model_params.optimization_tol_diff,
+        resize_mode=advanced_basicpy_model_params.resize_mode,
+        #resize_params=advanced_basicpy_model_params.resize_params,
+        reweighting_tol=advanced_basicpy_model_params.reweighting_tol,
+        rho=advanced_basicpy_model_params.rho,
+        smoothness_darkfield=advanced_basicpy_model_params.smoothness_darkfield,
+        smoothness_flatfield=advanced_basicpy_model_params.smoothness_flatfield,
+        sort_intensity=advanced_basicpy_model_params.sort_intensity,
+        sparse_cost_darkfield=advanced_basicpy_model_params.sparse_cost_darkfield,
+        working_size=advanced_basicpy_model_params.working_size,
+    )
+
     if np.shape(ROI_data)[0] == 1:
         basic.fit(ROI_data[0, :, :, :])
     else:
