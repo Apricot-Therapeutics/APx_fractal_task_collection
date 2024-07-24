@@ -23,7 +23,7 @@ import dask.array as da
 import numpy as np
 import pandas as pd
 import zarr
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 import image_registration
 
 from fractal_tasks_core.channels import get_channel_from_image_zarr
@@ -59,7 +59,7 @@ def convert_to_8bit(img):
     return img
 
 
-@validate_arguments
+@validate_call
 def calculate_registration_image_based_chi_squared_shift(
     *,
     # Fractal arguments

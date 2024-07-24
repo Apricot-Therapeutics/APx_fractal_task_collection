@@ -19,7 +19,7 @@ from typing import Optional
 import dask.array as da
 import numpy as np
 from skimage import io
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 from ashlar.scripts import ashlar
 
 
@@ -30,7 +30,7 @@ from fractal_tasks_core.tasks._zarr_utils import _copy_tables_from_zarr_url
 
 logger = logging.getLogger(__name__)
 
-@validate_arguments
+@validate_call
 def stitch_fovs_with_overlap(
     *,
     # Default arguments for fractal tasks:

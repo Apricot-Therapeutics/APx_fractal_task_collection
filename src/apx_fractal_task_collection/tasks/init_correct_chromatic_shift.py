@@ -28,7 +28,7 @@ from fractal_tasks_core.roi import (
     check_valid_ROI_indices
 )
 
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +109,7 @@ def register_channel(channel_image, ref_image):
 
     return map
 
-@validate_arguments
+@validate_call
 def init_correct_chromatic_shift(
     *,
     # Fractal parameters

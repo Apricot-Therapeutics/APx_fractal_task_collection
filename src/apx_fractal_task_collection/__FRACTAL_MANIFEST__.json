@@ -9,8 +9,56 @@
         "mem": 3750
       },
       "args_schema_parallel": {
-        "title": "MeasureFeatures",
-        "type": "object",
+        "$defs": {
+          "ChannelInputModel": {
+            "description": "A channel which is specified by either `wavelength_id` or `label`.",
+            "properties": {
+              "wavelength_id": {
+                "title": "Wavelength Id",
+                "type": "string",
+                "description": "Unique ID for the channel wavelength, e.g. `A01_C01`. Can only be specified if label is not set."
+              },
+              "label": {
+                "title": "Label",
+                "type": "string",
+                "description": "Name of the channel. Can only be specified if wavelength_id is not set."
+              }
+            },
+            "title": "ChannelInputModel",
+            "type": "object"
+          },
+          "TextureFeatures": {
+            "description": "Validator to handle texture feature selection.",
+            "properties": {
+              "haralick": {
+                "default": false,
+                "title": "Haralick",
+                "type": "boolean"
+              },
+              "laws_texture_energy": {
+                "default": false,
+                "title": "Laws Texture Energy",
+                "type": "boolean"
+              },
+              "clip_value": {
+                "default": 5000,
+                "title": "Clip Value",
+                "type": "integer"
+              },
+              "clip_value_exceptions": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "default": {},
+                "title": "Clip Value Exceptions",
+                "type": "object"
+              }
+            },
+            "title": "TextureFeatures",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
         "properties": {
           "zarr_url": {
             "title": "Zarr Url",
@@ -33,69 +81,69 @@
             "description": "Missing description"
           },
           "channels_to_include": {
+            "items": {
+              "$ref": "#/$defs/ChannelInputModel"
+            },
             "title": "Channels To Include",
             "type": "array",
-            "items": {
-              "$ref": "#/definitions/ChannelInputModel"
-            },
             "description": "List of channels to include for intensity and texture measurements. Use the channel label to indicate single channels. If None, all channels are included."
           },
           "channels_to_exclude": {
+            "items": {
+              "$ref": "#/$defs/ChannelInputModel"
+            },
             "title": "Channels To Exclude",
             "type": "array",
-            "items": {
-              "$ref": "#/definitions/ChannelInputModel"
-            },
             "description": "List of channels to exclude for intensity and texture measurements. Use the channel label to indicate single channels. If None, no channels are excluded."
           },
           "measure_intensity": {
-            "title": "Measure Intensity",
             "default": false,
+            "title": "Measure Intensity",
             "type": "boolean",
             "description": "If True, calculate intensity features."
           },
           "measure_morphology": {
-            "title": "Measure Morphology",
             "default": false,
+            "title": "Measure Morphology",
             "type": "boolean",
             "description": "If True, calculate morphology features."
           },
           "measure_texture": {
-            "title": "Measure Texture",
+            "allOf": [
+              {
+                "$ref": "#/$defs/TextureFeatures"
+              }
+            ],
             "default": {
               "haralick": false,
               "laws_texture_energy": false,
               "clip_value": 5000,
               "clip_value_exceptions": {}
             },
-            "allOf": [
-              {
-                "$ref": "#/definitions/TextureFeatures"
-              }
-            ],
+            "title": "Measure Texture",
             "description": "Select which texture features should be calculated."
           },
           "measure_population": {
-            "title": "Measure Population",
             "default": false,
+            "title": "Measure Population",
             "type": "boolean",
             "description": "If True, calculate population features."
           },
           "calculate_internal_borders": {
-            "title": "Calculate Internal Borders",
             "default": false,
+            "title": "Calculate Internal Borders",
             "type": "boolean",
             "description": "For a typical experiment this should not be selected. If True, calculate internal borders (whether an object touches or overlaps with a FOV border). This is only useful if you registered by well and want to remove objects that are on the border of a FOV. IMPORTANT: This only catches objects that are on the border of FOVs in cycle 1 of a multiplexed experiment."
           },
           "level": {
-            "title": "Level",
             "default": 0,
+            "title": "Level",
             "type": "integer",
             "description": "Resolution of the label image to calculate features. Only tested for level 0."
           },
           "overwrite": {
-            "title": "Overwrite",
             "default": true,
+            "title": "Overwrite",
             "type": "boolean",
             "description": "If True, overwrite existing feature table."
           }
@@ -106,56 +154,8 @@
           "ROI_table_name",
           "output_table_name"
         ],
-        "additionalProperties": false,
-        "definitions": {
-          "ChannelInputModel": {
-            "title": "ChannelInputModel",
-            "description": "A channel which is specified by either `wavelength_id` or `label`.",
-            "type": "object",
-            "properties": {
-              "wavelength_id": {
-                "title": "Wavelength Id",
-                "type": "string",
-                "description": "Unique ID for the channel wavelength, e.g. `A01_C01`."
-              },
-              "label": {
-                "title": "Label",
-                "type": "string",
-                "description": "Name of the channel."
-              }
-            }
-          },
-          "TextureFeatures": {
-            "title": "TextureFeatures",
-            "description": "Validator to handle texture feature selection.",
-            "type": "object",
-            "properties": {
-              "haralick": {
-                "title": "Haralick",
-                "default": false,
-                "type": "boolean"
-              },
-              "laws_texture_energy": {
-                "title": "Laws Texture Energy",
-                "default": false,
-                "type": "boolean"
-              },
-              "clip_value": {
-                "title": "Clip Value",
-                "default": 5000,
-                "type": "integer"
-              },
-              "clip_value_exceptions": {
-                "title": "Clip Value Exceptions",
-                "default": {},
-                "type": "object",
-                "additionalProperties": {
-                  "type": "integer"
-                }
-              }
-            }
-          }
-        }
+        "type": "object",
+        "title": "MeasureFeatures"
       },
       "docs_info": "## measure_features\nCalculate features based on label image and intensity image (optional).\n\nTakes a label image and an optional intensity image and calculates\nmorphology, intensity and texture features in 2D.\n"
     },
@@ -168,15 +168,14 @@
         "mem": 3750
       },
       "args_schema_non_parallel": {
-        "title": "InitSegmentSecondaryObjects",
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
           "zarr_urls": {
-            "title": "Zarr Urls",
-            "type": "array",
             "items": {
               "type": "string"
             },
+            "title": "Zarr Urls",
+            "type": "array",
             "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "zarr_dir": {
@@ -200,8 +199,8 @@
             "description": "label image to use as mask. Only areas where the mask is non-zero will be considered for the watershed."
           },
           "output_label_image_name": {
-            "title": "Output Label Image Name",
             "default": "0",
+            "title": "Output Label Image Name",
             "type": "string",
             "description": "Name of the zarr image that will contain the secondary segmentation. Defaults to \"0\". In case you saved, for example, illumination corrected images in the same zarr without overwriting the original images, you can specify a different name here (e.g. \"0_illum_corrected\")."
           }
@@ -212,83 +211,13 @@
           "channel_label",
           "label_name"
         ],
-        "additionalProperties": false
+        "type": "object",
+        "title": "InitSegmentSecondaryObjects"
       },
       "args_schema_parallel": {
-        "title": "SegmentSecondaryObjects",
-        "type": "object",
-        "properties": {
-          "zarr_url": {
-            "title": "Zarr Url",
-            "type": "string",
-            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
-          },
-          "init_args": {
-            "$ref": "#/definitions/InitArgsSegmentSecondary",
-            "title": "Init_Args",
-            "description": "Intialization arguments provided by `init_segment_secondary_objects`."
-          },
-          "ROI_table_name": {
-            "title": "Roi Table Name",
-            "type": "string",
-            "description": "Name of the table containing the ROIs."
-          },
-          "min_threshold": {
-            "title": "Min Threshold",
-            "type": "integer",
-            "description": "Minimum threshold for the background definition."
-          },
-          "max_threshold": {
-            "title": "Max Threshold",
-            "type": "integer",
-            "description": "Maximum threshold for the background definition."
-          },
-          "gaussian_blur": {
-            "title": "Gaussian Blur",
-            "type": "integer",
-            "description": "Sigma for gaussian blur."
-          },
-          "fill_holes_area": {
-            "title": "Fill Holes Area",
-            "type": "integer",
-            "description": "Area threshold for filling holes after watershed."
-          },
-          "contrast_threshold": {
-            "title": "Contrast Threshold",
-            "default": 5,
-            "type": "integer",
-            "description": "Contrast threshold for background definition."
-          },
-          "output_label_name": {
-            "title": "Output Label Name",
-            "type": "string",
-            "description": "Name of the output label image."
-          },
-          "level": {
-            "title": "Level",
-            "default": 0,
-            "type": "integer",
-            "description": "Resolution of the label image to calculate overlap. Only tested for level 0."
-          },
-          "overwrite": {
-            "title": "Overwrite",
-            "default": true,
-            "type": "boolean",
-            "description": "If True, overwrite existing label image."
-          }
-        },
-        "required": [
-          "zarr_url",
-          "init_args",
-          "ROI_table_name",
-          "output_label_name"
-        ],
-        "additionalProperties": false,
-        "definitions": {
+        "$defs": {
           "InitArgsSegmentSecondary": {
-            "title": "InitArgsSegmentSecondary",
             "description": "Segment Secondary HCS Plate init args.",
-            "type": "object",
             "properties": {
               "label_name": {
                 "title": "Label Name",
@@ -320,9 +249,80 @@
               "label_zarr_url",
               "channel_label",
               "channel_zarr_url"
-            ]
+            ],
+            "title": "InitArgsSegmentSecondary",
+            "type": "object"
           }
-        }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "init_args": {
+            "$ref": "#/$defs/InitArgsSegmentSecondary",
+            "title": "Init Args",
+            "description": "Intialization arguments provided by `init_segment_secondary_objects`."
+          },
+          "ROI_table_name": {
+            "title": "Roi Table Name",
+            "type": "string",
+            "description": "Name of the table containing the ROIs."
+          },
+          "min_threshold": {
+            "title": "Min Threshold",
+            "type": "integer",
+            "description": "Minimum threshold for the background definition."
+          },
+          "max_threshold": {
+            "title": "Max Threshold",
+            "type": "integer",
+            "description": "Maximum threshold for the background definition."
+          },
+          "gaussian_blur": {
+            "title": "Gaussian Blur",
+            "type": "integer",
+            "description": "Sigma for gaussian blur."
+          },
+          "fill_holes_area": {
+            "title": "Fill Holes Area",
+            "type": "integer",
+            "description": "Area threshold for filling holes after watershed."
+          },
+          "contrast_threshold": {
+            "default": 5,
+            "title": "Contrast Threshold",
+            "type": "integer",
+            "description": "Contrast threshold for background definition."
+          },
+          "output_label_name": {
+            "title": "Output Label Name",
+            "type": "string",
+            "description": "Name of the output label image."
+          },
+          "level": {
+            "default": 0,
+            "title": "Level",
+            "type": "integer",
+            "description": "Resolution of the label image to calculate overlap. Only tested for level 0."
+          },
+          "overwrite": {
+            "default": true,
+            "title": "Overwrite",
+            "type": "boolean",
+            "description": "If True, overwrite existing label image."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "init_args",
+          "ROI_table_name",
+          "output_label_name"
+        ],
+        "type": "object",
+        "title": "SegmentSecondaryObjects"
       },
       "docs_info": "## init_segment_secondary_objects\nInitialized secondary segmentation task\n\nCriteria:\n- Works for multiplexing & non-multiplexing\n- \n\nOption 1:\nAsk user for path for output_label_image_name => defaults tricky, but fully flexible\nBetter: Optional\n\nOption 2:\nAlways put output label in same image as label_image_name => downside: Confusing why label would go there\n\nOption 3:\nAlways put output label in same image as channel => downside: Confusing why label would go there\n\nOption 4:\nOptional acquisition parameter, used only in multiplexing case, determines where output image goes\n=> overkill for the moment\n\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform secondary segmentation based on a channel image and\na label image.\n## segment_secondary_objects\nSegments secondary objects based on primary labels and intensity image.\n\nTakes a primary label image and an intensity image and calculates secondary\nlabels based on watershed segmentation.\n"
     },
@@ -335,74 +335,90 @@
         "mem": 3750
       },
       "args_schema_non_parallel": {
-        "title": "InitConvertIc6000ToOmeZarr",
-        "type": "object",
-        "properties": {
-          "zarr_urls": {
-            "title": "Zarr Urls",
-            "type": "array",
-            "items": {
-              "type": "string"
+        "$defs": {
+          "MultiplexingAcquisition": {
+            "description": "Input class for Multiplexing Cellvoyager converter",
+            "properties": {
+              "image_dir": {
+                "title": "Image Dir",
+                "type": "string",
+                "description": "Path to the folder that contains the Cellvoyager image files for that acquisition and the MeasurementData & MeasurementDetail metadata files."
+              },
+              "allowed_channels": {
+                "items": {
+                  "$ref": "#/$defs/OmeroChannel"
+                },
+                "title": "Allowed Channels",
+                "type": "array",
+                "description": "A list of `OmeroChannel` objects, where each channel must include the `wavelength_id` attribute and where the `wavelength_id` values must be unique across the list."
+              }
             },
-            "description": "Missing description"
+            "required": [
+              "image_dir",
+              "allowed_channels"
+            ],
+            "title": "MultiplexingAcquisition",
+            "type": "object"
           },
-          "zarr_dir": {
-            "title": "Zarr Dir",
-            "type": "string",
-            "description": "Missing description"
-          },
-          "acquisitions": {
-            "title": "Acquisitions",
-            "type": "object",
-            "additionalProperties": {
-              "$ref": "#/definitions/MultiplexingAcquisition"
+          "OmeroChannel": {
+            "description": "Custom class for Omero channels, based on OME-NGFF v0.4.",
+            "properties": {
+              "wavelength_id": {
+                "title": "Wavelength Id",
+                "type": "string",
+                "description": "Unique ID for the channel wavelength, e.g. `A01_C01`."
+              },
+              "index": {
+                "title": "Index",
+                "type": "integer",
+                "description": "Do not change. For internal use only."
+              },
+              "label": {
+                "title": "Label",
+                "type": "string",
+                "description": "Name of the channel."
+              },
+              "window": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/Window"
+                  }
+                ],
+                "title": "Window",
+                "description": "Optional `Window` object to set default display settings for napari."
+              },
+              "color": {
+                "title": "Color",
+                "type": "string",
+                "description": "Optional hex colormap to display the channel in napari (it must be of length 6, e.g. `00FFFF`)."
+              },
+              "active": {
+                "default": true,
+                "title": "Active",
+                "type": "boolean",
+                "description": "Should this channel be shown in the viewer?"
+              },
+              "coefficient": {
+                "default": 1,
+                "title": "Coefficient",
+                "type": "integer",
+                "description": "Do not change. Omero-channel attribute."
+              },
+              "inverted": {
+                "default": false,
+                "title": "Inverted",
+                "type": "boolean",
+                "description": "Do not change. Omero-channel attribute."
+              }
             },
-            "description": "dictionary of acquisitions. Each key is the acquisition identifier (normally 0, 1, 2, 3 etc.). Each item defines the acquisition by providing the image_dir and the allowed_channels."
+            "required": [
+              "wavelength_id"
+            ],
+            "title": "OmeroChannel",
+            "type": "object"
           },
-          "image_glob_patterns": {
-            "title": "Image Glob Patterns",
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "If specified, only parse images with filenames that match with all these patterns. Patterns must be defined as in https://docs.python.org/3/library/fnmatch.html, Example: `image_glob_pattern=[\"*B - 03*\"]` => only process well B03 `image_glob_pattern=[\"*C - 09*\", \"*fld 16*\"]` => only process well C09, field of view 16."
-          },
-          "num_levels": {
-            "title": "Num Levels",
-            "default": 5,
-            "type": "integer",
-            "description": "Number of resolution-pyramid levels. If set to `5`, there will be the full-resolution level and 4 levels of downsampled images."
-          },
-          "coarsening_xy": {
-            "title": "Coarsening Xy",
-            "default": 2,
-            "type": "integer",
-            "description": "Linear coarsening factor between subsequent levels. If set to `2`, level 1 is 2x downsampled, level 2 is 4x downsampled etc."
-          },
-          "image_extension": {
-            "title": "Image Extension",
-            "default": "tif",
-            "type": "string",
-            "description": "Filename extension of images (e.g. `\"tif\"` or `\"png\"`)."
-          },
-          "overwrite": {
-            "title": "Overwrite",
-            "default": false,
-            "type": "boolean",
-            "description": "If `True`, overwrite the task output."
-          }
-        },
-        "required": [
-          "zarr_urls",
-          "zarr_dir",
-          "acquisitions"
-        ],
-        "additionalProperties": false,
-        "definitions": {
           "Window": {
-            "title": "Window",
             "description": "Custom class for Omero-channel window, based on OME-NGFF v0.4.",
-            "type": "object",
             "properties": {
               "min": {
                 "title": "Min",
@@ -428,112 +444,79 @@
             "required": [
               "start",
               "end"
-            ]
-          },
-          "OmeroChannel": {
-            "title": "OmeroChannel",
-            "description": "Custom class for Omero channels, based on OME-NGFF v0.4.",
-            "type": "object",
-            "properties": {
-              "wavelength_id": {
-                "title": "Wavelength Id",
-                "type": "string",
-                "description": "Unique ID for the channel wavelength, e.g. `A01_C01`."
-              },
-              "index": {
-                "title": "Index",
-                "type": "integer",
-                "description": "Do not change. For internal use only."
-              },
-              "label": {
-                "title": "Label",
-                "type": "string",
-                "description": "Name of the channel."
-              },
-              "window": {
-                "$ref": "#/definitions/Window",
-                "title": "Window",
-                "description": "Optional `Window` object to set default display settings for napari."
-              },
-              "color": {
-                "title": "Color",
-                "type": "string",
-                "description": "Optional hex colormap to display the channel in napari (it must be of length 6, e.g. `00FFFF`)."
-              },
-              "active": {
-                "title": "Active",
-                "default": true,
-                "type": "boolean",
-                "description": "Should this channel be shown in the viewer?"
-              },
-              "coefficient": {
-                "title": "Coefficient",
-                "default": 1,
-                "type": "integer",
-                "description": "Do not change. Omero-channel attribute."
-              },
-              "inverted": {
-                "title": "Inverted",
-                "default": false,
-                "type": "boolean",
-                "description": "Do not change. Omero-channel attribute."
-              }
-            },
-            "required": [
-              "wavelength_id"
-            ]
-          },
-          "MultiplexingAcquisition": {
-            "title": "MultiplexingAcquisition",
-            "description": "Input class for Multiplexing Cellvoyager converter",
-            "type": "object",
-            "properties": {
-              "image_dir": {
-                "title": "Image Dir",
-                "type": "string",
-                "description": "Path to the folder that contains the Cellvoyager image files for that acquisition and the MeasurementData & MeasurementDetail metadata files."
-              },
-              "allowed_channels": {
-                "title": "Allowed Channels",
-                "type": "array",
-                "items": {
-                  "$ref": "#/definitions/OmeroChannel"
-                },
-                "description": "A list of `OmeroChannel` objects, where each channel must include the `wavelength_id` attribute and where the `wavelength_id` values must be unique across the list."
-              }
-            },
-            "required": [
-              "image_dir",
-              "allowed_channels"
-            ]
+            ],
+            "title": "Window",
+            "type": "object"
           }
-        }
-      },
-      "args_schema_parallel": {
-        "title": "ConvertIc6000ToOmeZarr",
-        "type": "object",
+        },
+        "additionalProperties": false,
         "properties": {
-          "zarr_url": {
-            "title": "Zarr Url",
-            "type": "string",
-            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          "zarr_urls": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Zarr Urls",
+            "type": "array",
+            "description": "Missing description"
           },
-          "init_args": {
-            "$ref": "#/definitions/InitArgsIC6000",
-            "title": "Init_Args",
-            "description": "Intialization arguments provided by `init_convert_IC600_to_ome_zarr`."
+          "zarr_dir": {
+            "title": "Zarr Dir",
+            "type": "string",
+            "description": "Missing description"
+          },
+          "acquisitions": {
+            "additionalProperties": {
+              "$ref": "#/$defs/MultiplexingAcquisition"
+            },
+            "title": "Acquisitions",
+            "type": "object",
+            "description": "dictionary of acquisitions. Each key is the acquisition identifier (normally 0, 1, 2, 3 etc.). Each item defines the acquisition by providing the image_dir and the allowed_channels."
+          },
+          "image_glob_patterns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Image Glob Patterns",
+            "type": "array",
+            "description": "If specified, only parse images with filenames that match with all these patterns. Patterns must be defined as in https://docs.python.org/3/library/fnmatch.html, Example: `image_glob_pattern=[\"*B - 03*\"]` => only process well B03 `image_glob_pattern=[\"*C - 09*\", \"*fld 16*\"]` => only process well C09, field of view 16."
+          },
+          "num_levels": {
+            "default": 5,
+            "title": "Num Levels",
+            "type": "integer",
+            "description": "Number of resolution-pyramid levels. If set to `5`, there will be the full-resolution level and 4 levels of downsampled images."
+          },
+          "coarsening_xy": {
+            "default": 2,
+            "title": "Coarsening Xy",
+            "type": "integer",
+            "description": "Linear coarsening factor between subsequent levels. If set to `2`, level 1 is 2x downsampled, level 2 is 4x downsampled etc."
+          },
+          "image_extension": {
+            "default": "tif",
+            "title": "Image Extension",
+            "type": "string",
+            "description": "Filename extension of images (e.g. `\"tif\"` or `\"png\"`)."
+          },
+          "overwrite": {
+            "default": false,
+            "title": "Overwrite",
+            "type": "boolean",
+            "description": "If `True`, overwrite the task output."
           }
         },
         "required": [
-          "zarr_url",
-          "init_args"
+          "zarr_urls",
+          "zarr_dir",
+          "acquisitions"
         ],
-        "additionalProperties": false,
-        "definitions": {
+        "type": "object",
+        "title": "InitConvertIc6000ToOmeZarr"
+      },
+      "args_schema_parallel": {
+        "$defs": {
           "InitArgsIC6000": {
-            "title": "InitArgsIC6000",
             "description": "Arguments to be passed from IC6000 converter init to compute",
-            "type": "object",
             "properties": {
               "image_dir": {
                 "title": "Image Dir",
@@ -552,11 +535,11 @@
                 "type": "string"
               },
               "image_glob_patterns": {
-                "title": "Image Glob Patterns",
-                "type": "array",
                 "items": {
                   "type": "string"
-                }
+                },
+                "title": "Image Glob Patterns",
+                "type": "array"
               },
               "acquisition": {
                 "title": "Acquisition",
@@ -567,10 +550,33 @@
               "image_dir",
               "plate_prefix",
               "well_ID",
-              "image_extension"
-            ]
+              "image_extension",
+              "image_glob_patterns",
+              "acquisition"
+            ],
+            "title": "InitArgsIC6000",
+            "type": "object"
           }
-        }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "init_args": {
+            "$ref": "#/$defs/InitArgsIC6000",
+            "title": "Init Args",
+            "description": "Intialization arguments provided by `init_convert_IC600_to_ome_zarr`."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "init_args"
+        ],
+        "type": "object",
+        "title": "ConvertIc6000ToOmeZarr"
       },
       "docs_info": "## init_convert_IC6000_to_ome_zarr\nCreate OME-NGFF structure and metadata to host a multiplexing dataset.\n\nThis task takes a set of image folders (i.e. different acquisition cycles)\nand build the internal structure and metadata of a OME-NGFF zarr group,\nwithout actually loading/writing the image data.\n\nEach element in input_paths should be treated as a different acquisition.\n## convert_IC6000_to_ome_zarr\nConvert IC6000 output (png, tif) to zarr file.\n\nThis task is run after \"init_convert_IC6000_to_ome_zarr\"\nand populates the empty OME-Zarr files that were prepared.\n"
     },
@@ -583,15 +589,14 @@
         "mem": 3750
       },
       "args_schema_non_parallel": {
-        "title": "InitLabelAssignmentByOverlap",
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
           "zarr_urls": {
-            "title": "Zarr Urls",
-            "type": "array",
             "items": {
               "type": "string"
             },
+            "title": "Zarr Urls",
+            "type": "array",
             "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "zarr_dir": {
@@ -616,51 +621,13 @@
           "parent_label_name",
           "child_label_name"
         ],
-        "additionalProperties": false
+        "type": "object",
+        "title": "InitLabelAssignmentByOverlap"
       },
       "args_schema_parallel": {
-        "title": "LabelAssignmentByOverlap",
-        "type": "object",
-        "properties": {
-          "zarr_url": {
-            "title": "Zarr Url",
-            "type": "string",
-            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
-          },
-          "init_args": {
-            "$ref": "#/definitions/InitArgsLabelAssignment",
-            "title": "Init_Args",
-            "description": "Intialization arguments provided by `init_label_assignment_by_overlap`."
-          },
-          "child_table_name": {
-            "title": "Child Table Name",
-            "type": "string",
-            "description": "Name of the feature table associated with the child label image."
-          },
-          "level": {
-            "title": "Level",
-            "default": 0,
-            "type": "integer",
-            "description": "Resolution of the label image to calculate overlap. Only tested for level 0."
-          },
-          "overlap_threshold": {
-            "title": "Overlap Threshold",
-            "default": 1.0,
-            "type": "number",
-            "description": "The minimum percentage (between 0 and 1) of child label object that must be contained in parent label object to be considered a match."
-          }
-        },
-        "required": [
-          "zarr_url",
-          "init_args",
-          "child_table_name"
-        ],
-        "additionalProperties": false,
-        "definitions": {
+        "$defs": {
           "InitArgsLabelAssignment": {
-            "title": "InitArgsLabelAssignment",
             "description": "Arguments to be passed from Label Assignment init to compute",
-            "type": "object",
             "properties": {
               "parent_label_name": {
                 "title": "Parent Label Name",
@@ -684,9 +651,48 @@
               "parent_label_zarr_url",
               "child_label_name",
               "child_label_zarr_url"
-            ]
+            ],
+            "title": "InitArgsLabelAssignment",
+            "type": "object"
           }
-        }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "init_args": {
+            "$ref": "#/$defs/InitArgsLabelAssignment",
+            "title": "Init Args",
+            "description": "Intialization arguments provided by `init_label_assignment_by_overlap`."
+          },
+          "child_table_name": {
+            "title": "Child Table Name",
+            "type": "string",
+            "description": "Name of the feature table associated with the child label image."
+          },
+          "level": {
+            "default": 0,
+            "title": "Level",
+            "type": "integer",
+            "description": "Resolution of the label image to calculate overlap. Only tested for level 0."
+          },
+          "overlap_threshold": {
+            "default": 1.0,
+            "title": "Overlap Threshold",
+            "type": "number",
+            "description": "The minimum percentage (between 0 and 1) of child label object that must be contained in parent label object to be considered a match."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "init_args",
+          "child_table_name"
+        ],
+        "type": "object",
+        "title": "LabelAssignmentByOverlap"
       },
       "docs_info": "## init_label_assignment_by_overlap\nInitialized label assignment by overlap task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform label assignment based on overlap between two label images.\n## label_assignment_by_overlap\nAssign labels to each other based on overlap.\n\nTakes a parent label image and a child label image and calculates\noverlaps between their labels. Child labels will be assigned to parent\nlabels based on an overlap threshold.\n"
     },
@@ -699,15 +705,14 @@
         "mem": 3750
       },
       "args_schema_non_parallel": {
-        "title": "InitClipLabelImage",
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
           "zarr_urls": {
-            "title": "Zarr Urls",
-            "type": "array",
             "items": {
               "type": "string"
             },
+            "title": "Zarr Urls",
+            "type": "array",
             "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "zarr_dir": {
@@ -726,8 +731,8 @@
             "description": "Name of the label image used as mask for clipping. This image will be binarized. Needs to exist in OME-Zarr file."
           },
           "output_label_image_name": {
-            "title": "Output Label Image Name",
             "default": "0",
+            "title": "Output Label Image Name",
             "type": "string",
             "description": "Name of the zarr image that will contain the clipped label image. Defaults to \"0\". In case you saved, for example, illumination corrected images in the same zarr without overwriting the original images, you can specify a different name here (e.g. \"0_illum_corrected\")."
           }
@@ -738,51 +743,13 @@
           "label_name",
           "clipping_mask_name"
         ],
-        "additionalProperties": false
+        "type": "object",
+        "title": "InitClipLabelImage"
       },
       "args_schema_parallel": {
-        "title": "ClipLabelImage",
-        "type": "object",
-        "properties": {
-          "zarr_url": {
-            "title": "Zarr Url",
-            "type": "string",
-            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
-          },
-          "init_args": {
-            "$ref": "#/definitions/InitArgsClipLabelImage",
-            "title": "Init_Args",
-            "description": "Intialization arguments provided by `init_clip_label_image`."
-          },
-          "output_label_name": {
-            "title": "Output Label Name",
-            "type": "string",
-            "description": "Name of the output label image."
-          },
-          "level": {
-            "title": "Level",
-            "default": 0,
-            "type": "integer",
-            "description": "Resolution of the label image. Only tested for level 0."
-          },
-          "overwrite": {
-            "title": "Overwrite",
-            "default": true,
-            "type": "boolean",
-            "description": "If True, overwrite existing label image."
-          }
-        },
-        "required": [
-          "zarr_url",
-          "init_args",
-          "output_label_name"
-        ],
-        "additionalProperties": false,
-        "definitions": {
+        "$defs": {
           "InitArgsClipLabelImage": {
-            "title": "InitArgsClipLabelImage",
             "description": "Arguments to be passed from Clip Label Image init to compute",
-            "type": "object",
             "properties": {
               "label_name": {
                 "title": "Label Name",
@@ -806,9 +773,48 @@
               "label_zarr_url",
               "clipping_mask_name",
               "clipping_mask_zarr_url"
-            ]
+            ],
+            "title": "InitArgsClipLabelImage",
+            "type": "object"
           }
-        }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "init_args": {
+            "$ref": "#/$defs/InitArgsClipLabelImage",
+            "title": "Init Args",
+            "description": "Intialization arguments provided by `init_clip_label_image`."
+          },
+          "output_label_name": {
+            "title": "Output Label Name",
+            "type": "string",
+            "description": "Name of the output label image."
+          },
+          "level": {
+            "default": 0,
+            "title": "Level",
+            "type": "integer",
+            "description": "Resolution of the label image. Only tested for level 0."
+          },
+          "overwrite": {
+            "default": true,
+            "title": "Overwrite",
+            "type": "boolean",
+            "description": "If True, overwrite existing label image."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "init_args",
+          "output_label_name"
+        ],
+        "type": "object",
+        "title": "ClipLabelImage"
       },
       "docs_info": "## init_clip_label_image\nInitialized clip label image task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform clipping based on two label images.\n## clip_label_image\nClips a label image with a mask.\n\nTakes two label images (or a label image and a binary mask) and replaces\nall values in the first label image with 0 where the second label image has\nvalues > 0.\n"
     },
@@ -821,15 +827,14 @@
         "mem": 3750
       },
       "args_schema_non_parallel": {
-        "title": "InitMaskLabelImage",
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
           "zarr_urls": {
-            "title": "Zarr Urls",
-            "type": "array",
             "items": {
               "type": "string"
             },
+            "title": "Zarr Urls",
+            "type": "array",
             "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "zarr_dir": {
@@ -848,8 +853,8 @@
             "description": "Name of the label image used as as mask. This image will be binarized. Needs to exist in OME-Zarr file."
           },
           "output_label_image_name": {
-            "title": "Output Label Image Name",
             "default": "0",
+            "title": "Output Label Image Name",
             "type": "string",
             "description": "Name of the zarr image that will contain the masked label image. Defaults to \"0\". In case you saved, for example, illumination corrected images in the same zarr without overwriting the original images, you can specify a different name here (e.g. \"0_illum_corrected\")."
           }
@@ -860,51 +865,13 @@
           "label_name",
           "mask_name"
         ],
-        "additionalProperties": false
+        "type": "object",
+        "title": "InitMaskLabelImage"
       },
       "args_schema_parallel": {
-        "title": "MaskLabelImage",
-        "type": "object",
-        "properties": {
-          "zarr_url": {
-            "title": "Zarr Url",
-            "type": "string",
-            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
-          },
-          "init_args": {
-            "$ref": "#/definitions/InitArgsMaskLabelImage",
-            "title": "Init_Args",
-            "description": "Intialization arguments provided by `init_clip_label_image`."
-          },
-          "output_label_name": {
-            "title": "Output Label Name",
-            "type": "string",
-            "description": "Name of the output label image."
-          },
-          "level": {
-            "title": "Level",
-            "default": 0,
-            "type": "integer",
-            "description": "Resolution of the label image. Only tested for level 0."
-          },
-          "overwrite": {
-            "title": "Overwrite",
-            "default": true,
-            "type": "boolean",
-            "description": "If True, overwrite existing label image."
-          }
-        },
-        "required": [
-          "zarr_url",
-          "init_args",
-          "output_label_name"
-        ],
-        "additionalProperties": false,
-        "definitions": {
+        "$defs": {
           "InitArgsMaskLabelImage": {
-            "title": "InitArgsMaskLabelImage",
             "description": "Arguments to be passed from Mask Label Image init to compute",
-            "type": "object",
             "properties": {
               "label_name": {
                 "title": "Label Name",
@@ -928,9 +895,48 @@
               "label_zarr_url",
               "mask_name",
               "mask_zarr_url"
-            ]
+            ],
+            "title": "InitArgsMaskLabelImage",
+            "type": "object"
           }
-        }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "init_args": {
+            "$ref": "#/$defs/InitArgsMaskLabelImage",
+            "title": "Init Args",
+            "description": "Intialization arguments provided by `init_clip_label_image`."
+          },
+          "output_label_name": {
+            "title": "Output Label Name",
+            "type": "string",
+            "description": "Name of the output label image."
+          },
+          "level": {
+            "default": 0,
+            "title": "Level",
+            "type": "integer",
+            "description": "Resolution of the label image. Only tested for level 0."
+          },
+          "overwrite": {
+            "default": true,
+            "title": "Overwrite",
+            "type": "boolean",
+            "description": "If True, overwrite existing label image."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "init_args",
+          "output_label_name"
+        ],
+        "type": "object",
+        "title": "MaskLabelImage"
       },
       "docs_info": "## init_mask_label_image\nInitialized apply mask task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform mask application based on two label images.\n## mask_label_image\nApplies a mask to a label image.\n\nTakes two label images (or a label image and a binary mask) and replaces\nall values in the first label image with 0 where the second label image has\nvalues = 0.\n"
     },
@@ -943,15 +949,14 @@
         "mem": 3750
       },
       "args_schema_non_parallel": {
-        "title": "InitFilterLabelBySize",
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
           "zarr_urls": {
-            "title": "Zarr Urls",
-            "type": "array",
             "items": {
               "type": "string"
             },
+            "title": "Zarr Urls",
+            "type": "array",
             "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "zarr_dir": {
@@ -965,8 +970,8 @@
             "description": "Name of the label image to be filtered by size. Needs to exist in OME-Zarr file."
           },
           "output_label_image_name": {
-            "title": "Output Label Image Name",
             "default": "0",
+            "title": "Output Label Image Name",
             "type": "string",
             "description": "Name of the zarr image that will contain the size filtered label image. Defaults to \"0\". In case you saved, for example, illumination corrected images in the same zarr without overwriting the original images, you can specify a different name here (e.g. \"0_illum_corrected\")."
           }
@@ -976,11 +981,32 @@
           "zarr_dir",
           "label_name"
         ],
-        "additionalProperties": false
+        "type": "object",
+        "title": "InitFilterLabelBySize"
       },
       "args_schema_parallel": {
-        "title": "FilterLabelBySize",
-        "type": "object",
+        "$defs": {
+          "InitArgsFilterLabelBySize": {
+            "description": "Arguments to be passed from Filter Label by Size init to compute",
+            "properties": {
+              "label_name": {
+                "title": "Label Name",
+                "type": "string"
+              },
+              "label_zarr_url": {
+                "title": "Label Zarr Url",
+                "type": "string"
+              }
+            },
+            "required": [
+              "label_name",
+              "label_zarr_url"
+            ],
+            "title": "InitArgsFilterLabelBySize",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
         "properties": {
           "zarr_url": {
             "title": "Zarr Url",
@@ -988,8 +1014,8 @@
             "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "init_args": {
-            "$ref": "#/definitions/InitArgsFilterLabelBySize",
-            "title": "Init_Args",
+            "$ref": "#/$defs/InitArgsFilterLabelBySize",
+            "title": "Init Args",
             "description": "Intialization arguments provided by `init_filter_label_by_size`."
           },
           "output_label_name": {
@@ -1008,14 +1034,14 @@
             "description": "Maximum size of objects to keep. If None, no maximum size filter is applied."
           },
           "level": {
-            "title": "Level",
             "default": 0,
+            "title": "Level",
             "type": "integer",
             "description": "Resolution of the label image. Only tested for level 0."
           },
           "overwrite": {
-            "title": "Overwrite",
             "default": true,
+            "title": "Overwrite",
             "type": "boolean",
             "description": "If True, overwrite existing label image."
           }
@@ -1025,28 +1051,8 @@
           "init_args",
           "output_label_name"
         ],
-        "additionalProperties": false,
-        "definitions": {
-          "InitArgsFilterLabelBySize": {
-            "title": "InitArgsFilterLabelBySize",
-            "description": "Arguments to be passed from Filter Label by Size init to compute",
-            "type": "object",
-            "properties": {
-              "label_name": {
-                "title": "Label Name",
-                "type": "string"
-              },
-              "label_zarr_url": {
-                "title": "Label Zarr Url",
-                "type": "string"
-              }
-            },
-            "required": [
-              "label_name",
-              "label_zarr_url"
-            ]
-          }
-        }
+        "type": "object",
+        "title": "FilterLabelBySize"
       },
       "docs_info": "## init_filter_label_by_size\nInitialized Filter Label by Size task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform label filtering by size.\n## filter_label_by_size\nFilter objects in a label image by size.\n"
     },
@@ -1059,15 +1065,14 @@
         "mem": 10000
       },
       "args_schema_non_parallel": {
-        "title": "InitCalculateBasicpyIlluminationModels",
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
           "zarr_urls": {
-            "title": "Zarr Urls",
-            "type": "array",
             "items": {
               "type": "string"
             },
+            "title": "Zarr Urls",
+            "type": "array",
             "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "zarr_dir": {
@@ -1076,14 +1081,14 @@
             "description": "path of the directory where the new OME-Zarrs will be created. Not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "n_images": {
-            "title": "N Images",
             "default": 150,
+            "title": "N Images",
             "type": "integer",
             "description": "Number of images to use to calculate BaSiCPy model."
           },
           "compute_per_well": {
-            "title": "Compute Per Well",
             "default": false,
+            "title": "Compute Per Well",
             "type": "boolean",
             "description": "If True, calculate illumination profiles per well. This can be useful if your experiment contains different stainings in each well (e.g., different antibodies with varying intensity ranges). Defaults to False."
           }
@@ -1092,63 +1097,31 @@
           "zarr_urls",
           "zarr_dir"
         ],
-        "additionalProperties": false
+        "type": "object",
+        "title": "InitCalculateBasicpyIlluminationModels"
       },
       "args_schema_parallel": {
-        "title": "CalculateBasicpyIlluminationModels",
-        "type": "object",
-        "properties": {
-          "zarr_url": {
-            "title": "Zarr Url",
-            "type": "string",
-            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
-          },
-          "init_args": {
-            "$ref": "#/definitions/InitArgsBaSiCPyCalculate",
-            "title": "Init_Args",
-            "description": "Intialization arguments provided by `init_calculate_basicpy_illumination_models`."
-          },
-          "illumination_profiles_folder": {
-            "title": "Illumination Profiles Folder",
-            "type": "string",
-            "description": "Path to folder where illumination profiles will be saved."
-          },
-          "overwrite": {
-            "title": "Overwrite",
-            "default": false,
-            "type": "boolean",
-            "description": "If True, overwrite existing illumination profiles."
-          }
-        },
-        "required": [
-          "zarr_url",
-          "init_args",
-          "illumination_profiles_folder"
-        ],
-        "additionalProperties": false,
-        "definitions": {
+        "$defs": {
           "InitArgsBaSiCPyCalculate": {
-            "title": "InitArgsBaSiCPyCalculate",
             "description": "Arguments to be passed from BaSiCPy Calculate init to compute",
-            "type": "object",
             "properties": {
               "channel_label": {
                 "title": "Channel Label",
                 "type": "string"
               },
               "channel_zarr_urls": {
-                "title": "Channel Zarr Urls",
-                "type": "array",
                 "items": {
                   "type": "string"
-                }
+                },
+                "title": "Channel Zarr Urls",
+                "type": "array"
               },
               "channel_zarr_dict": {
-                "title": "Channel Zarr Dict",
-                "type": "object",
                 "additionalProperties": {
                   "type": "integer"
-                }
+                },
+                "title": "Channel Zarr Dict",
+                "type": "object"
               },
               "compute_per_well": {
                 "title": "Compute Per Well",
@@ -1160,9 +1133,42 @@
               "channel_zarr_urls",
               "channel_zarr_dict",
               "compute_per_well"
-            ]
+            ],
+            "title": "InitArgsBaSiCPyCalculate",
+            "type": "object"
           }
-        }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "init_args": {
+            "$ref": "#/$defs/InitArgsBaSiCPyCalculate",
+            "title": "Init Args",
+            "description": "Intialization arguments provided by `init_calculate_basicpy_illumination_models`."
+          },
+          "illumination_profiles_folder": {
+            "title": "Illumination Profiles Folder",
+            "type": "string",
+            "description": "Path to folder where illumination profiles will be saved."
+          },
+          "overwrite": {
+            "default": false,
+            "title": "Overwrite",
+            "type": "boolean",
+            "description": "If True, overwrite existing illumination profiles."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "init_args",
+          "illumination_profiles_folder"
+        ],
+        "type": "object",
+        "title": "CalculateBasicpyIlluminationModels"
       },
       "docs_info": "## init_calculate_basicpy_illumination_models\nInitialized BaSiCPy illumination correction task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform illumination correction with BaSiCPy.\n## calculate_basicpy_illumination_models\nCalculates illumination correction profiles based on a random sample\nof images of for each channel.\n"
     },
@@ -1180,8 +1186,7 @@
         "mem": 3750
       },
       "args_schema_parallel": {
-        "title": "ApplyBasicpyIlluminationModels",
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
           "zarr_url": {
             "title": "Zarr Url",
@@ -1194,28 +1199,28 @@
             "description": "Path of folder of illumination profiles."
           },
           "illumination_exceptions": {
-            "title": "Illumination Exceptions",
-            "type": "array",
             "items": {
               "type": "string"
             },
+            "title": "Illumination Exceptions",
+            "type": "array",
             "description": "List of channel labels that should not be corrected."
           },
           "input_ROI_table": {
-            "title": "Input Roi Table",
             "default": "FOV_ROI_table",
+            "title": "Input Roi Table",
             "type": "string",
             "description": "Name of the ROI table that contains the information about the location of the individual field of views (FOVs) to which the illumination correction shall be applied. Defaults to \"FOV_ROI_table\", the default name Fractal converters give the ROI tables that list all FOVs separately. If you generated your OME-Zarr with a different converter and used Import OME-Zarr to generate the ROI tables, `image_ROI_table` is the right choice if you only have 1 FOV per Zarr image and `grid_ROI_table` if you have multiple FOVs per Zarr image and set the right grid options during import."
           },
           "overwrite_input": {
-            "title": "Overwrite Input",
             "default": true,
+            "title": "Overwrite Input",
             "type": "boolean",
             "description": "If `True`, the results of this task will overwrite the input image data. If false, a new image is generated and the illumination corrected data is saved there."
           },
           "suffix": {
-            "title": "Suffix",
             "default": "_illum_corr",
+            "title": "Suffix",
             "type": "string",
             "description": "What suffix to append to the illumination corrected images. Only relevant if `overwrite_input=False`."
           }
@@ -1224,7 +1229,8 @@
           "zarr_url",
           "illumination_profiles_folder"
         ],
-        "additionalProperties": false
+        "type": "object",
+        "title": "ApplyBasicpyIlluminationModels"
       },
       "docs_info": "## apply_basicpy_illumination_models\nApplies illumination correction to the images in the OME-Zarr.\n"
     },
@@ -1237,15 +1243,14 @@
         "mem": 3750
       },
       "args_schema_non_parallel": {
-        "title": "InitAggregateFeatureTables",
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
           "zarr_urls": {
-            "title": "Zarr Urls",
-            "type": "array",
             "items": {
               "type": "string"
             },
+            "title": "Zarr Urls",
+            "type": "array",
             "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "zarr_dir": {
@@ -1258,11 +1263,30 @@
           "zarr_urls",
           "zarr_dir"
         ],
-        "additionalProperties": false
+        "type": "object",
+        "title": "InitAggregateFeatureTables"
       },
       "args_schema_parallel": {
-        "title": "AggregateFeatureTables",
-        "type": "object",
+        "$defs": {
+          "InitArgsAggregateFeatureTables": {
+            "description": "Arguments to be passed from BaSiCPy Calculate init to compute",
+            "properties": {
+              "zarr_urls": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Zarr Urls",
+                "type": "array"
+              }
+            },
+            "required": [
+              "zarr_urls"
+            ],
+            "title": "InitArgsAggregateFeatureTables",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
         "properties": {
           "zarr_url": {
             "title": "Zarr Url",
@@ -1270,8 +1294,8 @@
             "description": "Missing description"
           },
           "init_args": {
-            "$ref": "#/definitions/InitArgsAggregateFeatureTables",
-            "title": "Init_Args",
+            "$ref": "#/$defs/InitArgsAggregateFeatureTables",
+            "title": "Init Args",
             "description": "Missing description"
           },
           "input_table_name": {
@@ -1285,14 +1309,14 @@
             "description": "Name of the aggregated feature table. If this is the same as the input_table_name, the input table will be overwritten."
           },
           "output_image": {
-            "title": "Output Image",
             "default": "0",
+            "title": "Output Image",
             "type": "string",
             "description": "In which zarr-image to store the aggregated feature table. By default, it is saved in the first image of the zarr. If output_table_name is the same as input_table_name, the table will be overwritten in the same image."
           },
           "overwrite": {
-            "title": "Overwrite",
             "default": true,
+            "title": "Overwrite",
             "type": "boolean",
             "description": "If True, overwrite existing feature table."
           }
@@ -1303,26 +1327,8 @@
           "input_table_name",
           "output_table_name"
         ],
-        "additionalProperties": false,
-        "definitions": {
-          "InitArgsAggregateFeatureTables": {
-            "title": "InitArgsAggregateFeatureTables",
-            "description": "Arguments to be passed from BaSiCPy Calculate init to compute",
-            "type": "object",
-            "properties": {
-              "zarr_urls": {
-                "title": "Zarr Urls",
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            },
-            "required": [
-              "zarr_urls"
-            ]
-          }
-        }
+        "type": "object",
+        "title": "AggregateFeatureTables"
       },
       "docs_info": "## init_aggregate_feature_tables\nInitialized clip label image task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform clipping based on two label images.\n## aggregate_feature_tables\nAggregate feature tables that were calculated per zarr-image to one\nAnndata table containing feature measurements across all zarr-images.\n"
     },
@@ -1340,8 +1346,7 @@
         "mem": 30000
       },
       "args_schema_parallel": {
-        "title": "StitchFovsWithOverlap",
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
           "zarr_url": {
             "title": "Zarr Url",
@@ -1349,26 +1354,26 @@
             "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "overlap": {
-            "title": "Overlap",
             "default": 0.1,
+            "title": "Overlap",
             "type": "number",
             "description": "The overlap between FOVs in percent (0-1)."
           },
           "filter_sigma": {
-            "title": "Filter Sigma",
             "default": 10,
+            "title": "Filter Sigma",
             "type": "number",
             "description": "The sigma of the Gaussian filter used to filter the FOVs for stitching. Can help to improve the stitching performance."
           },
           "overwrite_input": {
-            "title": "Overwrite Input",
             "default": true,
+            "title": "Overwrite Input",
             "type": "boolean",
             "description": "If `True`, the results of this task will overwrite the input image data. If false, a new image is generated and the stitched data is saved there."
           },
           "suffix": {
-            "title": "Suffix",
             "default": "_stitched",
+            "title": "Suffix",
             "type": "string",
             "description": "What suffix to append to the stitched images. Only relevant if `overwrite_input=False`."
           },
@@ -1381,7 +1386,8 @@
         "required": [
           "zarr_url"
         ],
-        "additionalProperties": false
+        "type": "object",
+        "title": "StitchFovsWithOverlap"
       },
       "docs_info": "## stitch_fovs_with_overlap\nStitches FOVs with overlap using ASHLAR (https://github.com/labsyspharm/ashlar).\n"
     },
@@ -1393,15 +1399,14 @@
         "mem": 3750
       },
       "args_schema_non_parallel": {
-        "title": "MultiplexedPixelClustering",
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
           "zarr_urls": {
-            "title": "Zarr Urls",
-            "type": "array",
             "items": {
               "type": "string"
             },
+            "title": "Zarr Urls",
+            "type": "array",
             "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "label_image_name": {
@@ -1410,50 +1415,50 @@
             "description": "Name of label image to use. Only pixels that are part of a label will be considered for clustering."
           },
           "channels_to_use": {
-            "title": "Channels To Use",
-            "type": "array",
             "items": {
               "type": "string"
             },
+            "title": "Channels To Use",
+            "type": "array",
             "description": "List of channel labels to use for clustering. If None, all channels are used."
           },
           "channels_to_exclude": {
-            "title": "Channels To Exclude",
-            "type": "array",
             "items": {
               "type": "string"
             },
+            "title": "Channels To Exclude",
+            "type": "array",
             "description": "List of channel labels to exclude from clustering. If None, no channels are excluded."
           },
           "well_names": {
-            "title": "Well Names",
-            "type": "array",
             "items": {
               "type": "string"
             },
+            "title": "Well Names",
+            "type": "array",
             "description": "Missing description"
           },
           "som_shape": {
-            "title": "Som Shape",
             "default": [
               20,
               20
             ],
-            "type": "array",
             "items": {
               "type": "integer"
             },
+            "title": "Som Shape",
+            "type": "array",
             "description": "Shape of the self-organizing map (SOM) to use for clustering."
           },
           "phenograph_neighbours": {
-            "title": "Phenograph Neighbours",
             "default": 15,
+            "title": "Phenograph Neighbours",
             "type": "integer",
             "description": "Number of nearest neighbors to use in first step of graph construction."
           },
           "enforce_equal_object_count": {
-            "title": "Enforce Equal Object Count",
             "default": false,
+            "title": "Enforce Equal Object Count",
             "type": "boolean",
             "description": "If True, the same number of objects from the label images will be used to extract pixels for clustering."
           },
@@ -1463,16 +1468,16 @@
             "description": "Random seed for selection of objects if enforce_equal_object_count is True."
           },
           "coords": {
-            "title": "Coords",
-            "type": "array",
             "items": {
               "type": "integer"
             },
+            "title": "Coords",
+            "type": "array",
             "description": "Image coordinates to use. If None, the whole well will be used. Format: [y_start, y_end, x_start, x_end]."
           },
           "level": {
-            "title": "Level",
             "default": 0,
+            "title": "Level",
             "type": "integer",
             "description": "pyramid level to use."
           },
@@ -1487,8 +1492,8 @@
             "description": "Name of the output label image which will map the multiplexed pixel clusters"
           },
           "overwrite": {
-            "title": "Overwrite",
             "default": true,
+            "title": "Overwrite",
             "type": "boolean",
             "description": "If True, overwrite existing output table."
           }
@@ -1500,7 +1505,8 @@
           "output_table_name",
           "output_label_name"
         ],
-        "additionalProperties": false
+        "type": "object",
+        "title": "MultiplexedPixelClustering"
       },
       "docs_info": "## multiplexed_pixel_clustering\nPerform multiplexed cell unit (MCU) analysis on a label image. Inspired by\nGabriele Gut et al., Multiplexed protein maps link subcellular\norganization to cellular states. Science (2018)\nDOI: 10.1126/science.aar7042\n"
     },
@@ -1519,15 +1525,14 @@
         "mem": 3750
       },
       "args_schema_non_parallel": {
-        "title": "InitCorrectChromaticShift",
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
           "zarr_urls": {
-            "title": "Zarr Urls",
-            "type": "array",
             "items": {
               "type": "string"
             },
+            "title": "Zarr Urls",
+            "type": "array",
             "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "zarr_dir": {
@@ -1552,11 +1557,38 @@
           "reference_zarr_image",
           "reference_channel_label"
         ],
-        "additionalProperties": false
+        "type": "object",
+        "title": "InitCorrectChromaticShift"
       },
       "args_schema_parallel": {
-        "title": "CorrectChromaticShift",
-        "type": "object",
+        "$defs": {
+          "InitArgsCorrectChromaticShift": {
+            "description": "Arguments to be passed from Correct Chromatic Shift init to compute",
+            "properties": {
+              "zarr_urls": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Zarr Urls",
+                "type": "array"
+              },
+              "transformation_maps": {
+                "additionalProperties": {
+                  "type": "object"
+                },
+                "title": "Transformation Maps",
+                "type": "object"
+              }
+            },
+            "required": [
+              "zarr_urls",
+              "transformation_maps"
+            ],
+            "title": "InitArgsCorrectChromaticShift",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
         "properties": {
           "zarr_url": {
             "title": "Zarr Url",
@@ -1564,19 +1596,19 @@
             "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "init_args": {
-            "$ref": "#/definitions/InitArgsCorrectChromaticShift",
-            "title": "Init_Args",
+            "$ref": "#/$defs/InitArgsCorrectChromaticShift",
+            "title": "Init Args",
             "description": "Intialization arguments provided by `init_correct_chromatic_shift.py`."
           },
           "overwrite_input": {
-            "title": "Overwrite Input",
             "default": true,
+            "title": "Overwrite Input",
             "type": "boolean",
             "description": "If `True`, the results of this task will overwrite the input image data. If false, a new image is generated and the chromatic shift corrected data is saved there."
           },
           "suffix": {
-            "title": "Suffix",
             "default": "_chromatic_shift_corr",
+            "title": "Suffix",
             "type": "string",
             "description": "What suffix to append to the illumination corrected images. Only relevant if `overwrite_input=False`."
           }
@@ -1585,34 +1617,8 @@
           "zarr_url",
           "init_args"
         ],
-        "additionalProperties": false,
-        "definitions": {
-          "InitArgsCorrectChromaticShift": {
-            "title": "InitArgsCorrectChromaticShift",
-            "description": "Arguments to be passed from Correct Chromatic Shift init to compute",
-            "type": "object",
-            "properties": {
-              "zarr_urls": {
-                "title": "Zarr Urls",
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "transformation_maps": {
-                "title": "Transformation Maps",
-                "type": "object",
-                "additionalProperties": {
-                  "type": "object"
-                }
-              }
-            },
-            "required": [
-              "zarr_urls",
-              "transformation_maps"
-            ]
-          }
-        }
+        "type": "object",
+        "title": "CorrectChromaticShift"
       },
       "docs_info": "## init_correct_chromatic_shift\nInitialized Correct Chromatic Shift task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform chromatic shift correction based on reference images of\n(for example) fluorescent beads.\n## correct_chromatic_shift\nCorrect chromatic shift based on reference images (for example fluorescent\nbeads) and apply it to all images.\n"
     },
@@ -1625,15 +1631,14 @@
         "mem": 3750
       },
       "args_schema_non_parallel": {
-        "title": "InitConvertChannelToLabel",
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
           "zarr_urls": {
-            "title": "Zarr Urls",
-            "type": "array",
             "items": {
               "type": "string"
             },
+            "title": "Zarr Urls",
+            "type": "array",
             "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "zarr_dir": {
@@ -1647,8 +1652,8 @@
             "description": "Label of the channel that will be converted to a label."
           },
           "output_label_image_name": {
-            "title": "Output Label Image Name",
             "default": "0",
+            "title": "Output Label Image Name",
             "type": "string",
             "description": "Name of the zarr image that will contain the converted label image. Defaults to \"0\". In case you saved, for example, illumination corrected images in the same zarr without overwriting the original images, you can specify a different name here (e.g. \"0_illum_corrected\")."
           }
@@ -1658,45 +1663,13 @@
           "zarr_dir",
           "channel_label"
         ],
-        "additionalProperties": false
+        "type": "object",
+        "title": "InitConvertChannelToLabel"
       },
       "args_schema_parallel": {
-        "title": "ConvertChannelToLabel",
-        "type": "object",
-        "properties": {
-          "zarr_url": {
-            "title": "Zarr Url",
-            "type": "string",
-            "description": "Missing description"
-          },
-          "init_args": {
-            "$ref": "#/definitions/InitArgsConvertChannelToLabel",
-            "title": "Init_Args",
-            "description": "Missing description"
-          },
-          "output_label_name": {
-            "title": "Output Label Name",
-            "type": "string",
-            "description": "Missing description"
-          },
-          "overwrite": {
-            "title": "Overwrite",
-            "default": false,
-            "type": "boolean",
-            "description": "Missing description"
-          }
-        },
-        "required": [
-          "zarr_url",
-          "init_args",
-          "output_label_name"
-        ],
-        "additionalProperties": false,
-        "definitions": {
+        "$defs": {
           "InitArgsConvertChannelToLabel": {
-            "title": "InitArgsConvertChannelToLabel",
             "description": "Arguments to be passed from Convert Channel to Label init to compute",
-            "type": "object",
             "properties": {
               "channel_label": {
                 "title": "Channel Label",
@@ -1710,9 +1683,42 @@
             "required": [
               "channel_label",
               "channel_zarr_url"
-            ]
+            ],
+            "title": "InitArgsConvertChannelToLabel",
+            "type": "object"
           }
-        }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Missing description"
+          },
+          "init_args": {
+            "$ref": "#/$defs/InitArgsConvertChannelToLabel",
+            "title": "Init Args",
+            "description": "Missing description"
+          },
+          "output_label_name": {
+            "title": "Output Label Name",
+            "type": "string",
+            "description": "Missing description"
+          },
+          "overwrite": {
+            "default": false,
+            "title": "Overwrite",
+            "type": "boolean",
+            "description": "Missing description"
+          }
+        },
+        "required": [
+          "zarr_url",
+          "init_args",
+          "output_label_name"
+        ],
+        "type": "object",
+        "title": "ConvertChannelToLabel"
       },
       "docs_info": "## init_convert_channel_to_label\nInitialized Filter Label by Size task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform Convert Channel to Label task.\n## convert_channel_to_label\nConvert a channel of an OME-Zarr image to a label image.\n\nArgs:\n    zarr_url: Path or url to the individual OME-Zarr image to be processed.\n        (standard argument for Fractal tasks, managed by Fractal server).\n    init_args: Intialization arguments provided by\n    `init_convert_channel_to_label`.\n    output_label_name: Name of the label to be created.\n    overwrite: If True, overwrite existing label image with same name.\n"
     },
@@ -1725,15 +1731,14 @@
         "mem": 3750
       },
       "args_schema_non_parallel": {
-        "title": "InitDetectBlobCentroids",
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
           "zarr_urls": {
-            "title": "Zarr Urls",
-            "type": "array",
             "items": {
               "type": "string"
             },
+            "title": "Zarr Urls",
+            "type": "array",
             "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "zarr_dir": {
@@ -1747,8 +1752,8 @@
             "description": "Label of the channel in which blobs will be detected."
           },
           "output_label_image_name": {
-            "title": "Output Label Image Name",
             "default": "0",
+            "title": "Output Label Image Name",
             "type": "string",
             "description": "Name of the zarr image that will contain the label image with detected blob centroids. Defaults to \"0\". In case you saved, for example, illumination corrected images in the same zarr without overwriting the original images, you can specify a different name here (e.g. \"0_illum_corrected\")."
           }
@@ -1758,87 +1763,13 @@
           "zarr_dir",
           "channel_label"
         ],
-        "additionalProperties": false
+        "type": "object",
+        "title": "InitDetectBlobCentroids"
       },
       "args_schema_parallel": {
-        "title": "DetectBlobCentroids",
-        "type": "object",
-        "properties": {
-          "zarr_url": {
-            "title": "Zarr Url",
-            "type": "string",
-            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
-          },
-          "init_args": {
-            "$ref": "#/definitions/InitArgsDetectBlobCentroids",
-            "title": "Init_Args",
-            "description": "Intialization arguments provided by `init_detect_blob_centroids`."
-          },
-          "ROI_table_name": {
-            "title": "Roi Table Name",
-            "type": "string",
-            "description": "Name of the table containing the ROIs."
-          },
-          "min_sigma": {
-            "title": "Min Sigma",
-            "default": 1,
-            "type": "integer",
-            "description": "Missing description"
-          },
-          "max_sigma": {
-            "title": "Max Sigma",
-            "default": 10,
-            "type": "integer",
-            "description": "Missing description"
-          },
-          "num_sigma": {
-            "title": "Num Sigma",
-            "default": 3,
-            "type": "integer",
-            "description": "Missing description"
-          },
-          "threshold": {
-            "title": "Threshold",
-            "default": 0.002,
-            "type": "number",
-            "description": "Missing description"
-          },
-          "output_label_name": {
-            "title": "Output Label Name",
-            "type": "string",
-            "description": "Name of the output label image."
-          },
-          "level": {
-            "title": "Level",
-            "default": 0,
-            "type": "integer",
-            "description": "Resolution of the label image to calculate overlap. Only tested for level 0."
-          },
-          "relabeling": {
-            "title": "Relabeling",
-            "default": true,
-            "type": "boolean",
-            "description": "If True, relabel the label image to keep unique label across all ROIs"
-          },
-          "overwrite": {
-            "title": "Overwrite",
-            "default": true,
-            "type": "boolean",
-            "description": "If True, overwrite existing label image."
-          }
-        },
-        "required": [
-          "zarr_url",
-          "init_args",
-          "ROI_table_name",
-          "output_label_name"
-        ],
-        "additionalProperties": false,
-        "definitions": {
+        "$defs": {
           "InitArgsDetectBlobCentroids": {
-            "title": "InitArgsDetectBlobCentroids",
             "description": "Arguments to be passed from Convert Channel to Label init to compute",
-            "type": "object",
             "properties": {
               "channel_label": {
                 "title": "Channel Label",
@@ -1852,13 +1783,88 @@
             "required": [
               "channel_label",
               "channel_zarr_url"
-            ]
+            ],
+            "title": "InitArgsDetectBlobCentroids",
+            "type": "object"
           }
-        }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "init_args": {
+            "$ref": "#/$defs/InitArgsDetectBlobCentroids",
+            "title": "Init Args",
+            "description": "Intialization arguments provided by `init_detect_blob_centroids`."
+          },
+          "ROI_table_name": {
+            "title": "Roi Table Name",
+            "type": "string",
+            "description": "Name of the table containing the ROIs."
+          },
+          "min_sigma": {
+            "default": 1,
+            "title": "Min Sigma",
+            "type": "integer",
+            "description": "Missing description"
+          },
+          "max_sigma": {
+            "default": 10,
+            "title": "Max Sigma",
+            "type": "integer",
+            "description": "Missing description"
+          },
+          "num_sigma": {
+            "default": 3,
+            "title": "Num Sigma",
+            "type": "integer",
+            "description": "Missing description"
+          },
+          "threshold": {
+            "default": 0.002,
+            "title": "Threshold",
+            "type": "number",
+            "description": "Missing description"
+          },
+          "output_label_name": {
+            "title": "Output Label Name",
+            "type": "string",
+            "description": "Name of the output label image."
+          },
+          "level": {
+            "default": 0,
+            "title": "Level",
+            "type": "integer",
+            "description": "Resolution of the label image to calculate overlap. Only tested for level 0."
+          },
+          "relabeling": {
+            "default": true,
+            "title": "Relabeling",
+            "type": "boolean",
+            "description": "If True, relabel the label image to keep unique label across all ROIs"
+          },
+          "overwrite": {
+            "default": true,
+            "title": "Overwrite",
+            "type": "boolean",
+            "description": "If True, overwrite existing label image."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "init_args",
+          "ROI_table_name",
+          "output_label_name"
+        ],
+        "type": "object",
+        "title": "DetectBlobCentroids"
       },
       "docs_info": "## init_detect_blob_centroids\nInitialized Filter Label by Size task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform Convert Channel to Label task.\n## detect_blob_centroids\nDetects blob centroids in an intensity image and stores the result as a\nlabel image..\n"
     }
   ],
   "has_args_schemas": true,
-  "args_schema_version": "pydantic_v1"
+  "args_schema_version": "pydantic_v2"
 }

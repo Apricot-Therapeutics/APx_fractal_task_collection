@@ -15,7 +15,7 @@ import SimpleITK as sitk
 import dask.array as da
 import anndata as ad
 
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 
 from apx_fractal_task_collection.io_models import InitArgsCorrectChromaticShift
 
@@ -94,7 +94,7 @@ def register_image(img, transformation_map):
     return result
 
 
-@validate_arguments
+@validate_call
 def correct_chromatic_shift(
     *,
     # Default arguments for fractal tasks:

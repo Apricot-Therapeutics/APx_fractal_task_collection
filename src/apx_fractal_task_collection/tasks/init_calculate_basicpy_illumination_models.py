@@ -15,12 +15,12 @@ import logging
 from typing import Any, Optional
 from apx_fractal_task_collection.init_utils import group_by_channel, group_by_well_and_channel
 import random
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-@validate_arguments
+@validate_call
 def init_calculate_basicpy_illumination_models(
     *,
     # Fractal parameters

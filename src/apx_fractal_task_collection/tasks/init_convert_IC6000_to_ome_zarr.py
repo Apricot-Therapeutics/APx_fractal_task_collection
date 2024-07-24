@@ -20,7 +20,7 @@ from typing import Any
 from typing import Optional
 
 import zarr
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 from zarr.errors import ContainsGroupError
 
 from apx_fractal_task_collection.init_utils import (parse_platename,
@@ -51,7 +51,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@validate_arguments
+@validate_call
 def init_convert_IC6000_to_ome_zarr(
     *,
     # Fractal parameters

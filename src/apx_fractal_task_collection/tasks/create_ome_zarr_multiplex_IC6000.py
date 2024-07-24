@@ -23,7 +23,7 @@ from typing import Sequence
 import pandas as pd
 import numpy as np
 import zarr
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 from zarr.errors import ContainsGroupError
 from defusedxml import ElementTree
 
@@ -159,7 +159,7 @@ def parse_IC6000_metadata(metadata_path, filename_patterns):
     return site_metadata, total_files
 
 
-@validate_arguments
+@validate_call
 def create_ome_zarr_multiplex_IC6000(
     *,
     input_paths: Sequence[str],

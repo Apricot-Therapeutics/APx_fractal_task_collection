@@ -14,13 +14,13 @@ import logging
 from typing import Any
 from apx_fractal_task_collection.init_utils import (group_by_well,
                                                     get_label_zarr_url)
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 
-@validate_arguments
+@validate_call
 def init_mask_label_image(
         *,
         # Fractal parameters

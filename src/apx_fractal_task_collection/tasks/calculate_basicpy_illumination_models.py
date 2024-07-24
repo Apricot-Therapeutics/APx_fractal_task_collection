@@ -18,7 +18,7 @@ from basicpy import BaSiC
 import dask.array as da
 import numpy as np
 
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 
 from apx_fractal_task_collection.io_models import InitArgsBaSiCPyCalculate
 
@@ -33,7 +33,7 @@ from fractal_tasks_core.roi import (
 logger = logging.getLogger(__name__)
 
 
-@validate_arguments
+@validate_call
 def calculate_basicpy_illumination_models(
     *,
     # Default arguments for fractal tasks:

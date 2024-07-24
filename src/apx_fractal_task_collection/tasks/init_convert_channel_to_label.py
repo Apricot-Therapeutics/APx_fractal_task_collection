@@ -14,12 +14,12 @@ import logging
 from typing import Any
 from apx_fractal_task_collection.init_utils import (group_by_well,
                                                     get_channel_zarr_url)
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 
 logger = logging.getLogger(__name__)
 
 
-@validate_arguments
+@validate_call
 def init_convert_channel_to_label(
         *,
         # Fractal parameters

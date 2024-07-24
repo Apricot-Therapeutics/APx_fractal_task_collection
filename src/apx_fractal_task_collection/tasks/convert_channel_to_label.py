@@ -14,7 +14,7 @@ import numpy as np
 import dask.array as da
 
 from skimage.morphology import label
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 
 from apx_fractal_task_collection.io_models import InitArgsConvertChannelToLabel
 
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
 
-@validate_arguments
+@validate_call
 def convert_channel_to_label(
     *,
     # Default arguments for fractal tasks:

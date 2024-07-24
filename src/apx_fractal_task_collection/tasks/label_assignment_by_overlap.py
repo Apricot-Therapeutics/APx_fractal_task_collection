@@ -22,7 +22,7 @@ from pathlib import Path
 from apx_fractal_task_collection.io_models import InitArgsLabelAssignment
 from fractal_tasks_core.tables import write_table
 
-from pydantic.decorator import validate_arguments
+from pydantic import validate_call
 
 
 __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
@@ -83,7 +83,7 @@ def assign_objects(
     return t
 
 
-@validate_arguments
+@validate_call
 def label_assignment_by_overlap(  # noqa: C901
     *,
     # Default arguments for fractal tasks:
