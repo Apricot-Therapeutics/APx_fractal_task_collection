@@ -225,3 +225,16 @@ class InitArgsDetectBlobCentroids(BaseModel):
 
     channel_label: str
     channel_zarr_url: str
+
+
+class InitArgsAshlarStitchingAndRegistration(BaseModel):
+    """
+
+    Arguments to be passed from Ashlar Stitching and Regisrtation init to compute
+
+    Attributes:
+        zarr_urls: list of zarr urls specifying the images that
+            are present in the well.
+
+    """
+    zarr_urls: list[str]

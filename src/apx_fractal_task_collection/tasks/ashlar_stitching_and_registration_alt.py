@@ -10,6 +10,7 @@
 
 import logging
 import itertools
+import napari
 from pathlib import Path
 import tempfile
 from typing import Any
@@ -20,12 +21,76 @@ import numpy as np
 from skimage import io
 from pydantic import validate_call
 from ashlar.scripts import ashlar
-
+import image_registration
 
 from fractal_tasks_core.ngff import load_NgffImageMeta
 from fractal_tasks_core.pyramids import build_pyramid
 
 logger = logging.getLogger(__name__)
+
+
+viewer = napari.Viewer()
+
+ref_img = da.from_zarr(r"Z:\ashlar_test_zarr\20240122_Arpan_Test.zarr\C\04\0\0")[0, :, 0:4096, 0:4096]
+data_zyx = da.from_zarr(r"Z:\ashlar_test_zarr\20240122_Arpan_Test.zarr\C\04\1\0")[0, :, 0:4096, 0:4096]
+
+result = align_tiles(ref_img, data_zyx)
+
+viewer.add_image(ref_img)
+viewer.add_image(data_zyx)
+viewer.add_image(result)
+
+
+def align_tiles(ref_img, data_zyx):
+    """
+    Aligns the tiles of the stitched image to the reference image.
+
+    Args:
+        ref_tile: The reference tile.
+        tiled: The tile to align.
+
+    Returns:
+        The aligned tile.
+
+
+    """
+    result = np.zeros(ref_img.shape, dtype='uint16')
+
+    for i, inds in enumerate(
+            itertools.product(*map(range, data_zyx.blocks.shape))):
+        tile = data_zyx.blocks[inds]
+        ref_tile = ref_img.blocks[inds]
+
+        # pad the tile to same shape as ref_img
+        x, y, a, b = image_registration.chi2_shift(
+            np.squeeze(ref_tile.compute()),
+            np.squeeze(tile.compute()))
+
+        shifts = np.array([-int(np.round(y)), -int(np.round(x))], dtype='int16')
+
+        padded_tile = np.pad(tile, (
+            (0, 0),
+            (inds[1]*2048, (ref_img.shape[1] - (inds[1]+1)*2048)),
+            (inds[2]*2048, (ref_img.shape[2] - (inds[2]+1)*2048)),
+              ),
+                             mode='constant', constant_values=0)
+
+        registered_tile = np.roll(padded_tile, shifts, axis=(1, 2))
+
+        # set the parts that rolled out to 0
+        if shifts[0] > 0:
+            registered_tile[:, 0:shifts[0], :] = 0
+        else:
+            registered_tile[:, shifts[0]:0, :] = 0
+        if shifts[1] > 0:
+            registered_tile[:, :, 0:shifts[1]] = 0
+        else:
+            registered_tile[:, :, shifts[1]:0] = 0
+
+        result = np.where(((registered_tile > 0) & (result == 0)), registered_tile, result)
+
+    return result
+
 
 @validate_call
 def ashlar_stitching_and_registration(
@@ -70,7 +135,6 @@ def ashlar_stitching_and_registration(
     """
     in_path = Path(input_paths[0])
     zarrurl = in_path.joinpath(component)
-    current_cycle = zarrurl.name
 
     # get pixel size
     ngff_image_meta = load_NgffImageMeta(zarrurl)
@@ -78,18 +142,10 @@ def ashlar_stitching_and_registration(
     num_levels = ngff_image_meta.num_levels
     coarsening_xy = ngff_image_meta.coarsening_xy
 
-    cycle_data_czyx = []
-    # add data from reference cycle
-    cycle_data_czyx.append(
-        da.from_zarr(zarrurl.parent.joinpath(f'{ref_cycle}/0')))
-    # add data from current cycle
-    cycle_data_czyx.append(da.from_zarr(zarrurl.joinpath('0')))
+    data_czyx = da.from_zarr(zarrurl.joinpath('0'))
 
-    cycle_data_czyx = np.stack(cycle_data_czyx)
-
-
-    height = cycle_data_czyx.blocks.shape[-2]
-    width = cycle_data_czyx.blocks.shape[-1]
+    height = data_czyx.blocks.shape[-2]
+    width = data_czyx.blocks.shape[-1]
 
     data_czyx_out = []
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -97,37 +153,28 @@ def ashlar_stitching_and_registration(
         logger.info(f'created temporary directory {tmpdirname}')
         tmpdir = Path(tmpdirname)
 
-        for i_cycle, data_czyx in enumerate(cycle_data_czyx):
-            # make a folder for the cycle
-            cycle_tmpdir = tmpdir.joinpath(f'cycle_{i_cycle}')
-            cycle_tmpdir.mkdir()
-            for i_c, data_zyx in enumerate(data_czyx):
+        for i_c, data_zyx in enumerate(data_czyx):
+            logger.info(
+                f"Saving FOVs of channel index {i_c} to "
+                f"temporary directory")
+            for i, inds in enumerate(
+                    itertools.product(*map(range, data_zyx.blocks.shape))):
+                chunk = data_zyx.blocks[inds]
+                io.imsave(
+                    tmpdir.joinpath(f'chunk_F{i:03d}_C{i_c:02d}.tif'),
+                    np.squeeze(chunk.compute()))
                 logger.info(
-                    f"Saving FOVs of channel index {i_c} from cycle {i_cycle} to "
-                    f"temporary directory")
-                for i, inds in enumerate(
-                        itertools.product(*map(range, data_zyx.blocks.shape))):
-                    chunk = data_zyx.blocks[inds]
-                    io.imsave(
-                        cycle_tmpdir.joinpath(f'chunk_F{i:03d}_C{i_c:02d}.tif'),
-                        np.squeeze(chunk.compute()))
-                    logger.info(
-                        f"Saved chunk {i} of shape "
-                        f"{np.squeeze(chunk).shape} to "
-                        f"{cycle_tmpdir.joinpath(f'chunk_F{i:03d}_C{i_c:02d}.tif')}")
+                    f"Saved chunk {i} of shape "
+                    f"{np.squeeze(chunk).shape} to "
+                    f"{tmpdir.joinpath(f'chunk_F{i:03d}_C{i_c:02d}.tif')}")
 
         logger.info("Running ASHLAR to stitch FOVs")
-        ashlar_path1 = f"fileseries|{tmpdir.joinpath('cycle_0')}|pattern=chunk_.tif|" \
+        ashlar_path = f"fileseries|{tmpdir}|pattern=chunk_.tif|" \
                       f"overlap={overlap}|width={width}|" \
                       f"height={height}|pixel_size={pixel_size_yx}"
-        ashlar_path1 = ashlar_path1.replace("chunk_",
+        ashlar_path = ashlar_path.replace("chunk_",
                                           "chunk_F{series:3}_C{channel:2}")
 
-        ashlar_path2 = f"fileseries|{tmpdir.joinpath('cycle_1')}|pattern=chunk_.tif|" \
-                       f"overlap={overlap}|width={width}|" \
-                       f"height={height}|pixel_size={pixel_size_yx}"
-        ashlar_path2 = ashlar_path2.replace("chunk_",
-                                            "chunk_F{series:3}_C{channel:2}")
 
         #ashlar_args = \
         #    f"--output=" \
@@ -136,25 +183,21 @@ def ashlar_stitching_and_registration(
 
         ashlar_args = \
             [f"--output={tmpdir.joinpath('ashlar_output_{cycle}_{channel}.tif')}",
-             f"--filter-sigma={filter_sigma}",
-             "--align-channel=0"]
+             f"--filter-sigma={filter_sigma}"]
 
-        logger.info(f"Running ASHLAR with path: {ashlar_path1} and {ashlar_path2}")
+        logger.info(f"Running ASHLAR with path: {ashlar_path}")
 
         #subprocess.call(f". /etc/profile.d/lmod.sh;"
         #                f" module load openjdk/11.0.2/gcc;"
         #                f" ashlar '{ashlar_path}' {ashlar_args}",
         #                shell=True)
 
-        ashlar.main(["test", ashlar_path1, ashlar_path2] + ashlar_args)
+        ashlar.main(["test", ashlar_path] + ashlar_args)
         for i_c, data_zyx in enumerate(data_czyx):
             logger.info("Reading stitched FOV")
-            if current_cycle == '0':
-                stitched_img = io.imread(
-                    tmpdir.joinpath(f'ashlar_output_0_{i_c}.tif'))
-            else:
-                stitched_img = io.imread(
-                    tmpdir.joinpath(f'ashlar_output_1_{i_c}.tif'))
+            stitched_img = io.imread(
+                tmpdir.joinpath(f'ashlar_output_0_{i_c}.tif'))
+
             logger.info(f"Stitched image has shape {stitched_img.shape}")
 
             logger.info(f"Padding stitched image to match original image size "

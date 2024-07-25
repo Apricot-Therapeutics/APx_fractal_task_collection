@@ -97,4 +97,12 @@ TASK_LIST = [
         executable="tasks/detect_blob_centroids.py",
         meta={"cpus_per_task": 1, "mem": 3750},
     ),
+    CompoundTask(
+        name="Ashlar Stitching and Registration",
+        input_types=dict(stitched=False),
+        executable_init="tasks/init_ashlar_stitching_and_registration.py",
+        executable="tasks/ashlar_stitching_and_registration.py",
+        output_types=dict(stitched=True),
+        meta={"cpus_per_task": 1, "mem": 15000},
+    ),
 ]
