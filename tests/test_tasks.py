@@ -44,6 +44,8 @@ from apx_fractal_task_collection.tasks.init_mask_label_image import init_mask_la
 from apx_fractal_task_collection.tasks.calculate_registration_image_based_chi_squared_shift import calculate_registration_image_based_chi_squared_shift
 from apx_fractal_task_collection.tasks.ashlar_stitching_and_registration import ashlar_stitching_and_registration
 from apx_fractal_task_collection.tasks.init_ashlar_stitching_and_registration import init_ashlar_stitching_and_registration
+from apx_fractal_task_collection.tasks.init_expand_labels import init_expand_labels
+from apx_fractal_task_collection.tasks.expand_labels_skimage import expand_labels_skimage
 #from apx_fractal_task_collection.tasks.ashlar_stitching_and_registration_pure import ashlar_stitching_and_registration
 
 WELL_COMPONENT_2D = "hcs_ngff_2D.zarr/A/2"
@@ -265,6 +267,36 @@ def test_segment_secondary_objects(test_data_dir, image_list):
     assert label_path.exists(), \
         f"label image not found at {label_path}"
 
+
+@pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
+def test_expand_labels(test_data_dir, image_list):
+
+    image_list = [f"{test_data_dir}/{i}" for i in image_list]
+
+    parallelization_list = init_expand_labels(
+        zarr_urls=image_list,
+        zarr_dir=test_data_dir,
+        label_name='Label A',
+        output_label_image_name="0",
+    )
+
+    zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
+    init_args = parallelization_list['parallelization_list'][0]['init_args']
+
+    expand_labels_skimage(
+        zarr_url=zarr_url,
+        init_args=init_args,
+        ROI_table_name='FOV_ROI_table',
+        distance=10,
+        output_label_name='expansion_result',
+        level=0,
+        overwrite=True,
+    )
+
+    # assert whether the label image was created
+    label_path = Path(zarr_url).joinpath("labels/expansion_result/0")
+    assert label_path.exists(), \
+        f"label image not found at {label_path}"
 
 @pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
 def test_detect_blob_centroids(test_data_dir, image_list):

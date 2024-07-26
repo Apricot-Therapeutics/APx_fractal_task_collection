@@ -32,6 +32,21 @@ class InitArgsSegmentSecondary(BaseModel):
     mask_zarr_url: Optional[str] = None
 
 
+class InitArgsExpandLabels(BaseModel):
+    """
+    Expand Labels init args.
+
+    Attributes:
+        label_name: Name of the label image to expand.
+            Needs to exist in OME-Zarr file.
+        label_zarr_url: Zarr url indicating the zarr image containing the
+            label image.
+    """
+
+    label_name: str
+    label_zarr_url: str
+
+
 class InitArgsIC6000(BaseModel):
     """
     Arguments to be passed from IC6000 converter init to compute

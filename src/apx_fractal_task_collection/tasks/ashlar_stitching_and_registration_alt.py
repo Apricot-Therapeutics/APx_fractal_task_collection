@@ -34,7 +34,12 @@ viewer = napari.Viewer()
 ref_img = da.from_zarr(r"Z:\ashlar_test_zarr\20240122_Arpan_Test.zarr\C\04\0\0")[0, :, 0:4096, 0:4096]
 data_zyx = da.from_zarr(r"Z:\ashlar_test_zarr\20240122_Arpan_Test.zarr\C\04\1\0")[0, :, 0:4096, 0:4096]
 
+
+ref_img = da.from_zarr(r"J:\BTP\07052024_BTP_ALK_ROS\cycle_12_zarr\07052024_BTP_ALK_ROS_Cycle00.zarr\B\05\0_stitched\0")[0, :, 0:6*2048, 0:6*2048]
+data_zyx = da.from_zarr(r"J:\BTP\07052024_BTP_ALK_ROS\cycle_12_zarr\07052024_BTP_ALK_ROS_Cycle00.zarr\B\05\1\0")[0, :, 0:6*2048, 0:6*2048]
+
 result = align_tiles(ref_img, data_zyx)
+result = result.compute()
 
 viewer.add_image(ref_img)
 viewer.add_image(data_zyx)

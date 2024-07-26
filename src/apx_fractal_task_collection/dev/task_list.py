@@ -17,6 +17,12 @@ TASK_LIST = [
         meta={"cpus_per_task": 1, "mem": 3750},
     ),
     CompoundTask(
+        name="Expand Labels",
+        executable_init="tasks/init_expand_labels.py",
+        executable="tasks/expand_labels_skimage.py",
+        meta={"cpus_per_task": 1, "mem": 3750},
+    ),
+    CompoundTask(
         name="Convert IC6000 to OME-Zarr",
         executable_init="tasks/init_convert_IC6000_to_ome_zarr.py",
         executable="tasks/convert_IC6000_to_ome_zarr.py",
