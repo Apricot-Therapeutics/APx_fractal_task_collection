@@ -2097,8 +2097,8 @@
             "type": "number",
             "description": "The sigma of the Gaussian filter used to filter the FOVs for stitching. Can help to improve the stitching performance."
           },
-          "ref_channel_id": {
-            "title": "Ref Channel Id",
+          "ref_wavelength_id": {
+            "title": "Ref Wavelength Id",
             "type": "string",
             "description": "The wavelength id of the channel to use as reference."
           },
@@ -2123,13 +2123,13 @@
           "tmp_dir": {
             "title": "Tmp Dir",
             "type": "string",
-            "description": "Missing description"
+            "description": "Optional path to where the temporary directory should be created. Might be necessary if the default temporary directory (/tmp/) on the cluster has too little space left."
           }
         },
         "required": [
           "zarr_url",
           "init_args",
-          "ref_channel_id"
+          "ref_wavelength_id"
         ],
         "type": "object",
         "title": "AshlarStitchingAndRegistration"

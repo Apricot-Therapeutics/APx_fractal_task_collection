@@ -821,8 +821,8 @@ def test_stitch_fovs_with_overlap(test_data_dir):
     assert stitched_image_path.exists(),\
         f"Stitched image not found at {stitched_image_path}"
 
-
-def test_ashlar_stitching_and_registration(test_data_dir):
+@pytest.mark.parametrize("ref_wavelength_id", ['UV - DAPI', 'Red - Cy5'])
+def test_ashlar_stitching_and_registration(test_data_dir, ref_wavelength_id):
 
     parallelization_list = init_convert_IC6000_to_ome_zarr(
         zarr_urls=[],
@@ -897,7 +897,7 @@ def test_ashlar_stitching_and_registration(test_data_dir):
         tmp_dir=None,
         overwrite_input=False,
         suffix="_stitched",
-        ref_channel_id='UV - DAPI',
+        ref_wavelength_id=ref_wavelength_id,
         ref_cycle=0,
     )
 
