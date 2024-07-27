@@ -54,8 +54,4 @@ push = true
 "pyproject.toml" = [
     'version = "{version}"',
 ]
-"README.md" = [
-    "{version}",
-    "{pep440_version}",
-]
 
