@@ -20,6 +20,7 @@ from skimage import io
 from pydantic import validate_call
 from ashlar.scripts import ashlar
 from typing import Optional
+from natsort import natsorted
 
 
 from fractal_tasks_core.ngff import load_NgffImageMeta
@@ -100,8 +101,9 @@ def ashlar_stitching_and_registration(
 
     with tempfile.TemporaryDirectory(dir=tmp_dir) as tmpdirname:
 
-        logger.info(f'created temporary directory {tmpdirname}')
         tmpdir = Path(tmpdirname)
+
+        logger.info(f'created temporary directory {tmpdirname}')
 
         ashlar_paths = {}
 
@@ -216,9 +218,15 @@ def ashlar_stitching_and_registration(
                 logger.info(f"Reading stitched FOV for cycle {i_cycle} "
                             f"and channel {channel}")
 
+                # ashlar saves results with cycle indices starting from 0
+                # and does not use the original cycle ids..., same with the
+                # channel ids. Therefore we use the index of the cycle in the
+                # original zarr_urls and the index of the channel that is
+                # tracked in cycle_wavelength_maps
+
                 stitched_img = io.imread(
                     tmpdir.joinpath(
-                        f'ashlar_output_{i_cycle}_'
+                        f'ashlar_output_{init_args.zarr_urls.index(zarr_url)}_'
                         f'{ashlar_wavelength_ids.index(channel)}.tif'))
 
                 logger.info(f"Stitched image has shape {stitched_img.shape}")
