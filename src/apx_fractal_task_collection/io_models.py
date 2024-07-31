@@ -253,3 +253,29 @@ class InitArgsAshlarStitchingAndRegistration(BaseModel):
 
     """
     zarr_urls: list[str]
+
+
+class InitArgsCalculatePixelIntensityCorrelation(BaseModel):
+    """
+    Calculate Pixel Intensity Correlation init args.
+
+    Attributes:
+        channel_label_1: Label of the first intensity image used to calculate
+        correlation coefficient. Needs to exist in OME-Zarr file.
+        channel_label_2: Label of the second intensity image used to calculate
+        correlation coefficient. Needs to exist in OME-Zarr file.
+        channel_zarr_url_1: Zarr url indicating the zarr image containing the
+            channel image 1.
+        channel_zarr_url_2: Zarr url indicating the zarr image containing the
+            channel image 2.
+        label_name: Name of the label image that contains the seeds.
+            Needs to exist in OME-Zarr file.
+        label_zarr_url: Zarr url indicating the zarr image containing the
+            label image.
+    """
+    channel_label_1: str
+    channel_zarr_url_1: str
+    channel_label_2: str
+    channel_zarr_url_2: str
+    label_name: str
+    label_zarr_url: str

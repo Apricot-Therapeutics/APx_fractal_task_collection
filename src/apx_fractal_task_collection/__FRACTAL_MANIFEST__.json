@@ -164,6 +164,144 @@
       "docs_info": "## measure_features\nCalculate features based on label image and intensity image (optional).\n\nTakes a label image and an optional intensity image and calculates\nmorphology, intensity and texture features in 2D.\n"
     },
     {
+      "name": "Calculate Pixel Intensity Correlation",
+      "executable_non_parallel": "tasks/init_calculate_pixel_intensity_correlation.py",
+      "executable_parallel": "tasks/calculate_pixel_intensity_correlation.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 3750
+      },
+      "args_schema_non_parallel": {
+        "additionalProperties": false,
+        "properties": {
+          "zarr_urls": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Zarr Urls",
+            "type": "array",
+            "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "zarr_dir": {
+            "title": "Zarr Dir",
+            "type": "string",
+            "description": "path of the directory where the new OME-Zarrs will be created. Not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "label_name": {
+            "title": "Label Name",
+            "type": "string",
+            "description": "Name of the label image that contains the seeds. Needs to exist in OME-Zarr file."
+          },
+          "correlation_pairs": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Correlation Pairs",
+            "type": "array",
+            "description": "List of dictionaries with two keys each, \"channel1\" and \"channel2\", that contain the channel labels of the two images to be correlated. Needs to exist in OME-Zarr file."
+          }
+        },
+        "required": [
+          "zarr_urls",
+          "zarr_dir",
+          "label_name",
+          "correlation_pairs"
+        ],
+        "type": "object",
+        "title": "InitCalculatePixelIntensityCorrelation"
+      },
+      "args_schema_parallel": {
+        "$defs": {
+          "InitArgsCalculatePixelIntensityCorrelation": {
+            "description": "Calculate Pixel Intensity Correlation init args.",
+            "properties": {
+              "channel_label_1": {
+                "title": "Channel Label 1",
+                "type": "string"
+              },
+              "channel_zarr_url_1": {
+                "title": "Channel Zarr Url 1",
+                "type": "string"
+              },
+              "channel_label_2": {
+                "title": "Channel Label 2",
+                "type": "string"
+              },
+              "channel_zarr_url_2": {
+                "title": "Channel Zarr Url 2",
+                "type": "string"
+              },
+              "label_name": {
+                "title": "Label Name",
+                "type": "string"
+              },
+              "label_zarr_url": {
+                "title": "Label Zarr Url",
+                "type": "string"
+              }
+            },
+            "required": [
+              "channel_label_1",
+              "channel_zarr_url_1",
+              "channel_label_2",
+              "channel_zarr_url_2",
+              "label_name",
+              "label_zarr_url"
+            ],
+            "title": "InitArgsCalculatePixelIntensityCorrelation",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "init_args": {
+            "$ref": "#/$defs/InitArgsCalculatePixelIntensityCorrelation",
+            "title": "Init Args",
+            "description": "Intialization arguments provided by `init_segment_secondary_objects`."
+          },
+          "ROI_table_name": {
+            "title": "Roi Table Name",
+            "type": "string",
+            "description": "Name of the table containing the ROIs."
+          },
+          "output_table_basename": {
+            "title": "Output Table Basename",
+            "type": "string",
+            "description": "Name of the output feature table."
+          },
+          "level": {
+            "default": 0,
+            "title": "Level",
+            "type": "integer",
+            "description": "Resolution of the label image to calculate correlation. Only tested for level 0."
+          },
+          "overwrite": {
+            "default": true,
+            "title": "Overwrite",
+            "type": "boolean",
+            "description": "If True, overwrite existing table."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "init_args",
+          "ROI_table_name",
+          "output_table_basename"
+        ],
+        "type": "object",
+        "title": "CalculatePixelIntensityCorrelation"
+      },
+      "docs_info": "## init_calculate_pixel_intensity_correlation\nInitializes the Calculate Pixel Intensity Correlation task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform Calculate Pixel Intensity Correlation task based on\ntwo channel images and a label image.\n## calculate_pixel_intensity_correlation\nCalculate pixel intensity correlation between two channels.\n\nTakes a label image and two channel images and calculates the pixel\nintensity correlation between the two channels for each object in the label\nimage.\n"
+    },
+    {
       "name": "Segment Secondary Objects",
       "executable_non_parallel": "tasks/init_segment_secondary_objects.py",
       "executable_parallel": "tasks/segment_secondary_objects.py",

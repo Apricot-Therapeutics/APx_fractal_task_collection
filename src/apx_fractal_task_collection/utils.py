@@ -369,4 +369,3 @@ class BaSiCPyModelParams(BaseModel):
     working_size: int = 128
 
 
-

@@ -47,6 +47,8 @@ from apx_fractal_task_collection.tasks.init_ashlar_stitching_and_registration im
 from apx_fractal_task_collection.tasks.init_expand_labels import init_expand_labels
 from apx_fractal_task_collection.tasks.expand_labels_skimage import expand_labels_skimage
 #from apx_fractal_task_collection.tasks.ashlar_stitching_and_registration_pure import ashlar_stitching_and_registration
+from apx_fractal_task_collection.tasks.init_calculate_pixel_intensity_correlation import init_calculate_pixel_intensity_correlation
+from apx_fractal_task_collection.tasks.calculate_pixel_intensity_correlation import calculate_pixel_intensity_correlation
 
 WELL_COMPONENT_2D = "hcs_ngff_2D.zarr/A/2"
 IMAGE_COMPONENT_2D = "hcs_ngff_2D.zarr/A/2/0"
@@ -166,6 +168,70 @@ def test_measure_features(test_data_dir, image_list):
                        intensity_columns +\
                        texture_columns +\
                        population_columns
+
+    print(feature_table.to_df().columns)
+    assert np.isin(feature_table.var.index.tolist(), expected_columns).all(), \
+        f"Expected columns {expected_columns}," \
+        f" but got {feature_table.var.index.tolist()}"
+
+
+@pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
+def test_calculate_pixel_intensity_correlation(test_data_dir, image_list):
+
+    image_list = [f"{test_data_dir}/{i}" for i in image_list]
+
+    parallelization_list = init_calculate_pixel_intensity_correlation(
+        zarr_urls=image_list,
+        zarr_dir=test_data_dir,
+        correlation_pairs=[{"0_DAPI": "0_GFP"},
+                           {"0_DAPI": "1_GFP"},
+                           {"0_DAPI": "1_DAPI"}],
+        label_name='Label A',
+    )
+
+    for pl in parallelization_list['parallelization_list']:
+        zarr_url = pl['zarr_url']
+        init_args = pl['init_args']
+
+        calculate_pixel_intensity_correlation(
+            zarr_url=zarr_url,
+            init_args=init_args,
+            ROI_table_name='FOV_ROI_table',
+            output_table_basename='correlation_table',
+            level=0,
+            overwrite=True,
+        )
+
+        # assert that the feature table exists in correct location
+        feature_table_path = Path(image_list[0]).joinpath(
+            "tables/correlation_table_0_DAPI_0_GFP")
+        assert feature_table_path.exists(), \
+            f"Feature table not found at {feature_table_path}"
+
+    # assert that the feature table exists in correct location
+    feature_table_path = Path(image_list[0]).joinpath(
+        "tables/correlation_table_0_DAPI_1_GFP")
+    assert feature_table_path.exists(), \
+        f"Feature table not found at {feature_table_path}"
+
+    # assert that the feature table exists in correct location
+    feature_table_path = Path(image_list[0]).joinpath(
+        "tables/correlation_table_0_DAPI_1_DAPI")
+    assert feature_table_path.exists(), \
+        f"Feature table not found at {feature_table_path}"
+
+    # assert that the obs contain correct columns
+    feature_table = ad.read_zarr(feature_table_path)
+    expected_columns = ['label',
+                        'well_name',
+                        'ROI']
+
+    assert feature_table.obs.columns.tolist() == expected_columns, \
+        f"Expected columns {expected_columns}," \
+        f" but got {feature_table.obs.columns.tolist()}"
+
+    # assert that the feature table contains correct columns
+    expected_columns = ['Label A_Correlation_0_DAPI_1_DAPI']
 
     print(feature_table.to_df().columns)
     assert np.isin(feature_table.var.index.tolist(), expected_columns).all(), \
