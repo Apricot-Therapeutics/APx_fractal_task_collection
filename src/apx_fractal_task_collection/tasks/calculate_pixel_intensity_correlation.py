@@ -178,7 +178,7 @@ def calculate_pixel_intensity_correlation(  # noqa: C901
                                    dtype='float32')
 
         # Write to zarr group
-        image_group = zarr.group(zarr_url)
+        image_group = zarr.group(init_args.label_zarr_url)
         write_table(
             image_group,
             output_table_basename + "_" + init_args.channel_label_1 + "_" + init_args.channel_label_2,
