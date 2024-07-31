@@ -46,9 +46,9 @@ def init_calculate_pixel_intensity_correlation(
             (standard argument for Fractal tasks, managed by Fractal server).
         label_name: Name of the label image that contains the seeds.
             Needs to exist in OME-Zarr file.
-        correlation_pairs: List of dictionaries with two keys each, "channel1"
-            and "channel2", that contain the channel labels of the two images
-            to be correlated. Needs to exist in OME-Zarr file.
+        correlation_pairs: List of dictionaries. Key and value represent
+        the label names of two channels that should be correlated.
+        CAREFUL: add a new dictionary for each correlation.
 
     Returns:
         task_output: Dictionary for Fractal server that contains a
