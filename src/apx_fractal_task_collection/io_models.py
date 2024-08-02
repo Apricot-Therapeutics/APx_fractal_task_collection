@@ -260,22 +260,16 @@ class InitArgsCalculatePixelIntensityCorrelation(BaseModel):
     Calculate Pixel Intensity Correlation init args.
 
     Attributes:
-        channel_label_1: Label of the first intensity image used to calculate
-        correlation coefficient. Needs to exist in OME-Zarr file.
-        channel_label_2: Label of the second intensity image used to calculate
-        correlation coefficient. Needs to exist in OME-Zarr file.
-        channel_zarr_url_1: Zarr url indicating the zarr image containing the
-            channel image 1.
-        channel_zarr_url_2: Zarr url indicating the zarr image containing the
-            channel image 2.
+        corr_channel_urls: List of dictionaries. Key and value represent
+        the url of the intensity images that should be correlated.
+        corr_channel_labels: List of dictionaries. Key and value represent
+        the label names of two channels that should be correlated.
         label_name: Name of the label image that contains the seeds.
             Needs to exist in OME-Zarr file.
         label_zarr_url: Zarr url indicating the zarr image containing the
             label image.
     """
-    channel_label_1: str
-    channel_zarr_url_1: str
-    channel_label_2: str
-    channel_zarr_url_2: str
+    corr_channel_urls: list[dict[str, str]]
+    corr_channel_labels: list[dict[str, str]]
     label_name: str
     label_zarr_url: str

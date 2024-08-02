@@ -218,21 +218,25 @@
           "InitArgsCalculatePixelIntensityCorrelation": {
             "description": "Calculate Pixel Intensity Correlation init args.",
             "properties": {
-              "channel_label_1": {
-                "title": "Channel Label 1",
-                "type": "string"
+              "corr_channel_urls": {
+                "items": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "title": "Corr Channel Urls",
+                "type": "array"
               },
-              "channel_zarr_url_1": {
-                "title": "Channel Zarr Url 1",
-                "type": "string"
-              },
-              "channel_label_2": {
-                "title": "Channel Label 2",
-                "type": "string"
-              },
-              "channel_zarr_url_2": {
-                "title": "Channel Zarr Url 2",
-                "type": "string"
+              "corr_channel_labels": {
+                "items": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "title": "Corr Channel Labels",
+                "type": "array"
               },
               "label_name": {
                 "title": "Label Name",
@@ -244,10 +248,8 @@
               }
             },
             "required": [
-              "channel_label_1",
-              "channel_zarr_url_1",
-              "channel_label_2",
-              "channel_zarr_url_2",
+              "corr_channel_urls",
+              "corr_channel_labels",
               "label_name",
               "label_zarr_url"
             ],
@@ -272,8 +274,8 @@
             "type": "string",
             "description": "Name of the table containing the ROIs."
           },
-          "output_table_basename": {
-            "title": "Output Table Basename",
+          "output_table_name": {
+            "title": "Output Table Name",
             "type": "string",
             "description": "Name of the output feature table."
           },
@@ -294,7 +296,7 @@
           "zarr_url",
           "init_args",
           "ROI_table_name",
-          "output_table_basename"
+          "output_table_name"
         ],
         "type": "object",
         "title": "CalculatePixelIntensityCorrelation"

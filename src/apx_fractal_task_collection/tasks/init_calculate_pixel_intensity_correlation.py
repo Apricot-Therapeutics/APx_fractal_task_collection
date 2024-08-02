@@ -64,25 +64,34 @@ def init_calculate_pixel_intensity_correlation(
     for well, well_list in well_dict.items():
         label_zarr_url = get_label_zarr_url(well_list, label_name)
         zarr_url = well_list[0]
-        for channel_pair in correlation_pairs:
-            channel_zarr_url_1 = get_channel_zarr_url(well_list,
-                                                      list(channel_pair.keys())[0])
-            channel_zarr_url_2 = get_channel_zarr_url(well_list,
-                                                      list(channel_pair.values())[0])
 
-            parallelization_list.append(
-                dict(
-                    zarr_url=zarr_url,
-                    init_args=dict(
-                        channel_label_1=list(channel_pair.keys())[0],
-                        channel_label_2=list(channel_pair.values())[0],
-                        channel_zarr_url_1=channel_zarr_url_1,
-                        channel_zarr_url_2=channel_zarr_url_2,
-                        label_name=label_name,
-                        label_zarr_url=label_zarr_url,
-                    ),
-                )
+        corr_channel_urls = []
+        corr_channel_labels = []
+        for channel_pair in correlation_pairs:
+            channel_zarr_url_1 = get_channel_zarr_url(
+                well_list,
+                list(channel_pair.keys())[0])
+            channel_zarr_url_2 = get_channel_zarr_url(
+                well_list,
+                list(channel_pair.values())[0])
+
+            corr_channel_urls.append(
+                {channel_zarr_url_1: channel_zarr_url_2})
+            corr_channel_labels.append(
+                {list(channel_pair.keys())[0]: list(channel_pair.values())[0]})
+
+
+        parallelization_list.append(
+            dict(
+                zarr_url=zarr_url,
+                init_args=dict(
+                    corr_channel_urls=corr_channel_urls,
+                    corr_channel_labels=corr_channel_labels,
+                    label_name=label_name,
+                    label_zarr_url=label_zarr_url,
+                ),
             )
+        )
     return dict(parallelization_list=parallelization_list)
 
 

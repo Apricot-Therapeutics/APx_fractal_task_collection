@@ -48,7 +48,7 @@ def calculate_pixel_intensity_correlation(  # noqa: C901
     init_args: InitArgsCalculatePixelIntensityCorrelation,
     # Task-specific arguments:
     ROI_table_name: str,
-    output_table_basename: str,
+    output_table_name: str,
     level: int = 0,
     overwrite: bool = True,
 ) -> None:
@@ -65,12 +65,13 @@ def calculate_pixel_intensity_correlation(  # noqa: C901
         init_args: Intialization arguments provided by
             `init_segment_secondary_objects`.
         ROI_table_name: Name of the table containing the ROIs.
-        output_table_basename: Name of the output feature table.
+        output_table_name: Name of the output feature table.
         level: Resolution of the label image to calculate correlation.
             Only tested for level 0.
         overwrite: If True, overwrite existing table.
     """
     well_url = Path(zarr_url).parent
+    well_name = zarr_url.split("/")[-3] + zarr_url.split("/")[-2]
 
     # load label image
     label_image = da.from_zarr(
@@ -78,28 +79,6 @@ def calculate_pixel_intensity_correlation(  # noqa: C901
 
     label_image_cycle = get_acquisition_from_label_name(well_url,
                                                         init_args.label_name)
-
-    # load intensity image 1
-    tmp_channel: OmeroChannel = get_channel_from_image_zarr(
-        image_zarr_path=init_args.channel_zarr_url_1,
-        wavelength_id=None,
-        label=init_args.channel_label_1,
-    )
-    ind_channel = tmp_channel.index
-    data_zyx_1 = da.from_zarr(
-        f"{init_args.channel_zarr_url_1}/{level}")[ind_channel]
-
-    # load intensity image 2
-    tmp_channel: OmeroChannel = get_channel_from_image_zarr(
-        image_zarr_path=init_args.channel_zarr_url_2,
-        wavelength_id=None,
-        label=init_args.channel_label_2,
-    )
-    ind_channel = tmp_channel.index
-    data_zyx_2 = da.from_zarr(
-        f"{init_args.channel_zarr_url_2}/{level}")[ind_channel]
-
-    well_name = zarr_url.split("/")[-3] + zarr_url.split("/")[-2]
 
     # prepare label image
     ngff_image_meta = load_NgffImageMeta(init_args.label_zarr_url)
@@ -121,79 +100,108 @@ def calculate_pixel_intensity_correlation(  # noqa: C901
     check_valid_ROI_indices(list_indices, "registered_well_ROI_table")
     num_ROIs = len(list_indices)
 
+    channel_pair_features = []
+    for i, channel_pair in enumerate(init_args.corr_channel_urls):
 
-    feature_list=[]
-    obs_list = []
-    # Loop over the list of indices and perform the secondary segmentation
-    for i_ROI, indices in enumerate(list_indices):
+        channel_labels = init_args.corr_channel_labels[i]
 
-        # Define region
-        s_z, e_z, s_y, e_y, s_x, e_x = indices[:]
-        region = (
-            slice(s_z, e_z),
-            slice(s_y, e_y),
-            slice(s_x, e_x),
+        # load intensity image 1
+        tmp_channel: OmeroChannel = get_channel_from_image_zarr(
+            image_zarr_path=list(channel_pair.keys())[0],
+            wavelength_id=None,
+            label=list(channel_labels.keys())[0],
         )
-        logger.info(
-            f"Now processing ROI {i_ROI + 1}/{num_ROIs} from ROI table"
-            f" {ROI_table_name}."
+        ind_channel = tmp_channel.index
+        data_zyx_1 = da.from_zarr(
+            f"{list(channel_pair.keys())[0]}/{level}")[ind_channel]
+
+        # load intensity image 2
+        tmp_channel: OmeroChannel = get_channel_from_image_zarr(
+            image_zarr_path=list(channel_pair.values())[0],
+            wavelength_id=None,
+            label=list(channel_labels.values())[0],
         )
+        ind_channel = tmp_channel.index
+        data_zyx_2 = da.from_zarr(
+            f"{list(channel_pair.values())[0]}/{level}")[ind_channel]
 
-        # perform measurements
-        correlation = object_intensity_correlation(
-            labels=label_image[region].compute(),
-            ref_img=data_zyx_1[region].compute(),
-            img=data_zyx_2[region].compute(),
-        )
+        feature_list=[]
+        obs_list = []
+        # Loop over the list of indices and perform the secondary segmentation
+        for i_ROI, indices in enumerate(list_indices):
 
-        correlation.set_index("label", inplace=True)
-        correlation.columns = [init_args.label_name + \
-                              "_Correlation" + \
-                              "_" + init_args.channel_label_1 + \
-                              "_" + init_args.channel_label_2]
+            # Define region
+            s_z, e_z, s_y, e_y, s_x, e_x = indices[:]
+            region = (
+                slice(s_z, e_z),
+                slice(s_y, e_y),
+                slice(s_x, e_x),
+            )
+            logger.info(
+                f"Now processing ROI {i_ROI + 1}/{num_ROIs} from ROI table"
+                f" {ROI_table_name}."
+            )
 
-        correlation.reset_index(inplace=True)
+            # perform measurements
+            correlation = object_intensity_correlation(
+                labels=label_image[region].compute(),
+                ref_img=data_zyx_1[region].compute(),
+                img=data_zyx_2[region].compute(),
+            )
 
-        ROI_obs = pd.DataFrame(
-            {"label": correlation['label'],
-             "well_name": well_name,
-             "ROI": ROI_table.obs.index[i_ROI]})
+            correlation.set_index("label", inplace=True)
+            correlation.columns = [init_args.label_name + \
+                                  "_Correlation" + \
+                                  "_" + list(channel_labels.keys())[0] + \
+                                  "_" + list(channel_labels.values())[0]]
 
-        feature_list.append(correlation)
-        obs_list.append(ROI_obs)
+            correlation.reset_index(inplace=True)
 
-        logger.info(f"Finished correlation calculation for ROI {i_ROI + 1}/{num_ROIs}.")
+            ROI_obs = pd.DataFrame(
+                {"label": correlation['label'],
+                 "well_name": well_name,
+                 "ROI": ROI_table.obs.index[i_ROI]})
 
-    if feature_list:
-        obs = pd.concat(obs_list, axis=0)
-        merged_features = pd.concat(feature_list, axis=0)
+            feature_list.append(correlation)
+            obs_list.append(ROI_obs)
 
-        merged_features.set_index('label', inplace=True)
-        #obs.set_index('label', inplace=True)
-        obs.index = np.arange(0, len(obs))
+            logger.info(f"Finished correlation calculation for ROI {i_ROI + 1}/{num_ROIs}.")
 
-        # save features as AnnData table
-        feature_table = ad.AnnData(X=merged_features.reset_index(drop=True),
-                                   obs=obs,
-                                   dtype='float32')
+            if feature_list:
+                obs = pd.concat(obs_list, axis=0)
+                merged_features = pd.concat(feature_list, axis=0)
 
-        # Write to zarr group
-        image_group = zarr.group(init_args.label_zarr_url)
-        write_table(
-            image_group,
-            output_table_basename + "_" + init_args.channel_label_1 + "_" + init_args.channel_label_2,
-            feature_table,
-            overwrite=overwrite,
-            table_attrs={"type": "feature_table",
-                         "region": {
-                             "path": f"../../{label_image_cycle}/"
-                                     f"labels/{init_args.label_name}"},
-                         "instance_key": "label"}
-        )
+                merged_features.set_index('label', inplace=True)
+                # obs.set_index('label', inplace=True)
+                obs.index = np.arange(0, len(obs))
 
-    else:
-        logger.info(f"No features calculated for {init_args.label_name}. Likely,"
+            else:
+                logger.info(
+                    f"No features calculated for {init_args.label_name}. Likely,"
                     f" there are no objects in the label image.")
+
+        channel_pair_features.append(merged_features)
+
+    channel_pair_features_merged = pd.concat(channel_pair_features, axis=1)
+    # save features as AnnData table
+    feature_table = ad.AnnData(
+        X=channel_pair_features_merged.reset_index(drop=True),
+        obs=obs,
+        dtype='float32')
+
+    # Write to zarr group
+    image_group = zarr.group(init_args.label_zarr_url)
+    write_table(
+        image_group,
+        output_table_name,
+        feature_table,
+        overwrite=overwrite,
+        table_attrs={"type": "feature_table",
+                     "region": {
+                         "path": f"../../{label_image_cycle}/"
+                                 f"labels/{init_args.label_name}"},
+                     "instance_key": "label"}
+    )
 
 
 

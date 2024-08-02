@@ -197,28 +197,17 @@ def test_calculate_pixel_intensity_correlation(test_data_dir, image_list):
             zarr_url=zarr_url,
             init_args=init_args,
             ROI_table_name='FOV_ROI_table',
-            output_table_basename='correlation_table',
+            output_table_name='correlation_table',
             level=0,
             overwrite=True,
         )
 
         # assert that the feature table exists in correct location
         feature_table_path = Path(image_list[0]).joinpath(
-            "tables/correlation_table_0_DAPI_0_GFP")
+            "tables/correlation_table")
         assert feature_table_path.exists(), \
             f"Feature table not found at {feature_table_path}"
 
-    # assert that the feature table exists in correct location
-    feature_table_path = Path(image_list[0]).joinpath(
-        "tables/correlation_table_0_DAPI_1_GFP")
-    assert feature_table_path.exists(), \
-        f"Feature table not found at {feature_table_path}"
-
-    # assert that the feature table exists in correct location
-    feature_table_path = Path(image_list[0]).joinpath(
-        "tables/correlation_table_0_DAPI_1_DAPI")
-    assert feature_table_path.exists(), \
-        f"Feature table not found at {feature_table_path}"
 
     # assert that the obs contain correct columns
     feature_table = ad.read_zarr(feature_table_path)
@@ -231,9 +220,11 @@ def test_calculate_pixel_intensity_correlation(test_data_dir, image_list):
         f" but got {feature_table.obs.columns.tolist()}"
 
     # assert that the feature table contains correct columns
-    expected_columns = ['Label A_Correlation_0_DAPI_1_DAPI']
+    expected_columns = ['Label A_Correlation_0_DAPI_0_GFP',
+                        'Label A_Correlation_0_DAPI_1_GFP',
+                        'Label A_Correlation_0_DAPI_1_DAPI',]
 
-    print(feature_table.to_df().columns)
+    print(feature_table.to_df().shape)
     assert np.isin(feature_table.var.index.tolist(), expected_columns).all(), \
         f"Expected columns {expected_columns}," \
         f" but got {feature_table.var.index.tolist()}"
