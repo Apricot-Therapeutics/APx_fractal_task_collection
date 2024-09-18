@@ -17,6 +17,7 @@ from apx_fractal_task_collection.init_utils import group_by_channel, group_by_we
 import random
 from pydantic import validate_call
 import pandas as pd
+import anndata as ad
 
 logger = logging.getLogger(__name__)
 
@@ -67,15 +68,29 @@ def init_calculate_basicpy_illumination_models(
     else:
         channel_dict = group_by_channel(zarr_urls)
 
+        FOV_ROI_table = ad.read_zarr(f"{zarr_urls[0]}/tables/FOV_ROI_table")
+        n_FOVs = len(FOV_ROI_table)
+
+        # repeat each entry in the channel_dict n_FOVs times
+        for channel, channel_list in channel_dict.items():
+            channel_dict[channel] = channel_list * n_FOVs
+
+
     # Create the parallelization list
     parallelization_list = []
 
     for channel, channel_list in channel_dict.items():
 
-        # sample n_images times from the zarr_urls
-        channel_zarr_urls = pd.DataFrame(
-            random.choices(channel_list, k=n_images),
-            columns=['zarr_url'])
+        if compute_per_well:
+            # sample n_images times from the zarr_urls
+            channel_zarr_urls = pd.DataFrame(
+                channel_list*n_images,
+                columns=['zarr_url'])
+        else:
+            # sample n_images times from the zarr_urls
+            channel_zarr_urls = pd.DataFrame(
+                random.sample(channel_list, k=n_images),
+                columns=['zarr_url'])
 
         # get a dictionary of how often each zarr_url occurs in channel_zarr_urls
         channel_zarr_dict = channel_zarr_urls['zarr_url'].value_counts().to_dict()
