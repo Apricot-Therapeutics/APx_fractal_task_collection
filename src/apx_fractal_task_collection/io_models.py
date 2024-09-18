@@ -171,6 +171,7 @@ class InitArgsBaSiCPyCalculate(BaseModel):
             This can be useful if your experiment contains different stainings
             in each well (e.g., different antibodies with varying intensity
             ranges). Defaults to False.
+        exclude_border_FOVs: If True, exclude border FOVs from the calculation.
 
     """
 
@@ -178,6 +179,7 @@ class InitArgsBaSiCPyCalculate(BaseModel):
     channel_zarr_urls: list[str]
     channel_zarr_dict: dict[str, int]
     compute_per_well: bool
+    exclude_border_FOVs: bool
 
 
 class InitArgsAggregateFeatureTables(BaseModel):

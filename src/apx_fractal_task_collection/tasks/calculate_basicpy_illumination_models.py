@@ -92,6 +92,16 @@ def calculate_basicpy_illumination_models(
         FOV_ROI_table = ad.read_zarr(
             f"{zarr_url}/tables/FOV_ROI_table")
 
+        if init_args.exclude_border_FOVs:
+            FOV_ROI_table = FOV_ROI_table[
+                            (FOV_ROI_df['x_micrometer'] != 0)
+                            & (FOV_ROI_df['y_micrometer'] != 0)
+                            & (FOV_ROI_df['x_micrometer'] != FOV_ROI_df[
+                                'x_micrometer'].max())
+                            & (FOV_ROI_df['y_micrometer'] != FOV_ROI_df[
+                                'y_micrometer'].max())
+            , :]
+
         # Create list of indices for 3D FOVs spanning the entire Z direction
         list_indices = convert_ROI_table_to_indices(
             FOV_ROI_table,

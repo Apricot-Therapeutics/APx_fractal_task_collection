@@ -1353,6 +1353,12 @@
             "title": "Compute Per Well",
             "type": "boolean",
             "description": "If True, calculate illumination profiles per well. This can be useful if your experiment contains different stainings in each well (e.g., different antibodies with varying intensity ranges). Defaults to False."
+          },
+          "exclude_border_FOVs": {
+            "default": false,
+            "title": "Exclude Border Fovs",
+            "type": "boolean",
+            "description": "If True, exclude border FOVs from the calculation. Useful if the whole well was imaged and the border FOVs have some artifacts."
           }
         },
         "required": [
@@ -1530,13 +1536,18 @@
               "compute_per_well": {
                 "title": "Compute Per Well",
                 "type": "boolean"
+              },
+              "exclude_border_FOVs": {
+                "title": "Exclude Border Fovs",
+                "type": "boolean"
               }
             },
             "required": [
               "channel_label",
               "channel_zarr_urls",
               "channel_zarr_dict",
-              "compute_per_well"
+              "compute_per_well",
+              "exclude_border_FOVs"
             ],
             "title": "InitArgsBaSiCPyCalculate",
             "type": "object"

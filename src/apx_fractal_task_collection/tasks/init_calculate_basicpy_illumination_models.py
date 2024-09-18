@@ -30,6 +30,7 @@ def init_calculate_basicpy_illumination_models(
     # Core parameters
     n_images: int = 150,
     compute_per_well: bool = False,
+    exclude_border_FOVs: bool = False,
 ) -> dict[str, list[dict[str, Any]]]:
     """
     Initialized BaSiCPy illumination correction task
@@ -45,6 +46,9 @@ def init_calculate_basicpy_illumination_models(
             created. Not used by this task.
             (standard argument for Fractal tasks, managed by Fractal server).
         n_images: Number of images to use to calculate BaSiCPy model.
+        exclude_border_FOVs: If True, exclude border FOVs from the calculation.
+            Useful if the whole well was imaged and the border FOVs have some
+            artifacts.
         compute_per_well: If True, calculate illumination profiles per well.
             This can be useful if your experiment contains different stainings
             in each well (e.g., different antibodies with varying intensity
@@ -69,6 +73,18 @@ def init_calculate_basicpy_illumination_models(
         channel_dict = group_by_channel(zarr_urls)
 
         FOV_ROI_table = ad.read_zarr(f"{zarr_urls[0]}/tables/FOV_ROI_table")
+        FOV_ROI_df = FOV_ROI_table.to_df()
+
+        # exclude FOVs where x_micrometer or y_micrometer is equal to 0 or
+        # the max of x_micrometer or y_micrometer
+        if exclude_border_FOVs:
+            FOV_ROI_table = FOV_ROI_table[
+                (FOV_ROI_df['x_micrometer'] != 0)
+                & (FOV_ROI_df['y_micrometer'] != 0)
+                & (FOV_ROI_df['x_micrometer'] != FOV_ROI_df['x_micrometer'].max())
+                & (FOV_ROI_df['y_micrometer'] != FOV_ROI_df['y_micrometer'].max())
+            , :]
+
         n_FOVs = len(FOV_ROI_table)
 
         # repeat each entry in the channel_dict n_FOVs times
@@ -108,6 +124,7 @@ def init_calculate_basicpy_illumination_models(
                     channel_zarr_urls=channel_zarr_urls,
                     channel_zarr_dict=channel_zarr_dict,
                     compute_per_well=compute_per_well,
+                    exclude_border_FOVs=exclude_border_FOVs,
                 ),
             )
         )
