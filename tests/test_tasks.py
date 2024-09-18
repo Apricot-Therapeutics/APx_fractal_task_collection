@@ -399,8 +399,7 @@ def test_illumination_correction(test_data_dir, image_list):
         zarr_urls=image_list,
         zarr_dir=test_data_dir,
         n_images=1,
-        compute_per_well=compute_per_well,
-        exclude_border_FOVs=True,
+        compute_per_well=compute_per_well
     )
 
     for channel in parallelization_list['parallelization_list']:
