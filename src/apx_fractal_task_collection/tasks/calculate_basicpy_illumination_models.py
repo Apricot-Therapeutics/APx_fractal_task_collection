@@ -92,18 +92,6 @@ def calculate_basicpy_illumination_models(
         FOV_ROI_table = ad.read_zarr(
             f"{zarr_url}/tables/FOV_ROI_table")
 
-        # Exclude border FOVs if requested
-        FOV_ROI_df = FOV_ROI_table.to_df()
-        if init_args.exclude_border_FOVs:
-            FOV_ROI_table = FOV_ROI_table[
-                            (FOV_ROI_df['x_micrometer'] != 0)
-                            & (FOV_ROI_df['y_micrometer'] != 0)
-                            & (FOV_ROI_df['x_micrometer'] != FOV_ROI_df[
-                                'x_micrometer'].max())
-                            & (FOV_ROI_df['y_micrometer'] != FOV_ROI_df[
-                                'y_micrometer'].max())
-            , :]
-
         # Create list of indices for 3D FOVs spanning the entire Z direction
         list_indices = convert_ROI_table_to_indices(
             FOV_ROI_table,
@@ -112,6 +100,14 @@ def calculate_basicpy_illumination_models(
             full_res_pxl_sizes_zyx=full_res_pxl_sizes_zyx,
         )
         check_valid_ROI_indices(list_indices, "FOV_ROI_table")
+
+        # Exclude border FOVs if requested
+        if init_args.exclude_border_FOVs:
+            max_y = np.max([x[2] for x in list_indices])
+            max_x = np.max([x[4] for x in list_indices])
+            list_indices = [x for x in list_indices if
+                             (x[2] != 0) & (x[4] != 0) & (x[2] != max_y) & (
+                                     x[4] != max_x)]
         # Extract image size from FOV-ROI indices. Note: this works at level=0,
         # where FOVs should all be of the exact same size (in pixels)
         ref_img_size = None
