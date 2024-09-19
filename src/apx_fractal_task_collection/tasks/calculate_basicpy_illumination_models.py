@@ -92,6 +92,8 @@ def calculate_basicpy_illumination_models(
         FOV_ROI_table = ad.read_zarr(
             f"{zarr_url}/tables/FOV_ROI_table")
 
+        # Exclude border FOVs if requested
+        FOV_ROI_df = FOV_ROI_table.to_df()
         if init_args.exclude_border_FOVs:
             FOV_ROI_table = FOV_ROI_table[
                             (FOV_ROI_df['x_micrometer'] != 0)
