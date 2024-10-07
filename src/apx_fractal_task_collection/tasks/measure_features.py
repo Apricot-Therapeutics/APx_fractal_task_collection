@@ -159,6 +159,8 @@ def measure_features(  # noqa: C901
             f"{label_image_url}/labels/"
             f"{label_image_name}/{level}")[region[1:]].compute()
 
+        label_image = np.squeeze(label_image)
+
         # check whether there is objects in the label image and skip if not
         if np.max(label_image) == 0:
             logger.info(f"No objects found in {label_image_name}. "
