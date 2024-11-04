@@ -147,6 +147,8 @@ def filter_mpps(mpps: pd.DataFrame,
         mpps_filtered = mpps[channels_to_use]
     elif channels_to_exclude is not None:
         mpps_filtered = mpps.drop(columns=channels_to_exclude)
+    elif channels_to_use is None and channels_to_exclude is None:
+        mpps_filtered = mpps
 
     # identify pixels that have intensity < 0.1
     # quantile gray values across all channels that should be
@@ -354,13 +356,7 @@ def multiplexed_pixel_clustering(  # noqa: C901
         logger.info(f"Using {min_cells} randomly sampled objects per well.")
 
     # quantile filter mpps
-    mpps = filter_mpps(mpps, channels_to_use, channels_to_exclude)
-
-    # only use the specified channels for clustering
-    if channels_to_use is not None:
-        mpps_filtered = mpps[channels_to_use]
-    elif channels_to_exclude is not None:
-        mpps_filtered = mpps.drop(columns=channels_to_exclude)
+    mpps_filtered = filter_mpps(mpps, channels_to_use, channels_to_exclude)
 
     # scale mpps
     mpps_scaled = scale_mpps(mpps_filtered)
@@ -377,11 +373,11 @@ def multiplexed_pixel_clustering(  # noqa: C901
     som_cluster = np.ravel_multi_index(winner_coordinates, som_shape)
 
     # add som_cluster to index
-    new_index = list(mpps.index.names)
+    new_index = list(mpps_filtered.index.names)
     new_index.extend(['som_cluster'])
 
-    mpps.set_index(som_cluster + 1, inplace=True, append=True)
-    mpps.index.rename(names=new_index, inplace=True)
+    mpps_filtered.set_index(som_cluster + 1, inplace=True, append=True)
+    mpps_filtered.index.rename(names=new_index, inplace=True)
     mpps_scaled.set_index(som_cluster + 1, inplace=True, append=True)
     mpps_scaled.index.rename(names=new_index, inplace=True)
 
@@ -404,11 +400,11 @@ def multiplexed_pixel_clustering(  # noqa: C901
         {'som_cluster': replace_dict})['som_cluster'].values
 
     # add pheno_cluster to index
-    new_index = list(mpps.index.names)
+    new_index = list(mpps_filtered.index.names)
     new_index.extend(['pheno_cluster'])
 
-    mpps.set_index(pheno_cluster, inplace=True, append=True)
-    mpps.index.rename(names=new_index, inplace=True)
+    mpps_filtered.set_index(pheno_cluster, inplace=True, append=True)
+    mpps_filtered.index.rename(names=new_index, inplace=True)
     mpps_scaled.set_index(pheno_cluster, inplace=True, append=True)
     mpps_scaled.index.rename(names=new_index, inplace=True)
 
@@ -417,18 +413,18 @@ def multiplexed_pixel_clustering(  # noqa: C901
 
     # add z-scored layer
     ss = StandardScaler()
-    mpps_normalized = pd.DataFrame(ss.fit_transform(mpps),
-                                   columns=mpps.columns,
-                                   index=mpps.index)
+    mpps_normalized = pd.DataFrame(ss.fit_transform(mpps_filtered),
+                                   columns=mpps_filtered.columns,
+                                   index=mpps_filtered.index)
 
-    obs = mpps.reset_index()
-    obs = obs[mpps.index.names]
-    #var = mpps.columns.to_frame(name='columns')
+    obs = mpps_filtered.reset_index()
+    obs = obs[mpps_filtered.index.names]
+    #var = mpps_filtered.columns.to_frame(name='columns')
     used_for_clustering = [True if c in mpps_filtered.columns
-                           else False for c in mpps.columns]
+                           else False for c in mpps_filtered.columns]
     varm = {'used_for_clustering': np.array(used_for_clustering)}
 
-    mpps_ad = ad.AnnData(X=mpps.reset_index(drop=True),
+    mpps_ad = ad.AnnData(X=mpps_filtered.reset_index(drop=True),
                          obs=obs,
                          varm=varm,
                          layers={
@@ -512,7 +508,7 @@ def multiplexed_pixel_clustering(  # noqa: C901
 
         well_id = well_name.rsplit("/", 2)[1] + well_name.rsplit("/", 1)[1]
         # get the label map for multiplexed units
-        mcu_labels = get_image_from_mpps(mpps,
+        mcu_labels = get_image_from_mpps(mpps_filtered,
                                          well_name=well_id,
                                          shape=shape,
                                          column='pheno_cluster')
