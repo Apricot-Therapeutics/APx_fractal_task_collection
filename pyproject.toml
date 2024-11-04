@@ -1,7 +1,7 @@
 # Project metadata (see https://peps.python.org/pep-0621)
 [project]
 name = "apx-fractal-task-collection"
-version = "0.3.17"
+version = "0.3.18"
 description = "A collection of custom fractal tasks."
 readme = "README.md"
 license = { text = "BSD-3-Clause" }
@@ -39,7 +39,7 @@ include = ["apx_fractal_task_collection", "apx_fractal_task_collection.*"]
 
 
 [tool.bumpver]
-current_version = "0.3.17"
+current_version = "0.3.18"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "bump version {old_version} -> {new_version}"
 tag_message = "{new_version}"
