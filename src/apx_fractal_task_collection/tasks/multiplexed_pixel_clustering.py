@@ -324,7 +324,7 @@ def multiplexed_pixel_clustering(  # noqa: C901
         # to save memory)
         mpps_list.append(get_mpps(img, label.astype('uint16'),
                                   channel_names=channel_names,
-                                  well_name=well_name))
+                                  well_name=well_id))
 
     mpps = pd.concat(mpps_list)
 
@@ -505,8 +505,8 @@ def multiplexed_pixel_clustering(  # noqa: C901
 
     # Compute and store 0-th level to disk
     for well_name, well_list in well_dict.items():
-
         well_id = well_name.rsplit("/", 2)[1] + well_name.rsplit("/", 1)[1]
+
         # get the label map for multiplexed units
         mcu_labels = get_image_from_mpps(mpps_filtered,
                                          well_name=well_id,
