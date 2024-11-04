@@ -252,7 +252,7 @@ def create_ome_zarr_multiplex_IC6000(
             patterns.extend(image_glob_patterns)
         input_filenames = glob_with_multiple_patterns(
             folder=in_path_str,
-            patterns=patterns,
+            include_patterns=patterns,
         )
 
         for fn in input_filenames:
@@ -384,7 +384,7 @@ def create_ome_zarr_multiplex_IC6000(
             patterns.extend(image_glob_patterns)
         plate_images = glob_with_multiple_patterns(
             folder=str(image_folder),
-            patterns=patterns,
+            include_patterns=patterns,
         )
 
         wells = [
@@ -401,7 +401,7 @@ def create_ome_zarr_multiplex_IC6000(
                 patterns.extend(image_glob_patterns)
             well_images = glob_with_multiple_patterns(
                 folder=str(image_folder),
-                patterns=patterns,
+                include_patterns=patterns,
             )
 
             well_wavelength_ids = []

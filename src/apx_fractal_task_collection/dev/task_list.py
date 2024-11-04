@@ -10,7 +10,7 @@ TASK_LIST = [
         executable="tasks/measure_features.py",
         meta={"cpus_per_task": 1, "mem": 3750},
     ),
-CompoundTask(
+    CompoundTask(
         name="Calculate Pixel Intensity Correlation",
         executable_init="tasks/init_calculate_pixel_intensity_correlation.py",
         executable="tasks/calculate_pixel_intensity_correlation.py",

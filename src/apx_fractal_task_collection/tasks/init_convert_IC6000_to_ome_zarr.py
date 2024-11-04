@@ -146,7 +146,7 @@ def init_convert_IC6000_to_ome_zarr(
             patterns.extend(image_glob_patterns)
         input_filenames = glob_with_multiple_patterns(
             folder=acq_input.image_dir,
-            patterns=patterns,
+            include_patterns=patterns,
         )
 
         for fn in input_filenames:

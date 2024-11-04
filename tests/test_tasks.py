@@ -169,10 +169,18 @@ def test_measure_features(test_data_dir, image_list):
                        texture_columns +\
                        population_columns
 
-    print(feature_table.to_df().columns)
+    #assert set(feature_table.var.index.tolist()) == set(expected_columns), \
+    #    f"Expected columns {expected_columns}," \
+    #    f" but got {feature_table.var.index.tolist()}"
+
+    # print values uniquely in feature_table.var.index.tolist() and not in expected_columns
+    print(f"this is a test{set(expected_columns) - set(feature_table.var.index.tolist())}")
+
     assert np.isin(feature_table.var.index.tolist(), expected_columns).all(), \
         f"Expected columns {expected_columns}," \
         f" but got {feature_table.var.index.tolist()}"
+
+
 
 
 @pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
@@ -587,6 +595,8 @@ def test_label_assignment_by_overlap(test_data_dir, image_list):
         f"Expected obs columns {expected_obs_columns}," \
         f" but got {new_obs_columns}"
 
+    print(f"zarr_url is {zarr_url}")
+
     # assert whether label assignments are correct
     if zarr_url.split("/data/")[1] == IMAGE_LIST_2D[0]:
         label_assignments = {9: 6,
@@ -826,6 +836,7 @@ def test_multiplexed_pixel_clustering(test_data_dir, image_list):
 
     multiplexed_pixel_clustering(
         zarr_urls=image_list,
+        zarr_dir=test_data_dir,
         label_image_name='Label A',
         channels_to_use=['0_DAPI', '0_GFP', '1_GFP'],
         well_names=['A2', 'B3'],
@@ -996,88 +1007,12 @@ def test_ashlar_stitching_and_registration(test_data_dir, ref_wavelength_id):
     assert stitched_image_path.exists(),\
         f"Stitched image not found at {stitched_image_path}"
 
-#
-# def test_ashlar_stitching_and_registration(test_data_dir):
-#
-#     create_ome_zarr_multiplex_IC6000(
-#         input_paths=[
-#             Path(test_data_dir).joinpath("IC6000_data/cycle_0").as_posix(),
-#             Path(test_data_dir).joinpath("IC6000_data/cycle_1").as_posix()],
-#         output_path=Path(test_data_dir).joinpath("IC6000_data").as_posix(),
-#         metadata={},
-#         allowed_channels={'0': [OmeroChannel(label='0_DAPI',
-#                                              wavelength_id='UV - DAPI'),
-#                                 OmeroChannel(label='0_GFP',
-#                                              wavelength_id='Blue - FITC'),
-#                                 OmeroChannel(label='0_RFP',
-#                                              wavelength_id='Green - dsRed'),
-#                                 OmeroChannel(label='0_FR',
-#                                              wavelength_id='Red - Cy5')],
-#                           '1': [OmeroChannel(label='1_DAPI',
-#                                              wavelength_id='UV - DAPI'),
-#                                 OmeroChannel(label='1_GFP',
-#                                              wavelength_id='Blue - FITC'),
-#                                 OmeroChannel(label='1_RFP',
-#                                              wavelength_id='Green - dsRed'),
-#                                 OmeroChannel(label='1_FR',
-#                                              wavelength_id='Red - Cy5')
-#                                 ]
-#                           },
-#         image_glob_patterns=None,
-#         num_levels=5,
-#         coarsening_xy=2,
-#         image_extension='tif',
-#         overwrite=True
-#     )
-#
-#     IC6000_to_ome_zarr(
-#         input_paths=[Path(test_data_dir).joinpath("IC6000_data").as_posix()],
-#         output_path=Path(test_data_dir).joinpath("IC6000_data").as_posix(),
-#         component="test_plate.zarr/C/03/0",
-#         metadata={
-#             'original_paths': [
-#                 Path(test_data_dir).joinpath("IC6000_data",
-#                                              "cycle_0").as_posix(),
-#                 Path(test_data_dir).joinpath("IC6000_data",
-#                                              "cycle_1").as_posix()
-#             ],
-#             'image_extension': 'tif',
-#             'image_glob_patterns': None,
-#         },
-#         overwrite=True
-#     )
-#     ashlar_stitching_and_registration(
-#         input_paths=[Path(test_data_dir).joinpath("IC6000_data").as_posix()],
-#         output_path=Path(test_data_dir).joinpath("IC6000_data").as_posix(),
-#         component="test_plate.zarr/C/03/0",
-#         metadata={},
-#         overlap=0.1,
-#         filter_sigma=10,
-#         ref_channel_id = 'UV - DAPI',
-#         ref_cycle=0
-#     )
 
-#
-# from apx_fractal_task_collection.tasks.measure_features import measure_features
-# measure_features(
-#     input_paths=[r"J:\general\20240124_Arpan_4channel_20x_02272024Rad51foci_4cell_line_1\Output_2"],
-#     output_path=r"J:\general\20240124_Arpan_4channel_20x_02272024Rad51foci_4cell_line_1\Output_2",
-#     component="02272024Rad51foci_4cell_line.zarr/C/03/0",
-#     metadata={},
-#     label_image_name='Nuclei',
-#     channels_to_include=[ChannelInputModel(label='568', wavelength_id=None)],
-#     measure_intensity=False,
-#     measure_morphology=False,
-#     measure_texture=TextureFeatures(
-#         haralick=False,
-#         laws_texture_energy=True,
-#         clip_value=3000,
-#         clip_value_exceptions={'0_DAPI': 5000}
-#     ),
-#     measure_population=False,
-#     ROI_table_name='FOV_ROI_table',
-#     calculate_internal_borders=False,
-#     output_table_name='feature_table',
-#     level=0,
-#     overwrite=True
-# )
+# Clean up: Remove the temporary files after the tests
+@pytest.fixture(autouse=True)
+def cleanup_temp_files(test_data_dir):
+    yield
+    try:
+        shutil.rmtree(test_data_dir)
+    except:
+        pass

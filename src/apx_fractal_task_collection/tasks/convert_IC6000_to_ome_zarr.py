@@ -119,7 +119,7 @@ def convert_IC6000_to_ome_zarr(
 
     tmp_images = glob_with_multiple_patterns(
         folder=init_args.image_dir,
-        patterns=patterns,
+        include_patterns=patterns,
     )
     sample = imread(tmp_images.pop())
 
@@ -142,7 +142,7 @@ def convert_IC6000_to_ome_zarr(
             patterns.extend(init_args.image_glob_patterns)
         filenames_set = glob_with_multiple_patterns(
             folder=init_args.image_dir,
-            patterns=patterns,
+            include_patterns=patterns,
         )
         filenames = sorted(list(filenames_set), key=sort_fun)
         if len(filenames) == 0:

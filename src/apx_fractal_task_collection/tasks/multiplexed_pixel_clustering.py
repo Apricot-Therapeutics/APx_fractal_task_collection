@@ -235,6 +235,7 @@ def multiplexed_pixel_clustering(  # noqa: C901
         *,
         # Default arguments for fractal tasks:
         zarr_urls: list[str],
+        zarr_dir: str,
         # Task-specific arguments:
         label_image_name: str,
         channels_to_use: Optional[list[str]] = None,
@@ -260,6 +261,9 @@ def multiplexed_pixel_clustering(  # noqa: C901
         Args:
         zarr_urls: List of paths or urls to the individual OME-Zarr image to
             be processed.
+            (standard argument for Fractal tasks, managed by Fractal server).
+        zarr_dir: path of the directory where the new OME-Zarrs will be
+            created.
             (standard argument for Fractal tasks, managed by Fractal server).
         label_image_name: Name of label image to use. Only pixels that are part
             of a label will be considered for clustering.
