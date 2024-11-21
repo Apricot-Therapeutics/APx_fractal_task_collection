@@ -2410,6 +2410,58 @@
         "title": "AshlarStitchingAndRegistration"
       },
       "docs_info": "## init_ashlar_stitching_and_registration\nInitializes ashlar stitching and registration task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform ashlar stitching and registration.\n## ashlar_stitching_and_registration\nStitches FOVs with overlap using ASHLAR (https://github.com/labsyspharm/ashlar)\nand register the stitched image to the reference cycle.\n"
+    },
+    {
+      "name": "Merge Plate Metadata",
+      "executable_parallel": "tasks/merge_plate_metadata.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 3750
+      },
+      "args_schema_parallel": {
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "feature_table_name": {
+            "title": "Feature Table Name",
+            "type": "string",
+            "description": "Name of the feature table to be merged with the metadata."
+          },
+          "metadata_path": {
+            "title": "Metadata Path",
+            "type": "string",
+            "description": "Path to the metadata csv file."
+          },
+          "left_on": {
+            "default": "well_name",
+            "title": "Left On",
+            "type": "string",
+            "description": "Column name in the feature table to merge on."
+          },
+          "right_on": {
+            "title": "Right On",
+            "type": "string",
+            "description": "Column name in the metadata to merge on. If None, it defaults to left_on."
+          },
+          "new_feature_table_name": {
+            "title": "New Feature Table Name",
+            "type": "string",
+            "description": "Name of the new feature table to be created. If None, it defaults to the original feature table name."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "feature_table_name",
+          "metadata_path"
+        ],
+        "type": "object",
+        "title": "MergePlateMetadata"
+      },
+      "docs_info": "## merge_plate_metadata\nMerge a metadata csv file with a Fractal feature table.\n\nTakes a csv file containing metadata and merges it into a Fractal\nfeature table. The metadata columns will appear in the obs of the\nfeature table.\n"
     }
   ],
   "has_args_schemas": true,

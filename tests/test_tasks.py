@@ -7,6 +7,7 @@ import pandas as pd
 import dask.array as da
 
 import pytest
+from ngio.core import NgffImage
 from devtools import debug
 from fractal_tasks_core.channels import ChannelInputModel
 from fractal_tasks_core.channels import OmeroChannel
@@ -49,6 +50,7 @@ from apx_fractal_task_collection.tasks.expand_labels_skimage import expand_label
 #from apx_fractal_task_collection.tasks.ashlar_stitching_and_registration_pure import ashlar_stitching_and_registration
 from apx_fractal_task_collection.tasks.init_calculate_pixel_intensity_correlation import init_calculate_pixel_intensity_correlation
 from apx_fractal_task_collection.tasks.calculate_pixel_intensity_correlation import calculate_pixel_intensity_correlation
+from apx_fractal_task_collection.tasks.merge_plate_metadata import merge_plate_metadata
 
 WELL_COMPONENT_2D = "hcs_ngff_2D.zarr/A/2"
 IMAGE_COMPONENT_2D = "hcs_ngff_2D.zarr/A/2/0"
@@ -1006,6 +1008,53 @@ def test_ashlar_stitching_and_registration(test_data_dir, ref_wavelength_id):
         "test_plate.zarr/C/03/0_stitched")
     assert stitched_image_path.exists(),\
         f"Stitched image not found at {stitched_image_path}"
+
+
+def test_merge_plate_metadata(test_data_dir):
+
+    image_list = [f"{test_data_dir}/{i}" for i in IMAGE_LIST_2D]
+
+    zarr_url = image_list[0]
+
+    measure_features(
+        zarr_url=zarr_url,
+        label_image_name='Label A',
+        measure_intensity=True,
+        measure_morphology=True,
+        channels_to_include=None,
+        channels_to_exclude=[
+            ChannelInputModel(label='0_GFP', wavelength_id=None)],
+        measure_texture=TextureFeatures(
+            haralick=True,
+            laws_texture_energy=True,
+            clip_value=3000,
+            clip_value_exceptions={'0_DAPI': 5000}
+        ),
+        measure_population=True,
+        ROI_table_name='FOV_ROI_table',
+        calculate_internal_borders=True,
+        output_table_name='feature_table',
+        level=0,
+        overwrite=True,
+    )
+
+    merge_plate_metadata(
+        zarr_url=zarr_url,
+        metadata_path=Path(test_data_dir).joinpath("metadata.csv").as_posix(),
+        feature_table_name='feature_table',
+        left_on='well_name',
+        right_on='well',
+        new_feature_table_name='feature_table_2',
+    )
+
+    ngff_image = NgffImage(zarr_url, "r")
+
+    feature_table = ngff_image.tables.get_table("feature_table_2").table
+
+    # assert that the feature table contains the column treatment
+    assert 'treatment' in feature_table.columns, \
+        f"Column treatment not found in feature table"
+
 
 
 # Clean up: Remove the temporary files after the tests

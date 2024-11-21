@@ -117,4 +117,9 @@ TASK_LIST = [
         output_types=dict(stitched=True),
         meta={"cpus_per_task": 1, "mem": 15000},
     ),
+    ParallelTask(
+            name="Merge Plate Metadata",
+            executable="tasks/merge_plate_metadata.py",
+            meta={"cpus_per_task": 1, "mem": 3750},
+        ),
 ]
