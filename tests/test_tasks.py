@@ -840,7 +840,7 @@ def test_multiplexed_pixel_clustering(test_data_dir, image_list):
         zarr_urls=image_list,
         zarr_dir=test_data_dir,
         label_image_name='Label A',
-        channels_to_use=['0_DAPI', '0_GFP', '1_GFP'],
+        channels_to_use=['0_DAPI', '1_GFP'],
         well_names=['A2', 'B3'],
         som_shape=(10, 10),
         phenograph_neighbours=15,
@@ -861,6 +861,15 @@ def test_multiplexed_pixel_clustering(test_data_dir, image_list):
     mcu_label_path = Path(image_list[0]).parent.joinpath("0/labels/mcu_label/0")
     assert mcu_label_path.exists(),\
         f"MCU label image not found at {mcu_label_path}"
+
+    # assert that the mcu table varm has the expected columns set to True
+    mcu_table_path = Path(image_list[0]).parents[2].joinpath(
+        "tables/mcu_table")
+    mcu_table = ad.read_zarr(mcu_table_path)
+    expected_output = [True, False, False, True, False, False]
+    assert (mcu_table.varm['used_for_clustering'] == expected_output).all(), \
+        f"Expected output {expected_output}," \
+        f" but got {mcu_table.varm['used_for_clustering']}"
 
 
 def test_stitch_fovs_with_overlap(test_data_dir):
