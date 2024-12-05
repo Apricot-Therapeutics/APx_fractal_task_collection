@@ -3,6 +3,14 @@
   "task_list": [
     {
       "name": "Measure Features",
+      "category": "Measurement",
+      "tags": [
+        "Textures",
+        "Intensity",
+        "Morphology",
+        "scikit-image",
+        "regionprops"
+      ],
       "executable_parallel": "tasks/measure_features.py",
       "meta_parallel": {
         "cpus_per_task": 1,
@@ -165,6 +173,7 @@
     },
     {
       "name": "Calculate Pixel Intensity Correlation",
+      "category": "Measurement",
       "executable_non_parallel": "tasks/init_calculate_pixel_intensity_correlation.py",
       "executable_parallel": "tasks/calculate_pixel_intensity_correlation.py",
       "meta_parallel": {
@@ -305,6 +314,8 @@
     },
     {
       "name": "Segment Secondary Objects",
+      "category": "Segmentation",
+      "modality": "HCS",
       "executable_non_parallel": "tasks/init_segment_secondary_objects.py",
       "executable_parallel": "tasks/segment_secondary_objects.py",
       "meta_parallel": {
@@ -590,6 +601,13 @@
     },
     {
       "name": "Convert IC6000 to OME-Zarr",
+      "category": "Conversion",
+      "modality": "HCS",
+      "tags": [
+        "IC6000",
+        "IC6K",
+        "IN Cell"
+      ],
       "executable_non_parallel": "tasks/init_convert_IC6000_to_ome_zarr.py",
       "executable_parallel": "tasks/convert_IC6000_to_ome_zarr.py",
       "meta_parallel": {
@@ -844,6 +862,7 @@
     },
     {
       "name": "Label Assignment by Overlap",
+      "category": "Measurement",
       "executable_non_parallel": "tasks/init_label_assignment_by_overlap.py",
       "executable_parallel": "tasks/label_assignment_by_overlap.py",
       "meta_parallel": {
@@ -1320,6 +1339,7 @@
     },
     {
       "name": "Calculate BaSiCPy Illumination Models",
+      "category": "Image Processing",
       "executable_non_parallel": "tasks/init_calculate_basicpy_illumination_models.py",
       "executable_parallel": "tasks/calculate_basicpy_illumination_models.py",
       "meta_parallel": {
@@ -1600,6 +1620,7 @@
       "output_types": {
         "illumination_corrected": true
       },
+      "category": "Image Processing",
       "executable_parallel": "tasks/apply_basicpy_illumination_models.py",
       "meta_parallel": {
         "cpus_per_task": 1,
@@ -1656,6 +1677,7 @@
     },
     {
       "name": "Aggregate Feature Tables",
+      "category": "Measurement",
       "executable_non_parallel": "tasks/init_aggregate_feature_tables.py",
       "executable_parallel": "tasks/aggregate_feature_tables.py",
       "meta_parallel": {
@@ -1760,6 +1782,7 @@
       "output_types": {
         "stitched": true
       },
+      "category": "Image Processing",
       "executable_parallel": "tasks/stitch_fovs_with_overlap.py",
       "meta_parallel": {
         "cpus_per_task": 1,
@@ -1813,6 +1836,7 @@
     },
     {
       "name": "Multiplexed Pixel Clustering",
+      "category": "Measurement",
       "executable_non_parallel": "tasks/multiplexed_pixel_clustering.py",
       "meta_non_parallel": {
         "cpus_per_task": 1,
@@ -1944,6 +1968,7 @@
       "output_types": {
         "chromatic_shift_corrected": true
       },
+      "category": "Image Processing",
       "executable_non_parallel": "tasks/init_correct_chromatic_shift.py",
       "executable_parallel": "tasks/correct_chromatic_shift.py",
       "meta_parallel": {
@@ -2050,6 +2075,7 @@
     },
     {
       "name": "Convert Channel to Label",
+      "category": "Other",
       "executable_non_parallel": "tasks/init_convert_channel_to_label.py",
       "executable_parallel": "tasks/convert_channel_to_label.py",
       "meta_parallel": {
@@ -2298,6 +2324,7 @@
       "output_types": {
         "stitched": true
       },
+      "category": "Image Processing",
       "executable_non_parallel": "tasks/init_ashlar_stitching_and_registration.py",
       "executable_parallel": "tasks/ashlar_stitching_and_registration.py",
       "meta_parallel": {
@@ -2413,6 +2440,7 @@
     },
     {
       "name": "Merge Plate Metadata",
+      "category": "Other",
       "executable_parallel": "tasks/merge_plate_metadata.py",
       "meta_parallel": {
         "cpus_per_task": 1,
@@ -2465,5 +2493,6 @@
     }
   ],
   "has_args_schemas": true,
-  "args_schema_version": "pydantic_v2"
+  "args_schema_version": "pydantic_v2",
+  "authors": "Adrian Tschan"
 }

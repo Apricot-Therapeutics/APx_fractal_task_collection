@@ -1,0 +1,90 @@
+name: CI (build and test)
+
+on:
+  push:
+    branches: ["main"]
+    tags:
+      - "*"
+  pull_request:
+    branches: ["main"]
+
+
+jobs:
+  tests:
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, macos-latest]
+        python-version: ["3.10", "3.11", "3.12"]
+        exclude:
+          - os: macos-latest
+            python-version: '3.10'
+    name: "Core, Python ${{ '{{' }} matrix.python-version {{ '}}' }}, ${{ '{{' }} matrix.os {{ '}}' }}"
+    runs-on: ${{ '{{' }} matrix.os {{ '}}' }}
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python ${{ '{{' }} matrix.python-version {{ '}}' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ '{{' }} matrix.python-version {{ '}}' }}
+          cache: "pip"
+
+      - name: Install package
+        run: python -m pip install -e .[dev]
+
+      - name: Regenerate the manifest
+        run: python src/{{package_name}}/dev/create_manifest.py
+
+      - name: Check if manifest has changed
+        run: |
+          if [ -n "$(git diff --exit-code ./src/{{package_name}}/__FRACTAL_MANIFEST__.json)" ]; then
+          echo "__FRACTAL_MANIFEST__.json has changed. Please run 'python src/{{package_name}}/dev/create_manifest.py' and commit the changes."
+            exit 1
+          else
+            echo "__FRACTAL_MANIFEST__.json has not changed."
+          fi
+
+      - name: Test core library with pytest
+        run: python -m pytest tests
+  
+  deploy:
+    name: Deploy
+    needs: tests
+    if: success() && startsWith(github.ref, 'refs/tags/') && github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing on PyPi
+      # see https://docs.pypi.org/trusted-publishers/
+      id-token: write
+      # This permission allows writing releases
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: 👷 Build
+        run: |
+          python -m pip install build
+          python -m build
+
+      - name: 🚢 Publish to PyPI
+        # TODO remove the "if: false" line when the package is ready for pypi release
+        if: false
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: './dist/*'
