@@ -32,7 +32,6 @@ TASK_LIST = [
         executable_init="tasks/init_expand_labels.py",
         executable="tasks/expand_labels_skimage.py",
         meta={"cpus_per_task": 1, "mem": 3750},
-        category="Segmentation",
     ),
     CompoundTask(
         name="Convert IC6000 to OME-Zarr",
@@ -55,21 +54,18 @@ TASK_LIST = [
         executable_init="tasks/init_clip_label_image.py",
         executable="tasks/clip_label_image.py",
         meta={"cpus_per_task": 1, "mem": 3750},
-        category="Segmentation",
     ),
     CompoundTask(
         name="Mask Label Image",
         executable_init="tasks/init_mask_label_image.py",
         executable="tasks/mask_label_image.py",
         meta={"cpus_per_task": 1, "mem": 3750},
-        category="Segmentation",
     ),
     CompoundTask(
         name="Filter Label by Size",
         executable_init="tasks/init_filter_label_by_size.py",
         executable="tasks/filter_label_by_size.py",
         meta={"cpus_per_task": 1, "mem": 3750},
-        category="Segmentation",
     ),
     CompoundTask(
         name="Calculate BaSiCPy Illumination Models",
