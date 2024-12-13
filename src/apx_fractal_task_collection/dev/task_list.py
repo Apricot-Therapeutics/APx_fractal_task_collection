@@ -9,18 +9,23 @@ TASK_LIST = [
         name="Measure Features",
         executable="tasks/measure_features.py",
         meta={"cpus_per_task": 1, "mem": 3750},
+        category="Measurement",
+        tags=["Textures", "Intensity", "Morphology", "scikit-image", "regionprops"]
     ),
     CompoundTask(
         name="Calculate Pixel Intensity Correlation",
         executable_init="tasks/init_calculate_pixel_intensity_correlation.py",
         executable="tasks/calculate_pixel_intensity_correlation.py",
         meta={"cpus_per_task": 1, "mem": 3750},
+        category="Measurement",
     ),
     CompoundTask(
         name="Segment Secondary Objects",
         executable_init="tasks/init_segment_secondary_objects.py",
         executable="tasks/segment_secondary_objects.py",
         meta={"cpus_per_task": 1, "mem": 3750},
+        category="Segmentation",
+        modality="HCS",
     ),
     CompoundTask(
         name="Expand Labels",
@@ -33,12 +38,16 @@ TASK_LIST = [
         executable_init="tasks/init_convert_IC6000_to_ome_zarr.py",
         executable="tasks/convert_IC6000_to_ome_zarr.py",
         meta={"cpus_per_task": 1, "mem": 3750},
+        category="Conversion",
+        modality="HCS",
+        tags=["IC6000", "IC6K", "IN Cell"]
     ),
     CompoundTask(
         name="Label Assignment by Overlap",
         executable_init="tasks/init_label_assignment_by_overlap.py",
         executable="tasks/label_assignment_by_overlap.py",
         meta={"cpus_per_task": 1, "mem": 3750},
+        category="Measurement",
     ),
     CompoundTask(
         name="Clip Label Image",
@@ -63,6 +72,7 @@ TASK_LIST = [
         executable_init="tasks/init_calculate_basicpy_illumination_models.py",
         executable="tasks/calculate_basicpy_illumination_models.py",
         meta={"cpus_per_task": 1, "mem": 10000},
+        category="Image Processing",
     ),
     ParallelTask(
         name="Apply BaSiCPy Illumination Models",
@@ -70,12 +80,14 @@ TASK_LIST = [
         executable="tasks/apply_basicpy_illumination_models.py",
         output_types=dict(illumination_corrected=True),
         meta={"cpus_per_task": 1, "mem": 3750},
+        category="Image Processing",
     ),
     CompoundTask(
         name="Aggregate Feature Tables",
         executable_init="tasks/init_aggregate_feature_tables.py",
         executable="tasks/aggregate_feature_tables.py",
         meta={"cpus_per_task": 1, "mem": 3750},
+        category="Measurement",
     ),
     ParallelTask(
         name="Stitch FOVs with Overlap",
@@ -83,11 +95,13 @@ TASK_LIST = [
         executable="tasks/stitch_fovs_with_overlap.py",
         output_types=dict(stitched=True),
         meta={"cpus_per_task": 1, "mem": 30000},
+        category="Image Processing",
     ),
     NonParallelTask(
         name="Multiplexed Pixel Clustering",
         executable="tasks/multiplexed_pixel_clustering.py",
         meta={"cpus_per_task": 1, "mem": 3750},
+        category="Measurement",
     ),
     CompoundTask(
         name="Correct Chromatic Shift",
@@ -96,12 +110,14 @@ TASK_LIST = [
         executable="tasks/correct_chromatic_shift.py",
         output_types=dict(chromatic_shift_corrected=True),
         meta={"cpus_per_task": 1, "mem": 3750},
+        category="Image Processing",
     ),
     CompoundTask(
         name="Convert Channel to Label",
         executable_init="tasks/init_convert_channel_to_label.py",
         executable="tasks/convert_channel_to_label.py",
         meta={"cpus_per_task": 1, "mem": 3750},
+        category="Other",
     ),
     CompoundTask(
         name="Detect Blob Centroids",
@@ -116,10 +132,12 @@ TASK_LIST = [
         executable="tasks/ashlar_stitching_and_registration.py",
         output_types=dict(stitched=True),
         meta={"cpus_per_task": 1, "mem": 15000},
+        category="Image Processing",
     ),
     ParallelTask(
-            name="Merge Plate Metadata",
-            executable="tasks/merge_plate_metadata.py",
-            meta={"cpus_per_task": 1, "mem": 3750},
-        ),
+        name="Merge Plate Metadata",
+        executable="tasks/merge_plate_metadata.py",
+        meta={"cpus_per_task": 1, "mem": 3750},
+        category="Other",
+    ),
 ]
