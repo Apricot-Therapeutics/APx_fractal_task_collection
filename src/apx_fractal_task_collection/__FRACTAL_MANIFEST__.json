@@ -169,7 +169,8 @@
         "type": "object",
         "title": "MeasureFeatures"
       },
-      "docs_info": "## measure_features\nCalculate features based on label image and intensity image (optional).\n\nTakes a label image and an optional intensity image and calculates\nmorphology, intensity and texture features in 2D.\n"
+      "docs_info": "## measure_features\nCalculate features based on label image and intensity image (optional).\n\nTakes a label image and an optional intensity image and calculates\nmorphology, intensity and texture features in 2D.\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
       "name": "Calculate Pixel Intensity Correlation",
@@ -310,7 +311,8 @@
         "type": "object",
         "title": "CalculatePixelIntensityCorrelation"
       },
-      "docs_info": "## init_calculate_pixel_intensity_correlation\nInitializes the Calculate Pixel Intensity Correlation task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform Calculate Pixel Intensity Correlation task based on\ntwo channel images and a label image.\n\nArgs:\n    zarr_urls: List of paths or urls to the individual OME-Zarr image to\n        be processed.\n        (standard argument for Fractal tasks, managed by Fractal server).\n    zarr_dir: path of the directory where the new OME-Zarrs will be\n        created. Not used by this task.\n        (standard argument for Fractal tasks, managed by Fractal server).\n    label_name: Name of the label image that contains the seeds.\n        Needs to exist in OME-Zarr file.\n    correlation_pairs: List of dictionaries. Key and value represent\n    the label names of two channels that should be correlated.\n    CAREFUL: add a new dictionary for each correlation.\n\nReturns:\n    task_output: Dictionary for Fractal server that contains a\n        parallelization list.\n## calculate_pixel_intensity_correlation\nCalculate pixel intensity correlation between two channels.\n\nTakes a label image and two channel images and calculates the pixel\nintensity correlation between the two channels for each object in the label\nimage.\n"
+      "docs_info": "## init_calculate_pixel_intensity_correlation\nInitializes the Calculate Pixel Intensity Correlation task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform Calculate Pixel Intensity Correlation task based on\ntwo channel images and a label image.\n\nArgs:\n    zarr_urls: List of paths or urls to the individual OME-Zarr image to\n        be processed.\n        (standard argument for Fractal tasks, managed by Fractal server).\n    zarr_dir: path of the directory where the new OME-Zarrs will be\n        created. Not used by this task.\n        (standard argument for Fractal tasks, managed by Fractal server).\n    label_name: Name of the label image that contains the seeds.\n        Needs to exist in OME-Zarr file.\n    correlation_pairs: List of dictionaries. Key and value represent\n    the label names of two channels that should be correlated.\n    CAREFUL: add a new dictionary for each correlation.\n\nReturns:\n    task_output: Dictionary for Fractal server that contains a\n        parallelization list.\n## calculate_pixel_intensity_correlation\nCalculate pixel intensity correlation between two channels.\n\nTakes a label image and two channel images and calculates the pixel\nintensity correlation between the two channels for each object in the label\nimage.\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
       "name": "Segment Secondary Objects",
@@ -479,7 +481,8 @@
         "type": "object",
         "title": "SegmentSecondaryObjects"
       },
-      "docs_info": "## init_segment_secondary_objects\nInitialized secondary segmentation task\n\nCriteria:\n- Works for multiplexing & non-multiplexing\n- \n\nOption 1:\nAsk user for path for output_label_image_name => defaults tricky, but fully flexible\nBetter: Optional\n\nOption 2:\nAlways put output label in same image as label_image_name => downside: Confusing why label would go there\n\nOption 3:\nAlways put output label in same image as channel => downside: Confusing why label would go there\n\nOption 4:\nOptional acquisition parameter, used only in multiplexing case, determines where output image goes\n=> overkill for the moment\n\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform secondary segmentation based on a channel image and\na label image.\n## segment_secondary_objects\nSegments secondary objects based on primary labels and intensity image.\n\nTakes a primary label image and an intensity image and calculates secondary\nlabels based on watershed segmentation.\n"
+      "docs_info": "## init_segment_secondary_objects\nInitialized secondary segmentation task\n\nCriteria:\n- Works for multiplexing & non-multiplexing\n- \n\nOption 1:\nAsk user for path for output_label_image_name => defaults tricky, but fully flexible\nBetter: Optional\n\nOption 2:\nAlways put output label in same image as label_image_name => downside: Confusing why label would go there\n\nOption 3:\nAlways put output label in same image as channel => downside: Confusing why label would go there\n\nOption 4:\nOptional acquisition parameter, used only in multiplexing case, determines where output image goes\n=> overkill for the moment\n\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform secondary segmentation based on a channel image and\na label image.\n## segment_secondary_objects\nSegments secondary objects based on primary labels and intensity image.\n\nTakes a primary label image and an intensity image and calculates secondary\nlabels based on watershed segmentation.\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
       "name": "Expand Labels",
@@ -597,7 +600,8 @@
         "type": "object",
         "title": "ExpandLabelsSkimage"
       },
-      "docs_info": "## init_expand_labels\nInitialized secondary segmentation task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform expansion of a label image.\n## expand_labels_skimage\nExpands labels in a label image by \"distance\" pixels without overlapping.\n\nTakes a primary label image and expands it by a certain distance. Direct\nimplementation of skimage.segmentation.expand_labels.\n"
+      "docs_info": "## init_expand_labels\nInitialized secondary segmentation task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform expansion of a label image.\n## expand_labels_skimage\nExpands labels in a label image by \"distance\" pixels without overlapping.\n\nTakes a primary label image and expands it by a certain distance. Direct\nimplementation of skimage.segmentation.expand_labels.\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
       "name": "Convert IC6000 to OME-Zarr",
@@ -858,7 +862,8 @@
         "type": "object",
         "title": "ConvertIc6000ToOmeZarr"
       },
-      "docs_info": "## init_convert_IC6000_to_ome_zarr\nCreate OME-NGFF structure and metadata to host a multiplexing dataset.\n\nThis task takes a set of image folders (i.e. different acquisition cycles)\nand build the internal structure and metadata of a OME-NGFF zarr group,\nwithout actually loading/writing the image data.\n\nEach element in input_paths should be treated as a different acquisition.\n## convert_IC6000_to_ome_zarr\nConvert IC6000 output (png, tif) to zarr file.\n\nThis task is run after \"init_convert_IC6000_to_ome_zarr\"\nand populates the empty OME-Zarr files that were prepared.\n"
+      "docs_info": "## init_convert_IC6000_to_ome_zarr\nCreate OME-NGFF structure and metadata to host a multiplexing dataset.\n\nThis task takes a set of image folders (i.e. different acquisition cycles)\nand build the internal structure and metadata of a OME-NGFF zarr group,\nwithout actually loading/writing the image data.\n\nEach element in input_paths should be treated as a different acquisition.\n## convert_IC6000_to_ome_zarr\nConvert IC6000 output (png, tif) to zarr file.\n\nThis task is run after \"init_convert_IC6000_to_ome_zarr\"\nand populates the empty OME-Zarr files that were prepared.\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
       "name": "Label Assignment by Overlap",
@@ -975,7 +980,8 @@
         "type": "object",
         "title": "LabelAssignmentByOverlap"
       },
-      "docs_info": "## init_label_assignment_by_overlap\nInitialized label assignment by overlap task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform label assignment based on overlap between two label images.\n## label_assignment_by_overlap\nAssign labels to each other based on overlap.\n\nTakes a parent label image and a child label image and calculates\noverlaps between their labels. Child labels will be assigned to parent\nlabels based on an overlap threshold.\n"
+      "docs_info": "## init_label_assignment_by_overlap\nInitialized label assignment by overlap task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform label assignment based on overlap between two label images.\n## label_assignment_by_overlap\nAssign labels to each other based on overlap.\n\nTakes a parent label image and a child label image and calculates\noverlaps between their labels. Child labels will be assigned to parent\nlabels based on an overlap threshold.\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
       "name": "Clip Label Image",
@@ -1097,7 +1103,8 @@
         "type": "object",
         "title": "ClipLabelImage"
       },
-      "docs_info": "## init_clip_label_image\nInitialized clip label image task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform clipping based on two label images.\n## clip_label_image\nClips a label image with a mask.\n\nTakes two label images (or a label image and a binary mask) and replaces\nall values in the first label image with 0 where the second label image has\nvalues > 0.\n"
+      "docs_info": "## init_clip_label_image\nInitialized clip label image task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform clipping based on two label images.\n## clip_label_image\nClips a label image with a mask.\n\nTakes two label images (or a label image and a binary mask) and replaces\nall values in the first label image with 0 where the second label image has\nvalues > 0.\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
       "name": "Mask Label Image",
@@ -1219,7 +1226,8 @@
         "type": "object",
         "title": "MaskLabelImage"
       },
-      "docs_info": "## init_mask_label_image\nInitialized apply mask task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform mask application based on two label images.\n## mask_label_image\nApplies a mask to a label image.\n\nTakes two label images (or a label image and a binary mask) and replaces\nall values in the first label image with 0 where the second label image has\nvalues = 0.\n"
+      "docs_info": "## init_mask_label_image\nInitialized apply mask task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform mask application based on two label images.\n## mask_label_image\nApplies a mask to a label image.\n\nTakes two label images (or a label image and a binary mask) and replaces\nall values in the first label image with 0 where the second label image has\nvalues = 0.\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
       "name": "Filter Label by Size",
@@ -1335,7 +1343,8 @@
         "type": "object",
         "title": "FilterLabelBySize"
       },
-      "docs_info": "## init_filter_label_by_size\nInitialized Filter Label by Size task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform label filtering by size.\n## filter_label_by_size\nFilter objects in a label image by size.\n"
+      "docs_info": "## init_filter_label_by_size\nInitialized Filter Label by Size task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform label filtering by size.\n## filter_label_by_size\nFilter objects in a label image by size.\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
       "name": "Calculate BaSiCPy Illumination Models",
@@ -1610,7 +1619,8 @@
         "type": "object",
         "title": "CalculateBasicpyIlluminationModels"
       },
-      "docs_info": "## init_calculate_basicpy_illumination_models\nInitialized BaSiCPy illumination correction task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform illumination correction with BaSiCPy.\n## calculate_basicpy_illumination_models\nCalculates illumination correction profiles based on a random sample\nof images of for each channel.\n"
+      "docs_info": "## init_calculate_basicpy_illumination_models\nInitialized BaSiCPy illumination correction task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform illumination correction with BaSiCPy.\n## calculate_basicpy_illumination_models\nCalculates illumination correction profiles based on a random sample\nof images of for each channel.\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
       "name": "Apply BaSiCPy Illumination Models",
@@ -1673,7 +1683,8 @@
         "type": "object",
         "title": "ApplyBasicpyIlluminationModels"
       },
-      "docs_info": "## apply_basicpy_illumination_models\nApplies illumination correction to the images in the OME-Zarr.\n"
+      "docs_info": "## apply_basicpy_illumination_models\nApplies illumination correction to the images in the OME-Zarr.\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
       "name": "Aggregate Feature Tables",
@@ -1772,7 +1783,8 @@
         "type": "object",
         "title": "AggregateFeatureTables"
       },
-      "docs_info": "## init_aggregate_feature_tables\nInitialized clip label image task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform clipping based on two label images.\n## aggregate_feature_tables\nAggregate feature tables that were calculated per zarr-image to one\nAnndata table containing feature measurements across all zarr-images.\n"
+      "docs_info": "## init_aggregate_feature_tables\nInitialized clip label image task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform clipping based on two label images.\n## aggregate_feature_tables\nAggregate feature tables that were calculated per zarr-image to one\nAnndata table containing feature measurements across all zarr-images.\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
       "name": "Stitch FOVs with Overlap",
@@ -1832,7 +1844,8 @@
         "type": "object",
         "title": "StitchFovsWithOverlap"
       },
-      "docs_info": "## stitch_fovs_with_overlap\nStitches FOVs with overlap using ASHLAR (https://github.com/labsyspharm/ashlar).\n"
+      "docs_info": "## stitch_fovs_with_overlap\nStitches FOVs with overlap using ASHLAR (https://github.com/labsyspharm/ashlar).\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
       "name": "Multiplexed Pixel Clustering",
@@ -1958,7 +1971,8 @@
         "type": "object",
         "title": "MultiplexedPixelClustering"
       },
-      "docs_info": "## multiplexed_pixel_clustering\nPerform multiplexed cell unit (MCU) analysis on a label image. Inspired by\nGabriele Gut et al., Multiplexed protein maps link subcellular\norganization to cellular states. Science (2018)\nDOI: 10.1126/science.aar7042\n"
+      "docs_info": "## multiplexed_pixel_clustering\nPerform multiplexed cell unit (MCU) analysis on a label image. Inspired by\nGabriele Gut et al., Multiplexed protein maps link subcellular\norganization to cellular states. Science (2018)\nDOI: 10.1126/science.aar7042\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
       "name": "Correct Chromatic Shift",
@@ -2071,7 +2085,8 @@
         "type": "object",
         "title": "CorrectChromaticShift"
       },
-      "docs_info": "## init_correct_chromatic_shift\nInitialized Correct Chromatic Shift task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform chromatic shift correction based on reference images of\n(for example) fluorescent beads.\n## correct_chromatic_shift\nCorrect chromatic shift based on reference images (for example fluorescent\nbeads) and apply it to all images.\n"
+      "docs_info": "## init_correct_chromatic_shift\nInitialized Correct Chromatic Shift task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform chromatic shift correction based on reference images of\n(for example) fluorescent beads.\n## correct_chromatic_shift\nCorrect chromatic shift based on reference images (for example fluorescent\nbeads) and apply it to all images.\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
       "name": "Convert Channel to Label",
@@ -2172,7 +2187,8 @@
         "type": "object",
         "title": "ConvertChannelToLabel"
       },
-      "docs_info": "## init_convert_channel_to_label\nInitialized Filter Label by Size task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform Convert Channel to Label task.\n## convert_channel_to_label\nConvert a channel of an OME-Zarr image to a label image.\n\nArgs:\n    zarr_url: Path or url to the individual OME-Zarr image to be processed.\n        (standard argument for Fractal tasks, managed by Fractal server).\n    init_args: Intialization arguments provided by\n    `init_convert_channel_to_label`.\n    output_label_name: Name of the label to be created.\n    overwrite: If True, overwrite existing label image with same name.\n"
+      "docs_info": "## init_convert_channel_to_label\nInitialized Filter Label by Size task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform Convert Channel to Label task.\n## convert_channel_to_label\nConvert a channel of an OME-Zarr image to a label image.\n\nArgs:\n    zarr_url: Path or url to the individual OME-Zarr image to be processed.\n        (standard argument for Fractal tasks, managed by Fractal server).\n    init_args: Intialization arguments provided by\n    `init_convert_channel_to_label`.\n    output_label_name: Name of the label to be created.\n    overwrite: If True, overwrite existing label image with same name.\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
       "name": "Detect Blob Centroids",
@@ -2314,7 +2330,8 @@
         "type": "object",
         "title": "DetectBlobCentroids"
       },
-      "docs_info": "## init_detect_blob_centroids\nInitialized Filter Label by Size task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform Convert Channel to Label task.\n## detect_blob_centroids\nDetects blob centroids in an intensity image and stores the result as a\nlabel image..\n"
+      "docs_info": "## init_detect_blob_centroids\nInitialized Filter Label by Size task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform Convert Channel to Label task.\n## detect_blob_centroids\nDetects blob centroids in an intensity image and stores the result as a\nlabel image..\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
       "name": "Ashlar Stitching and Registration",
@@ -2436,7 +2453,8 @@
         "type": "object",
         "title": "AshlarStitchingAndRegistration"
       },
-      "docs_info": "## init_ashlar_stitching_and_registration\nInitializes ashlar stitching and registration task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform ashlar stitching and registration.\n## ashlar_stitching_and_registration\nStitches FOVs with overlap using ASHLAR (https://github.com/labsyspharm/ashlar)\nand register the stitched image to the reference cycle.\n"
+      "docs_info": "## init_ashlar_stitching_and_registration\nInitializes ashlar stitching and registration task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform ashlar stitching and registration.\n## ashlar_stitching_and_registration\nStitches FOVs with overlap using ASHLAR (https://github.com/labsyspharm/ashlar)\nand register the stitched image to the reference cycle.\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
       "name": "Merge Plate Metadata",
@@ -2489,7 +2507,8 @@
         "type": "object",
         "title": "MergePlateMetadata"
       },
-      "docs_info": "## merge_plate_metadata\nMerge a metadata csv file with a Fractal feature table.\n\nTakes a csv file containing metadata and merges it into a Fractal\nfeature table. The metadata columns will appear in the obs of the\nfeature table.\n"
+      "docs_info": "## merge_plate_metadata\nMerge a metadata csv file with a Fractal feature table.\n\nTakes a csv file containing metadata and merges it into a Fractal\nfeature table. The metadata columns will appear in the obs of the\nfeature table.\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     }
   ],
   "has_args_schemas": true,
