@@ -11,10 +11,9 @@
 Initializes the parallelization list for normalize measurements task.
 """
 import logging
-from typing import Any, Optional
-from apx_fractal_task_collection.init_utils import (group_by_well,
-                                                    get_label_zarr_url,
-                                                    get_channel_zarr_url)
+from typing import Any
+from enum import Enum
+
 from pydantic import validate_call
 from pathlib import Path
 import zarr
@@ -22,16 +21,26 @@ from anndata.experimental import read_elem
 
 logger = logging.getLogger(__name__)
 
+class NormalizationLayout(Enum):
+    """
+    Enum for the normalization layout options.
+    """
+
+    full_plate = "full plate"
+    row_and_column = "row and column"
+
 @validate_call
-def init_expand_labels(
+def init_normalize_measurements(
     *,
     # Fractal parameters
     zarr_urls: list[str],
     zarr_dir: str,
     # Core parameters
+    condition_column: str = "condition",
     control_condition: str,
     feature_table_name: str,
-#    normalization_layout: # should be drop-down with options available
+    normalization_layout: NormalizationLayout = NormalizationLayout.full_plate,
+    additional_control_filters: dict[str, Any] = None,
 ) -> dict[str, list[dict[str, Any]]]:
     """
     Initialized normalize measurement task
@@ -51,6 +60,13 @@ def init_expand_labels(
             normalization.
         feature_table_name: Name of the feature table that contains the
             measurements to be normalized.
+        normalization_layout: Layout of the normalization. Options are:
+            - full plate: Use all control wells for normalization.
+            - row and column: Use all control wells in the same row and column
+                as the well to be normalized.
+        addtitonal_control_filters: Dictionary of additional filters to be
+        applied to filter for control conditions. The dictionary should be
+        formatted as: { "column_name": "value",}.
 
     Returns:
         task_output: Dictionary for Fractal server that contains a
@@ -60,25 +76,68 @@ def init_expand_labels(
         f"Running `init_normalize_measurements.py` for {zarr_urls=}"
     )
 
-    # for each zarr-url in zarr-urls, load a sample and get the condition
-    condition_dict = {}
+    # for each zarr_url in zarr_urls, load a sample and get the condition
+    condition_cycle_dict = {'zarr_url': [],
+                            'condition': [],
+                            'cycle': [],
+                            'row': [],
+                            'col': []}
+
+    # add columns from additional_control_filters to the dict
+    for col in additional_control_filters:
+        condition_cycle_dict[col] = []
+
     for zarr_url in zarr_urls:
+        # get the condition
         zarr_store = zarr.open(f"{zarr_url}/tables/{feature_table_name}",
                                mode="r")
-        condition = read_elem(zarr_store["obs/condition"])[0]
-        condition_dict[zarr_url] = condition
+        condition = read_elem(zarr_store[f"obs/{condition_column}"])[0]
 
-    # simplest way: use all zarr-urls that have control_condition as condition
-    ctrl_zarr_urls = [zarr_url for zarr_url, condition in condition_dict.items()
-                      if condition == control_condition]
+        # get the cycle
+        cycle_path = Path(zarr_url).name
+        row = Path(zarr_url).parents[1].name
+        col = Path(zarr_url).parent.name
+
+        condition_cycle_dict['zarr_url'].append(zarr_url)
+        condition_cycle_dict['condition'].append(condition)
+        condition_cycle_dict['cycle'].append(cycle_path)
+        condition_cycle_dict['row'].append(row)
+        condition_cycle_dict['col'].append(col)
+
+        # get additional control filters
+        for col, value in additional_control_filters.items():
+            column_value = read_elem(zarr_store[f"obs/{col}"])[0]
+            condition_cycle_dict[col].append(column_value)
+
+
+    condition_cycle_df = pd.DataFrame(condition_cycle_dict)
+
+    # filter df to only include control conditions
+    ctrl_df = condition_cycle_df.loc[
+        condition_cycle_df['condition'] == control_condition]
+
+    # if additional control filters are provided, filter the control df
+    if additional_control_filters:
+        for col, value in additional_control_filters.items():
+            ctrl_df = ctrl_df.loc[ctrl_df[col] == value]
 
     # Create the parallelization list
     parallelization_list = []
 
-    for zarr_url in zarr_urls:
+    for i, row in condition_cycle_df.iterrows():
+        # get the control zarr urls in the same cycle
+        filtered_ctrl_df = ctrl_df.loc[ctrl_df['cycle'] == row['cycle']]
+        if normalization_layout == NormalizationLayout.row_and_column:
+            # get the control zarr urls in the same row and column
+            filtered_ctrl_df = filtered_ctrl_df.loc[
+                (filtered_ctrl_df['row'] == row['row']) |
+                (filtered_ctrl_df['col'] == row['col'])]
+
+        ctrl_zarr_urls = filtered_ctrl_df['zarr_url'].tolist()
+
         parallelization_list.append(
             dict(
-                zarr_url=zarr_url,
+                zarr_url=row.zarr_url,
                 init_args=dict(
                     ctrl_zarr_urls=ctrl_zarr_urls,
                 ),
@@ -87,11 +146,10 @@ def init_expand_labels(
 
     return dict(parallelization_list=parallelization_list)
 
-
 if __name__ == "__main__":
     from fractal_tasks_core.tasks._utils import run_fractal_task
 
     run_fractal_task(
-        task_function=init_expand_labels,
+        task_function=init_normalize_measurements,
         logger_name=logger.name,
     )
