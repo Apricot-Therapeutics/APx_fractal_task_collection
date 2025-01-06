@@ -122,4 +122,10 @@ TASK_LIST = [
             executable="tasks/merge_plate_metadata.py",
             meta={"cpus_per_task": 1, "mem": 3750},
         ),
+    CompoundTask(
+            name="Normalize Feature Table",
+            executable_init="tasks/init_normalize_feature_table.py",
+            executable="tasks/normalize_feature_table.py",
+            meta={"cpus_per_task": 1, "mem": 3750},
+        ),
 ]

@@ -275,3 +275,17 @@ class InitArgsCalculatePixelIntensityCorrelation(BaseModel):
     corr_channel_labels: list[dict[str, str]]
     label_name: str
     label_zarr_url: str
+
+
+class InitArgsNormalizeFeatureTable(BaseModel):
+    """
+    Normalize Measurements init args.
+
+    Attributes:
+        ctrl_zarr_urls: List of paths or urls to the individual OME-Zarr image
+            to be used as control conditions.
+        feature_table_name: Name of the feature table that contains the
+            measurements to be normalized.
+    """
+    ctrl_zarr_urls: list[str]
+    feature_table_name: str
