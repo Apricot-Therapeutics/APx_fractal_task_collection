@@ -10,7 +10,8 @@ TASK_LIST = [
         executable="tasks/measure_features.py",
         meta={"cpus_per_task": 1, "mem": 3750},
         category="Measurement",
-        tags=["Textures", "Intensity", "Morphology", "scikit-image", "regionprops"]
+        tags=["Textures", "Intensity", "Morphology", "scikit-image", "regionprops"],
+        docs_info="file:task_info/measure_features.md",
     ),
     CompoundTask(
         name="Calculate Pixel Intensity Correlation",
@@ -18,6 +19,7 @@ TASK_LIST = [
         executable="tasks/calculate_pixel_intensity_correlation.py",
         meta={"cpus_per_task": 1, "mem": 3750},
         category="Measurement",
+        docs_info="file:task_info/pixel_intensity_correlation.md",
     ),
     CompoundTask(
         name="Segment Secondary Objects",
@@ -26,6 +28,7 @@ TASK_LIST = [
         meta={"cpus_per_task": 1, "mem": 3750},
         category="Segmentation",
         modality="HCS",
+        docs_info="file:task_info/segment_secondary.md",
     ),
     CompoundTask(
         name="Expand Labels",
