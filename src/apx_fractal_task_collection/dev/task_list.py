@@ -20,6 +20,7 @@ TASK_LIST = [
         meta={"cpus_per_task": 1, "mem": 3750},
         category="Measurement",
         docs_info="file:task_info/pixel_intensity_correlation.md",
+        tags=["Correlation", "Intensity", "QC"]
     ),
     CompoundTask(
         name="Segment Secondary Objects",
@@ -35,6 +36,7 @@ TASK_LIST = [
         executable_init="tasks/init_expand_labels.py",
         executable="tasks/expand_labels_skimage.py",
         meta={"cpus_per_task": 1, "mem": 3750},
+        category="Image Processing",
     ),
     CompoundTask(
         name="Convert IC6000 to OME-Zarr",
@@ -57,18 +59,21 @@ TASK_LIST = [
         executable_init="tasks/init_clip_label_image.py",
         executable="tasks/clip_label_image.py",
         meta={"cpus_per_task": 1, "mem": 3750},
+        category="Image Processing",
     ),
     CompoundTask(
         name="Mask Label Image",
         executable_init="tasks/init_mask_label_image.py",
         executable="tasks/mask_label_image.py",
         meta={"cpus_per_task": 1, "mem": 3750},
+        category="Image Processing",
     ),
     CompoundTask(
         name="Filter Label by Size",
         executable_init="tasks/init_filter_label_by_size.py",
         executable="tasks/filter_label_by_size.py",
         meta={"cpus_per_task": 1, "mem": 3750},
+        category="Image Processing",
     ),
     CompoundTask(
         name="Calculate BaSiCPy Illumination Models",
@@ -90,7 +95,7 @@ TASK_LIST = [
         executable_init="tasks/init_aggregate_feature_tables.py",
         executable="tasks/aggregate_feature_tables.py",
         meta={"cpus_per_task": 1, "mem": 3750},
-        category="Measurement",
+        category="Other",
     ),
     ParallelTask(
         name="Stitch FOVs with Overlap",
@@ -99,12 +104,14 @@ TASK_LIST = [
         output_types=dict(stitched=True),
         meta={"cpus_per_task": 1, "mem": 30000},
         category="Image Processing",
+        tags=["Stitching", "FOV", "Overlap"]
     ),
     NonParallelTask(
         name="Multiplexed Pixel Clustering",
         executable="tasks/multiplexed_pixel_clustering.py",
         meta={"cpus_per_task": 1, "mem": 3750},
         category="Measurement",
+        tags=["Multiplex", "Clustering", "Pixel", "MCU"]
     ),
     CompoundTask(
         name="Correct Chromatic Shift",
@@ -127,6 +134,7 @@ TASK_LIST = [
         executable_init="tasks/init_detect_blob_centroids.py",
         executable="tasks/detect_blob_centroids.py",
         meta={"cpus_per_task": 1, "mem": 3750},
+        category="Segmentation",
     ),
     CompoundTask(
         name="Ashlar Stitching and Registration",
@@ -136,6 +144,7 @@ TASK_LIST = [
         output_types=dict(stitched=True),
         meta={"cpus_per_task": 1, "mem": 15000},
         category="Image Processing",
+        tags=["Stitching", "Registration"]
     ),
     ParallelTask(
         name="Merge Plate Metadata",

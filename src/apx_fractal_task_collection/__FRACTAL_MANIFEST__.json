@@ -175,6 +175,11 @@
     {
       "name": "Calculate Pixel Intensity Correlation",
       "category": "Measurement",
+      "tags": [
+        "Correlation",
+        "Intensity",
+        "QC"
+      ],
       "docs_info": "### Purpose\n- Calculates pixel intensity correlation between two channels for each object in a label image.  \n- Supports loading channels from different multiplexing acquisitions.  \n- Handles multiple channel pairs per well and large datasets efficiently.  \n\n### Outputs\n- A **feature table** in the OME-Zarr structure with correlation values for specified channel pairs for each object.  \n\n### Limitations\n- Requires consistent **label and channel names** across input zarrs.  \n- Assumes **registered well ROI tables** and NGFF-compatible metadata.  \n- Only validated for **level 0 resolution**.",
       "executable_non_parallel": "tasks/init_calculate_pixel_intensity_correlation.py",
       "executable_parallel": "tasks/calculate_pixel_intensity_correlation.py",
@@ -486,6 +491,7 @@
     },
     {
       "name": "Expand Labels",
+      "category": "Image Processing",
       "executable_non_parallel": "tasks/init_expand_labels.py",
       "executable_parallel": "tasks/expand_labels_skimage.py",
       "meta_parallel": {
@@ -985,6 +991,7 @@
     },
     {
       "name": "Clip Label Image",
+      "category": "Image Processing",
       "executable_non_parallel": "tasks/init_clip_label_image.py",
       "executable_parallel": "tasks/clip_label_image.py",
       "meta_parallel": {
@@ -1108,6 +1115,7 @@
     },
     {
       "name": "Mask Label Image",
+      "category": "Image Processing",
       "executable_non_parallel": "tasks/init_mask_label_image.py",
       "executable_parallel": "tasks/mask_label_image.py",
       "meta_parallel": {
@@ -1231,6 +1239,7 @@
     },
     {
       "name": "Filter Label by Size",
+      "category": "Image Processing",
       "executable_non_parallel": "tasks/init_filter_label_by_size.py",
       "executable_parallel": "tasks/filter_label_by_size.py",
       "meta_parallel": {
@@ -1688,7 +1697,7 @@
     },
     {
       "name": "Aggregate Feature Tables",
-      "category": "Measurement",
+      "category": "Other",
       "executable_non_parallel": "tasks/init_aggregate_feature_tables.py",
       "executable_parallel": "tasks/aggregate_feature_tables.py",
       "meta_parallel": {
@@ -1795,6 +1804,11 @@
         "stitched": true
       },
       "category": "Image Processing",
+      "tags": [
+        "Stitching",
+        "FOV",
+        "Overlap"
+      ],
       "executable_parallel": "tasks/stitch_fovs_with_overlap.py",
       "meta_parallel": {
         "cpus_per_task": 1,
@@ -1850,6 +1864,12 @@
     {
       "name": "Multiplexed Pixel Clustering",
       "category": "Measurement",
+      "tags": [
+        "Multiplex",
+        "Clustering",
+        "Pixel",
+        "MCU"
+      ],
       "executable_non_parallel": "tasks/multiplexed_pixel_clustering.py",
       "meta_non_parallel": {
         "cpus_per_task": 1,
@@ -2192,6 +2212,7 @@
     },
     {
       "name": "Detect Blob Centroids",
+      "category": "Segmentation",
       "executable_non_parallel": "tasks/init_detect_blob_centroids.py",
       "executable_parallel": "tasks/detect_blob_centroids.py",
       "meta_parallel": {
@@ -2342,6 +2363,10 @@
         "stitched": true
       },
       "category": "Image Processing",
+      "tags": [
+        "Stitching",
+        "Registration"
+      ],
       "executable_non_parallel": "tasks/init_ashlar_stitching_and_registration.py",
       "executable_parallel": "tasks/ashlar_stitching_and_registration.py",
       "meta_parallel": {
