@@ -1,15 +1,15 @@
-name: CI (build and test)
+# name: CI (build and test)
 
-on:
-  push:
-    branches: ["main"]
-    tags:
-      - "*"
-  pull_request:
-    branches: ["main"]
-  workflow_dispatch:
-  release:
-    types: [published]
+# on:
+#   push:
+#     branches: ["main"]
+#     tags:
+#       - "*"
+#   pull_request:
+#     branches: ["main"]
+#   workflow_dispatch:
+#   release:
+#     types: [published]
 
 jobs:
   tests:
