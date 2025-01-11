@@ -77,6 +77,11 @@ def init_normalize_feature_table(
     logger.info(
         f"Running `init_normalize_feature_table.py` for {zarr_urls=}"
     )
+    
+    # filter zarr-urls to only include zarrs that have the feature table
+    # (for example, aggregated tables are not present in all zarr files)
+    zarr_urls = [zarr_url for zarr_url in zarr_urls if
+                    Path(f"{zarr_url}/tables/{feature_table_name}").exists()]
 
     # for each zarr_url in zarr_urls, load a sample and get the condition
     condition_cycle_dict = {'zarr_url': [],
