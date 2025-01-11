@@ -11,7 +11,7 @@
         "scikit-image",
         "regionprops"
       ],
-      "docs_info": "### Purpose\n- Calculates **morphology**, **intensity**, **texture**, and **population features** for objects in a label image.\n- Supports **2D and 3D measurements** across multiple regions of interest (ROIs).\n- Extracts features for intensity images using configurable channel inclusion/exclusion.\n\n### Outputs\n- A **feature table** saved in the OME-Zarr structure, containing:\n  - Morphology features (e.g., size, shape, well coordinates).\n  - Intensity features (e.g., mean, max, min intensity per object).\n  - Texture features (e.g., Haralick, Laws' texture energy).\n  - Population features (e.g., object counts and densities).\n- Updated ROI metadata with border and well location information.\n\n### Limitations\n- Does not support measurements for label images that do not have the same resolution as the intensity images.",
+      "docs_info": "### Purpose\n- Calculates **morphology**, **intensity**, **texture**, and **population features** for objects in a label image.\n- Supports **2D and 3D measurements** across multiple regions of interest (ROIs).\n- Extracts features for intensity images using configurable channel inclusion/exclusion.\n\n### Outputs\n- A **feature table** saved in the OME-Zarr structure, containing:\n  - Morphology features (e.g., size, shape, well coordinates).\n  - Intensity features (e.g., mean, max, min intensity per object).\n  - Texture features (e.g., Haralick, Laws' texture energy).\n  - Population features (e.g., densities and number of neighbours).\n- Updated ROI metadata with border and well location information.\n\n### Limitations\n- Does not support measurements for label images that do not have the same resolution as the intensity images.",
       "executable_parallel": "tasks/measure_features.py",
       "meta_parallel": {
         "cpus_per_task": 1,
@@ -180,7 +180,7 @@
         "Intensity",
         "QC"
       ],
-      "docs_info": "### Purpose\n- Calculates pixel intensity correlation between two channels for each object in a label image.  \n- Supports loading channels from different multiplexing acquisitions.  \n- Handles multiple channel pairs per well and large datasets efficiently.  \n\n### Outputs\n- A **feature table** in the OME-Zarr structure with correlation values for specified channel pairs for each object.  \n\n### Limitations\n- Requires consistent **label and channel names** across input zarrs.  \n- Assumes **registered well ROI tables** and NGFF-compatible metadata.  \n- Only validated for **level 0 resolution**.",
+      "docs_info": "### Purpose\n- Calculates pixel intensity correlation between two channels for each object in a label image.  \n- Supports loading channels from different multiplexing acquisitions.  \n- Handles multiple channel pairs per well and large datasets efficiently.  \n\n### Outputs\n- A **feature table** in the OME-Zarr structure with correlation values for specified channel pairs for each object.  \n\n### Limitations\n- Requires consistent **label and channel names** across input zarrs.  \n- Assumes NGFF-compatible metadata.  \n- Only validated for **level 0 resolution**.",
       "executable_non_parallel": "tasks/init_calculate_pixel_intensity_correlation.py",
       "executable_parallel": "tasks/calculate_pixel_intensity_correlation.py",
       "meta_parallel": {
@@ -323,7 +323,7 @@
       "name": "Segment Secondary Objects",
       "category": "Segmentation",
       "modality": "HCS",
-      "docs_info": "### Purpose\n- Segments secondary objects based on primary labels and intensity images using watershed segmentation.  \n- Supports multiplexed and non-multiplexed acquisitions.  \n- Optional parameters allow for flexible handling of thresholds, blurring, and masking.  \n\n### Limitations\n- Requires consistent **label and channel names** across input zarrs.  \n- Assumes **registered well ROI tables** and NGFF-compatible metadata.  \n- Only tested for **level 0 resolution**.  ",
+      "docs_info": "### Purpose\n- Segments secondary objects based on primary labels and intensity images using watershed segmentation.  \n- Supports multiplexed and non-multiplexed acquisitions.  \n- Optional parameters allow for flexible handling of thresholds, blurring, and masking.  \n\n### Limitations\n- Requires consistent **label and channel names** across input zarrs.  \n- Assumes NGFF-compatible metadata.  \n- Only tested for **level 0 resolution**.  ",
       "executable_non_parallel": "tasks/init_segment_secondary_objects.py",
       "executable_parallel": "tasks/segment_secondary_objects.py",
       "meta_parallel": {
