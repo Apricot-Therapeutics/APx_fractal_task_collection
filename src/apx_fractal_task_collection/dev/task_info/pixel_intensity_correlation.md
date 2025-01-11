@@ -8,5 +8,5 @@
 
 ### Limitations
 - Requires consistent **label and channel names** across input zarrs.  
-- Assumes **registered well ROI tables** and NGFF-compatible metadata.  
+- Assumes NGFF-compatible metadata.  
 - Only validated for **level 0 resolution**.

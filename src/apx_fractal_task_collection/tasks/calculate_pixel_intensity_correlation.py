@@ -97,7 +97,7 @@ def calculate_pixel_intensity_correlation(  # noqa: C901
         coarsening_xy=coarsening_xy,
         full_res_pxl_sizes_zyx=full_res_pxl_sizes_zyx,
     )
-    check_valid_ROI_indices(list_indices, "registered_well_ROI_table")
+    check_valid_ROI_indices(list_indices, ROI_table_name)
     num_ROIs = len(list_indices)
 
     channel_pair_features = []

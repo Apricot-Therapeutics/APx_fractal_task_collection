@@ -8,7 +8,7 @@
   - Morphology features (e.g., size, shape, well coordinates).
   - Intensity features (e.g., mean, max, min intensity per object).
   - Texture features (e.g., Haralick, Laws' texture energy).
-  - Population features (e.g., object counts and densities).
+  - Population features (e.g., densities and number of neighbours).
 - Updated ROI metadata with border and well location information.
 
 ### Limitations
