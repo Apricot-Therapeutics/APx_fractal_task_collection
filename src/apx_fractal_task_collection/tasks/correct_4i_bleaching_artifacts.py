@@ -11,8 +11,8 @@
 import logging
 
 import anndata as ad
-import fractal_tasks_core
 import pandas as pd
+import fractal_tasks_core
 import zarr
 
 from apx_fractal_task_collection.io_models import InitArgsCorrect4iBleachingArtifacts
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 @validate_call
-def normalize_feature_table(  # noqa: C901
+def correct_4i_bleaching_artifacts(  # noqa: C901
     *,
     # Default arguments for fractal tasks:
     zarr_url: str,
@@ -37,8 +37,10 @@ def normalize_feature_table(  # noqa: C901
     output_table_name_suffix: str = "_bleaching_corrected",
 ):
     """
-    Correct bleaching aritfact in the feature table with the selected control 
-    condition.
+    Correct bleaching aritfacts in the feature table with the selected control
+    condition. Only intensity features are corrected. Currently, the correction
+    is applied assuming a zig-zag (starting left-to-right) acquisition pattern.
+    Other acquisition patterns may be supported in the future.
 
     Args:
         zarr_url: Path or url to the individual OME-Zarr image to be processed.
@@ -53,30 +55,37 @@ def normalize_feature_table(  # noqa: C901
     feature_table = ad.read_zarr(
         f"{zarr_url}/tables/{init_args.feature_table_name}")
 
-    feature_df = feature_table.to_df()
-    features_to_correct = init_args.current_scale_factors.columns
+    current_scale_factors = pd.DataFrame(init_args.current_scale_factors)
 
-    # Correct bleaching artifacts
-    corrected_feature_df = feature_df.copy()
-    corrected_feature_df[features_to_correct] = corrected_feature_df[
-        features_to_correct].div(init_args.current_scale_factors.values)
-    
-    # get original table attributes
-    table_group = zarr.open_group(
-        f"{zarr_url}/tables/{init_args.feature_table_name}",
-        mode='r')
-    orig_attrs = table_group.attrs.asdict()
+    # check that current_scale_factors is not empty
+    if current_scale_factors.empty:
+        logger.info("No scale factors provided. Exiting.")
+    else:
+        logger.info("Correcting bleaching artifacts.")
+        feature_df = feature_table.to_df()
+        features_to_correct = current_scale_factors.columns
 
-    out_group = zarr.open_group(zarr_url, mode="r+")
+        # Correct bleaching artifacts
+        corrected_feature_df = feature_df.copy()
+        corrected_feature_df[features_to_correct] = corrected_feature_df[
+            features_to_correct].div(current_scale_factors.values)
 
-    # Write to zarr group
-    write_table(
-        out_group,
-        init_args.feature_table_name + output_table_name_suffix,
-        normalized_feature_table,
-        overwrite=True,
-        table_attrs=orig_attrs,
-    )
+        # get original table attributes
+        table_group = zarr.open_group(
+            f"{zarr_url}/tables/{init_args.feature_table_name}",
+            mode='r')
+        orig_attrs = table_group.attrs.asdict()
+
+        out_group = zarr.open_group(zarr_url, mode="r+")
+
+        # Write to zarr group
+        write_table(
+            out_group,
+            init_args.feature_table_name + output_table_name_suffix,
+            normalized_feature_table,
+            overwrite=True,
+            table_attrs=orig_attrs,
+        )
 
 if __name__ == "__main__":
     from fractal_tasks_core.tasks._utils import run_fractal_task

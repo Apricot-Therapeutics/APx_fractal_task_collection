@@ -128,4 +128,10 @@ TASK_LIST = [
             executable="tasks/normalize_feature_table.py",
             meta={"cpus_per_task": 1, "mem": 3750},
         ),
+    CompoundTask(
+            name="Correct 4i Bleaching Artifacts",
+            executable_init="tasks/init_correct_4i_bleaching_artifacts.py",
+            executable="tasks/correct_4i_bleaching_artifacts.py",
+            meta={"cpus_per_task": 1, "mem": 3750},
+        ),
 ]

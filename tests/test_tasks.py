@@ -53,6 +53,8 @@ from apx_fractal_task_collection.tasks.calculate_pixel_intensity_correlation imp
 from apx_fractal_task_collection.tasks.merge_plate_metadata import merge_plate_metadata
 from apx_fractal_task_collection.tasks.normalize_feature_table import normalize_feature_table, NormalizationMethod
 from apx_fractal_task_collection.tasks.init_normalize_feature_table import init_normalize_feature_table, NormalizationLayout
+from apx_fractal_task_collection.tasks.init_correct_4i_bleaching_artifacts import init_correct_4i_bleaching_artifacts
+from apx_fractal_task_collection.tasks.correct_4i_bleaching_artifacts import correct_4i_bleaching_artifacts
 
 WELL_COMPONENT_2D = "hcs_ngff_2D.zarr/A/2"
 IMAGE_COMPONENT_2D = "hcs_ngff_2D.zarr/A/2/0"
@@ -1123,6 +1125,64 @@ def test_normalize_feature_table(test_data_dir):
             init_args=init_args,
             normalization_method=NormalizationMethod.z_score,
             output_table_name_suffix='_normalized',
+        )
+
+
+def test_correct_4i_bleaching_artifacts(test_data_dir):
+
+    image_list = [f"{test_data_dir}/{i}" for i in IMAGE_LIST_2D]
+
+    for zarr_url in image_list:
+
+        measure_features(
+            zarr_url=zarr_url,
+            label_image_name='Label A',
+            measure_intensity=True,
+            measure_morphology=True,
+            channels_to_include=None,
+            channels_to_exclude=[
+                ChannelInputModel(label='0_GFP', wavelength_id=None)],
+            measure_texture=TextureFeatures(
+                haralick=True,
+                laws_texture_energy=True,
+                clip_value=3000,
+                clip_value_exceptions={'0_DAPI': 5000}
+            ),
+            measure_population=True,
+            ROI_table_name='FOV_ROI_table',
+            calculate_internal_borders=True,
+            output_table_name='feature_table',
+            level=0,
+            overwrite=True,
+        )
+
+        merge_plate_metadata(
+            zarr_url=zarr_url,
+            metadata_path=Path(test_data_dir).joinpath("metadata.csv").as_posix(),
+            feature_table_name='feature_table',
+            left_on='well_name',
+            right_on='well',
+            new_feature_table_name='feature_table_2',
+        )
+
+    parallelization_list = init_correct_4i_bleaching_artifacts(
+        zarr_urls=image_list,
+        zarr_dir=test_data_dir,
+        feature_table_name='feature_table_2',
+        condition_column='treatment',
+        control_condition='control',
+        additional_control_filters={'sample': 'sample_1'},
+        model_output_dir=test_data_dir,
+    )
+
+    for p in parallelization_list['parallelization_list']:
+        zarr_url = p['zarr_url']
+        init_args = p['init_args']
+
+        correct_4i_bleaching_artifacts(
+            zarr_url=zarr_url,
+            init_args=init_args,
+            output_table_name_suffix='_bleaching_corrected',
         )
 
 

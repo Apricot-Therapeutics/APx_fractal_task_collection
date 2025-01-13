@@ -28,6 +28,32 @@ import anndata as ad
 
 logger = logging.getLogger(__name__)
 
+
+class Plate():
+    '''
+    Class to store metadata of a plate and which wells are imaged
+    '''
+    def __init__(self):
+        self.initialize_wells()
+        self.time_index = list(range(0, 384))
+
+
+    def initialize_wells(self):
+        self.wells = []
+        rows = list(string.ascii_uppercase[0:16])
+        for i_row, row in enumerate(rows):
+            if i_row % 2 == 0:
+                cols = list(range(1, 25))
+            else:
+                cols = list(range(24, 0, -1))
+            for col in cols:
+                self.wells.append(f"{row}{col:02d}")
+
+    def sort_wells_by_imaging_time(self, imaged_wells):
+        time_index = [self.wells.index(x) for x in imaged_wells]
+        time_sorted_wells =  [val for _, val in sorted(zip(time_index, imaged_wells))]
+        return time_sorted_wells
+
 def fit_exp_nonlinear(t, y, bounds=([0, -1, 0], [100, 0, 100])):
     opt_parms, parm_cov = scipy.optimize.curve_fit(model_func, t, y,
                                                    maxfev=10000, bounds=bounds)
@@ -39,7 +65,9 @@ def model_func(t, A, K, C):
     return A * np.exp(K * t) + C
 
 
-def calculate_correction_factors(control_data, plot_results=False,
+def calculate_correction_factors(control_data,
+                                 imaged_wells,
+                                 plot_results=False,
                                  output_path=None):
     '''
     Calculate the correction factor for each timepoint of each 
@@ -49,17 +77,10 @@ def calculate_correction_factors(control_data, plot_results=False,
         control_data: pd.DataFrame containing control data
     '''
 
-    rows = list(string.ascii_uppercase[2:14])
-    wells = []
-    time_index = list(range(0, 120))
 
-    for i_row, row in enumerate(rows):
-        if i_row % 2 == 0:
-            cols = list(range(3, 13))
-        else:
-            cols = list(range(12, 2, -1))
-        for col in cols:
-            wells.append(f"{row}{col:02d}")
+    plate = Plate()
+    time_index = list(range(0, len(imaged_wells)))
+    wells = plate.sort_wells_by_imaging_time(imaged_wells)
 
     time_df = pd.DataFrame({'well_name': wells, 'time': time_index})
     control_data = pd.merge(control_data, time_df, on='well_name', how='left')
@@ -117,141 +138,10 @@ def calculate_correction_factors(control_data, plot_results=False,
             plt.savefig(output_dir.joinpath(f'{col}.png'), dpi=300,
                         bbox_inches='tight')
 
-    # save model parameters
     model_df = pd.DataFrame(decay_model_params).T
-    #model_df.to_csv(output_dir.joinpath('decay_model_params.csv'))
-    # save model scale factors
-    #decay_model_scale_factors_df.to_csv(
-    #    output_dir.joinpath('decay_model_scale_factors.csv'))
 
     return model_df, decay_model_scale_factors_df
-    
 
-
-def correct_imaging_snake(data, output_dir):
-    '''
-    Correct the imaging snake effect in the data.
-
-    Args:
-        data: DataFrame containing the data.
-        output_dir: directory where to save plots and results
-
-    Returns:
-        DataFrame with the imaging snake effect corrected.
-    '''
-
-    rows = list(string.ascii_uppercase[2:14])
-    wells = []
-    time_index = list(range(0, 120))
-    raw_data = data.copy()
-    raw_data.reset_index(inplace=True)
-    DMSO_data = raw_data.loc[(raw_data['sample'] == 'patient_1') &
-                             (raw_data['condition'] == 'DMSO')]
-
-    for i_row, row in enumerate(rows):
-        if i_row % 2 == 0:
-            cols = list(range(3, 13))
-        else:
-            cols = list(range(12, 2, -1))
-        for col in cols:
-            wells.append(f"{row}{col:02d}")
-
-    time_df = pd.DataFrame({'well_name': wells, 'time': time_index})
-    DMSO_data = pd.merge(DMSO_data, time_df, on='well_name', how='left')
-
-    averaged_df = DMSO_data.set_index(
-        ["label", 'well_name', 'sample', 'condition', 'replicate',
-         'combination', 'final_concentration_uM', 'drug_panel',
-         'EPCAM;MUC1_positive']).groupby(['well_name', 'time']).mean()
-    intensity_columns = [c for c in averaged_df.columns if 'Intensity' in c]
-
-    # minmax scaling
-    averaged_df = averaged_df.div(averaged_df.loc[
-        averaged_df.index.get_level_values('time') == 0].values)
-    averaged_df.reset_index(inplace=True)
-    decay_model_params = {}
-
-    bounds = ([0, -1, 0], [1, 0, 1])
-    for col in intensity_columns:
-        try:
-            A, K, C = fit_exp_nonlinear(averaged_df['time'], averaged_df[col],
-                                        bounds=bounds)
-            decay_model_params[col] = {'A': A, 'K': K, 'C': C}
-        except ValueError:
-            logger.warning(f"Could not fit decay model for {col}")
-
-    decay_model_scale_factors = {}
-
-    for col in decay_model_params.keys():
-        data_fit = model_func(np.array(time_index),
-                              decay_model_params[col]['A'],
-                              decay_model_params[col]['K'],
-                              decay_model_params[col]['C'])
-        decay_model_scale_factors[col] = data_fit
-
-    decay_model_scale_factors_df = pd.DataFrame(decay_model_scale_factors)
-    decay_model_scale_factors_df['well_name'] = time_df['well_name']
-
-    plt.rc('figure', figsize=(6, 4))
-
-    for col in decay_model_params.keys():
-        plt.figure()
-        A, K, C = decay_model_params[col]['A'], decay_model_params[col]['K'], \
-            decay_model_params[col]['C']
-        ax = sns.scatterplot(data=averaged_df, x='time', y=col, color='black')
-        sns.lineplot(x=averaged_df['time'],
-                     y=model_func(averaged_df['time'], A, K, C), color='red',
-                     linestyle='--')
-        ax.set(xlabel='Imaging Time Index',
-               ylabel=f'{col.split("_intensity_")[-1]} Intensity',
-               ylim=(0, 2.0))
-
-        plt.savefig(output_dir.joinpath(f'{col}.png'), dpi=300,
-                    bbox_inches='tight')
-
-    # save model parameters
-    model_df = pd.DataFrame(decay_model_params).T
-    model_df.to_csv(output_dir.joinpath('decay_model_params.csv'))
-    # save model scale factors
-    decay_model_scale_factors_df.to_csv(
-        output_dir.joinpath('decay_model_scale_factors.csv'))
-
-    # Apply decay model to all data
-    data_corr = []
-
-    for well in raw_data.well_name.unique():
-        well_data = raw_data.loc[raw_data['well_name'] == well]
-        well_data.set_index(
-            ['label', 'well_name', 'sample', 'condition', 'replicate',
-             'combination', 'final_concentration_uM', 'drug_panel',
-             'EPCAM;MUC1_positive'],
-            inplace=True)
-        # apply scale factor
-        scale_factors = decay_model_scale_factors_df.loc[
-            decay_model_scale_factors_df['well_name'] == well].set_index(
-            'well_name')
-        well_data = well_data[scale_factors.columns]
-        well_data = well_data.div(scale_factors)
-
-        data_corr.append(well_data)
-
-    data_corr = pd.concat(data_corr).reset_index()
-
-    # replace the columns in data_corr in data with their values in data_corr
-    raw_data = raw_data.set_index(
-        ['label', 'well_name', 'sample', 'condition', 'replicate',
-         'combination', 'final_concentration_uM', 'drug_panel',
-         'EPCAM;MUC1_positive'])
-    data_corr = data_corr.set_index(
-        ['label', 'well_name', 'sample', 'condition', 'replicate',
-         'combination', 'final_concentration_uM', 'drug_panel',
-         'EPCAM;MUC1_positive'])
-    raw_data.update(data_corr)
-
-    # make sure raw_data is ordered the same way as data
-    raw_data = raw_data.reindex(data.index)
-
-    return raw_data
 
 
 @validate_call
@@ -273,7 +163,7 @@ def init_correct_4i_bleaching_artifacts(
 
 
     This task prepares a parallelization list of all zarr_urls that need to be
-    used to perform measurement normalization.
+    used to perform correction of 4i bleaching artifacts.
 
     Args:
         zarr_urls: List of paths or urls to the individual OME-Zarr image to
@@ -283,12 +173,12 @@ def init_correct_4i_bleaching_artifacts(
             created. Not used by this task.
         condition_column: Name of the column in the feature table that contains
             the condition information.
-        control_condition: Name of the control condition to be used for
+        control_condition: Name of the condition to be used for
             correction.
         feature_table_name: Name of the feature table that contains the
             measurements to be corrected.
-        additional_control_filters: Dictionary of additional filters to be
-            applied to filter for control conditions. The dictionary should be
+        additional_control_filters: Dictionary of additional metadata filters
+            to be applied to filter. The dictionary should be
             formatted as: { "column_name": "value",}.
         plot_results: Whether to plot the results of the decay model fit.
         model_output_dir: Directory where to save the model parameters and
@@ -317,6 +207,11 @@ def init_correct_4i_bleaching_artifacts(
     # add columns from additional_control_filters to the dict
     for col in additional_control_filters:
         condition_cycle_dict[col] = []
+
+    # using regex, find all subfolders with format '/[A-Z]/[0-9]{2}' in zarr dir
+    imaged_wells = list(Path(zarr_dir).glob(
+        pattern="[A-Z]/[0-9][0-9]/"))
+    imaged_wells = [well.parent.name + well.name for well in imaged_wells]
 
     for zarr_url in zarr_urls:
         # get the condition
@@ -364,12 +259,13 @@ def init_correct_4i_bleaching_artifacts(
             for zarr_url in cycle_ctrl_zarr_urls])
 
         cycle_ctrl_df = cycle_ctrl_data.to_df()
-        cycle_ctrl_df['well_name'] = cycle_ctrl_data.obs['well_name']
+        cycle_ctrl_df[['label', 'well_name']] = cycle_ctrl_data.obs[['label', 'well_name']]
         cycle_ctrl_df.reset_index(inplace=True)
         
         # get model_df and decay_model_scale_factors_df
-        model_df, scale_factors_df  = calculate_correction_factors(
+        model_df, scale_factors_df = calculate_correction_factors(
             cycle_ctrl_df,
+            imaged_wells,
             plot_results,
             output_path=model_output_dir)
 
@@ -395,7 +291,7 @@ def init_correct_4i_bleaching_artifacts(
             dict(
                 zarr_url=row.zarr_url,
                 init_args=dict(
-                    current_scale_factors=current_scale_factors,
+                    current_scale_factors=current_scale_factors.to_dict(),
                     feature_table_name=feature_table_name,
                 ),
             )

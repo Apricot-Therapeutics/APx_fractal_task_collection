@@ -301,5 +301,5 @@ class InitArgsCorrect4iBleachingArtifacts(BaseModel):
         feature_table_name: Name of the feature table that contains the
             measurements to be corrected.
     """
-    current_scale_factors: pd.DataFrame
+    current_scale_factors: dict[str, float]
     feature_table_name: str
