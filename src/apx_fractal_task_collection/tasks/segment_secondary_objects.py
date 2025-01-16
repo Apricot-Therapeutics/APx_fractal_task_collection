@@ -256,7 +256,7 @@ def segment_secondary_objects(  # noqa: C901
         coarsening_xy=coarsening_xy,
         full_res_pxl_sizes_zyx=full_res_pxl_sizes_zyx,
     )
-    check_valid_ROI_indices(list_indices, "registered_well_ROI_table")
+    check_valid_ROI_indices(list_indices, ROI_table_name)
     num_ROIs = len(list_indices)
 
     # Loop over the list of indices and perform the secondary segmentation
@@ -328,4 +328,3 @@ if __name__ == "__main__":
         task_function=segment_secondary_objects,
         logger_name=logger.name,
     )
-
