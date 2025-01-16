@@ -506,24 +506,28 @@ def test_filter_label_by_size(test_data_dir, image_list):
         zarr_urls=image_list,
         zarr_dir=test_data_dir,
         label_name='Label A',
-        output_label_image_name="0"
     )
 
     zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
     init_args = parallelization_list['parallelization_list'][0]['init_args']
+    output_label_image_name = "1"
+
+    print(f"init args are {init_args}")
 
     filter_label_by_size(
         zarr_url=zarr_url,
         init_args=init_args,
         output_label_name='filtered_label',
+        output_label_image_name=output_label_image_name,
         min_size=10,
         max_size=50,
         level=0,
         overwrite=True
     )
 
+    output_zarr_url = f"{init_args['label_zarr_url'].rsplit('/', 1)[0]}/{output_label_image_name}"
     # assert whether the clipped label image was created
-    filtered_label_path = Path(zarr_url).joinpath("labels/filtered_label/0")
+    filtered_label_path = Path(f"{output_zarr_url}/labels/filtered_label/0")
     assert filtered_label_path.exists(),\
         f"Clipped label image not found at {filtered_label_path}"
 
