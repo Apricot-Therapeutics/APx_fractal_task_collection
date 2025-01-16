@@ -100,8 +100,6 @@ def normalize_feature_table(  # noqa: C901
 
     # concatenate the control feature tables
     ctrl_df = pd.concat([f.to_df() for f in ctrl_feature_tables])
-
-    normalization_method = NormalizationMethod.robust_z_score
     
     # Normalize the measurements
     normalized_feature_table = normalization_method.normalize(

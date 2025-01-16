@@ -70,6 +70,11 @@ def correct_4i_bleaching_artifacts(  # noqa: C901
         corrected_feature_df[features_to_correct] = corrected_feature_df[
             features_to_correct].div(current_scale_factors.values)
 
+        # convert to anndata table
+        corrected_feature_table = ad.AnnData(X=corrected_feature_df,
+                                              obs=feature_table.obs,
+                                              dtype='float32')
+
         # get original table attributes
         table_group = zarr.open_group(
             f"{zarr_url}/tables/{init_args.feature_table_name}",
@@ -82,7 +87,7 @@ def correct_4i_bleaching_artifacts(  # noqa: C901
         write_table(
             out_group,
             init_args.feature_table_name + output_table_name_suffix,
-            normalized_feature_table,
+            corrected_feature_table,
             overwrite=True,
             table_attrs=orig_attrs,
         )

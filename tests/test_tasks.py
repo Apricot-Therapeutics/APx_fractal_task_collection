@@ -1178,12 +1178,48 @@ def test_correct_4i_bleaching_artifacts(test_data_dir):
     for p in parallelization_list['parallelization_list']:
         zarr_url = p['zarr_url']
         init_args = p['init_args']
+        cycle = Path(zarr_url).name
+
+        # change scale factors, because calculation fails for test
+        corr_value = 0.5
+        current_scale_factors = {
+            f"Label A_Intensity_mean_intensity_{cycle}_DAPI": {0: corr_value}}
+
+        init_args['current_scale_factors'] = current_scale_factors
 
         correct_4i_bleaching_artifacts(
             zarr_url=zarr_url,
             init_args=init_args,
             output_table_name_suffix='_bleaching_corrected',
         )
+
+        # assert whether corrected table exists
+        corrected_table_path = Path(zarr_url).joinpath(
+            "tables/feature_table_2_bleaching_corrected"
+        )
+        assert corrected_table_path.exists(),\
+            f"Corrected table not found at {corrected_table_path}"
+
+        # assert that the feature values have been changed correctly
+        original_table_path = Path(zarr_url).joinpath(
+            "tables/feature_table_2"
+        )
+
+        feature_table = ad.read_zarr(original_table_path).to_df()
+        feature_table_corr = ad.read_zarr(corrected_table_path).to_df()
+
+        condition = feature_table_corr[f"Label A_Intensity_mean_intensity_{cycle}_DAPI"] == feature_table[f"Label A_Intensity_mean_intensity_{cycle}_DAPI"].div(corr_value)
+        corr_factor_mean = feature_table[f'Label A_Intensity_mean_intensity_{cycle}_DAPI'].div(feature_table_corr[f'Label A_Intensity_mean_intensity_{cycle}_DAPI']).mean()
+
+        # all in conditions must be True
+        assert condition.all(), (
+            f"Feature values not corrected correctly. "
+            f"Expected correction factor of {corr_value},"
+            f" but got correction factor of "
+            f"{corr_factor_mean}")
+
+
+
 
 
 

@@ -29,6 +29,19 @@ import anndata as ad
 logger = logging.getLogger(__name__)
 
 
+class MeanEstimator(Enum):
+    """
+    Enum for the mean estimator options.
+
+    Attributes:
+        mean: use arithmetic mean to estimate the control data mean value
+        median: use median to estimate the control data mean value
+    """
+
+    mean = "mean"
+    median = "median"
+
+
 class Plate():
     '''
     Class to store metadata of a plate and which wells are imaged
@@ -67,6 +80,7 @@ def model_func(t, A, K, C):
 
 def calculate_correction_factors(control_data,
                                  imaged_wells,
+                                 mean_estimator,
                                  plot_results=False,
                                  output_path=None):
     '''
@@ -85,8 +99,13 @@ def calculate_correction_factors(control_data,
     time_df = pd.DataFrame({'well_name': wells, 'time': time_index})
     control_data = pd.merge(control_data, time_df, on='well_name', how='left')
 
-    averaged_df = control_data.set_index(
-        ["label", 'well_name']).groupby(['well_name', 'time']).mean()
+    if mean_estimator == MeanEstimator.median:
+        averaged_df = control_data.set_index(
+            ['well_name']).groupby(['well_name', 'time']).median()
+    elif mean_estimator == MeanEstimator.mean:
+        averaged_df = control_data.set_index(
+            ['well_name']).groupby(['well_name', 'time']).mean()
+
     intensity_columns = [c for c in averaged_df.columns if 'Intensity' in c]
 
     # minmax scaling
@@ -153,6 +172,7 @@ def init_correct_4i_bleaching_artifacts(
     # Core parameters
     condition_column: str = "condition",
     control_condition: str,
+    mean_estimator: MeanEstimator = MeanEstimator.median,
     feature_table_name: str,
     additional_control_filters: dict[str, str] = None,
     plot_results: bool = True,
@@ -175,6 +195,10 @@ def init_correct_4i_bleaching_artifacts(
             the condition information.
         control_condition: Name of the condition to be used for
             correction.
+        mean_estimator: Method to be used for estimating the mean of the control
+            population. Choices are:
+            - mean: use arithmetic mean to estimate the control data mean value
+            - median: use median to estimate the control data mean value
         feature_table_name: Name of the feature table that contains the
             measurements to be corrected.
         additional_control_filters: Dictionary of additional metadata filters
@@ -259,13 +283,14 @@ def init_correct_4i_bleaching_artifacts(
             for zarr_url in cycle_ctrl_zarr_urls])
 
         cycle_ctrl_df = cycle_ctrl_data.to_df()
-        cycle_ctrl_df[['label', 'well_name']] = cycle_ctrl_data.obs[['label', 'well_name']]
+        cycle_ctrl_df['well_name'] = cycle_ctrl_data.obs['well_name']
         cycle_ctrl_df.reset_index(inplace=True)
         
         # get model_df and decay_model_scale_factors_df
         model_df, scale_factors_df = calculate_correction_factors(
             cycle_ctrl_df,
             imaged_wells,
+            mean_estimator,
             plot_results,
             output_path=model_output_dir)
 
