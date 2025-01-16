@@ -212,4 +212,3 @@ if __name__ == "__main__":
         task_function=calculate_pixel_intensity_correlation,
         logger_name=logger.name,
     )
-

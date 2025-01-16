@@ -51,6 +51,10 @@ from apx_fractal_task_collection.tasks.expand_labels_skimage import expand_label
 from apx_fractal_task_collection.tasks.init_calculate_pixel_intensity_correlation import init_calculate_pixel_intensity_correlation
 from apx_fractal_task_collection.tasks.calculate_pixel_intensity_correlation import calculate_pixel_intensity_correlation
 from apx_fractal_task_collection.tasks.merge_plate_metadata import merge_plate_metadata
+from apx_fractal_task_collection.tasks.normalize_feature_table import normalize_feature_table, NormalizationMethod
+from apx_fractal_task_collection.tasks.init_normalize_feature_table import init_normalize_feature_table, NormalizationLayout
+from apx_fractal_task_collection.tasks.init_correct_4i_bleaching_artifacts import init_correct_4i_bleaching_artifacts
+from apx_fractal_task_collection.tasks.correct_4i_bleaching_artifacts import correct_4i_bleaching_artifacts
 
 WELL_COMPONENT_2D = "hcs_ngff_2D.zarr/A/2"
 IMAGE_COMPONENT_2D = "hcs_ngff_2D.zarr/A/2/0"
@@ -1063,6 +1067,159 @@ def test_merge_plate_metadata(test_data_dir):
     # assert that the feature table contains the column treatment
     assert 'treatment' in feature_table.columns, \
         f"Column treatment not found in feature table"
+
+
+def test_normalize_feature_table(test_data_dir):
+
+    image_list = [f"{test_data_dir}/{i}" for i in IMAGE_LIST_2D]
+
+    for zarr_url in image_list:
+
+        measure_features(
+            zarr_url=zarr_url,
+            label_image_name='Label A',
+            measure_intensity=True,
+            measure_morphology=True,
+            channels_to_include=None,
+            channels_to_exclude=[
+                ChannelInputModel(label='0_GFP', wavelength_id=None)],
+            measure_texture=TextureFeatures(
+                haralick=True,
+                laws_texture_energy=True,
+                clip_value=3000,
+                clip_value_exceptions={'0_DAPI': 5000}
+            ),
+            measure_population=True,
+            ROI_table_name='FOV_ROI_table',
+            calculate_internal_borders=True,
+            output_table_name='feature_table',
+            level=0,
+            overwrite=True,
+        )
+
+        merge_plate_metadata(
+            zarr_url=zarr_url,
+            metadata_path=Path(test_data_dir).joinpath("metadata.csv").as_posix(),
+            feature_table_name='feature_table',
+            left_on='well_name',
+            right_on='well',
+            new_feature_table_name='feature_table_2',
+        )
+
+    parallelization_list = init_normalize_feature_table(
+        zarr_urls=image_list,
+        zarr_dir=test_data_dir,
+        feature_table_name='feature_table_2',
+        condition_column='treatment',
+        control_condition='control',
+        normalization_layout=NormalizationLayout.full_plate,
+        additional_control_filters={'sample': 'sample_1'}
+    )
+
+    for p in parallelization_list['parallelization_list']:
+        zarr_url = p['zarr_url']
+        init_args = p['init_args']
+
+        normalize_feature_table(
+            zarr_url=zarr_url,
+            init_args=init_args,
+            normalization_method=NormalizationMethod.z_score,
+            output_table_name_suffix='_normalized',
+        )
+
+
+def test_correct_4i_bleaching_artifacts(test_data_dir):
+
+    image_list = [f"{test_data_dir}/{i}" for i in IMAGE_LIST_2D]
+
+    for zarr_url in image_list:
+
+        measure_features(
+            zarr_url=zarr_url,
+            label_image_name='Label A',
+            measure_intensity=True,
+            measure_morphology=True,
+            channels_to_include=None,
+            channels_to_exclude=[
+                ChannelInputModel(label='0_GFP', wavelength_id=None)],
+            measure_texture=TextureFeatures(
+                haralick=True,
+                laws_texture_energy=True,
+                clip_value=3000,
+                clip_value_exceptions={'0_DAPI': 5000}
+            ),
+            measure_population=True,
+            ROI_table_name='FOV_ROI_table',
+            calculate_internal_borders=True,
+            output_table_name='feature_table',
+            level=0,
+            overwrite=True,
+        )
+
+        merge_plate_metadata(
+            zarr_url=zarr_url,
+            metadata_path=Path(test_data_dir).joinpath("metadata.csv").as_posix(),
+            feature_table_name='feature_table',
+            left_on='well_name',
+            right_on='well',
+            new_feature_table_name='feature_table_2',
+        )
+
+    parallelization_list = init_correct_4i_bleaching_artifacts(
+        zarr_urls=image_list,
+        zarr_dir=test_data_dir,
+        feature_table_name='feature_table_2',
+        condition_column='treatment',
+        control_condition='control',
+        additional_control_filters={'sample': 'sample_1'},
+        model_output_dir=test_data_dir,
+    )
+
+    for p in parallelization_list['parallelization_list']:
+        zarr_url = p['zarr_url']
+        init_args = p['init_args']
+        cycle = Path(zarr_url).name
+
+        # change scale factors, because calculation fails for test
+        corr_value = 0.5
+        current_scale_factors = {
+            f"Label A_Intensity_mean_intensity_{cycle}_DAPI": {0: corr_value}}
+
+        init_args['current_scale_factors'] = current_scale_factors
+
+        correct_4i_bleaching_artifacts(
+            zarr_url=zarr_url,
+            init_args=init_args,
+            output_table_name_suffix='_bleaching_corrected',
+        )
+
+        # assert whether corrected table exists
+        corrected_table_path = Path(zarr_url).joinpath(
+            "tables/feature_table_2_bleaching_corrected"
+        )
+        assert corrected_table_path.exists(),\
+            f"Corrected table not found at {corrected_table_path}"
+
+        # assert that the feature values have been changed correctly
+        original_table_path = Path(zarr_url).joinpath(
+            "tables/feature_table_2"
+        )
+
+        feature_table = ad.read_zarr(original_table_path).to_df()
+        feature_table_corr = ad.read_zarr(corrected_table_path).to_df()
+
+        condition = feature_table_corr[f"Label A_Intensity_mean_intensity_{cycle}_DAPI"] == feature_table[f"Label A_Intensity_mean_intensity_{cycle}_DAPI"].div(corr_value)
+        corr_factor_mean = feature_table[f'Label A_Intensity_mean_intensity_{cycle}_DAPI'].div(feature_table_corr[f'Label A_Intensity_mean_intensity_{cycle}_DAPI']).mean()
+
+        # all in conditions must be True
+        assert condition.all(), (
+            f"Feature values not corrected correctly. "
+            f"Expected correction factor of {corr_value},"
+            f" but got correction factor of "
+            f"{corr_factor_mean}")
+
+
+
 
 
 

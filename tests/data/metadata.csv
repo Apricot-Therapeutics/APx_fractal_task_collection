@@ -1,4 +1,3 @@
-well,treatment
-A02,control
-A03,treatment
-A04,control
+well,treatment,sample
+A2,control,sample_1
+B3,treatment,sample_1

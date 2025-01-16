@@ -1,6 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel
-
+import pandas as pd
 
 
 class InitArgsSegmentSecondary(BaseModel):
@@ -275,3 +275,31 @@ class InitArgsCalculatePixelIntensityCorrelation(BaseModel):
     corr_channel_labels: list[dict[str, str]]
     label_name: str
     label_zarr_url: str
+
+
+class InitArgsNormalizeFeatureTable(BaseModel):
+    """
+    Normalize Measurements init args.
+
+    Attributes:
+        ctrl_zarr_urls: List of paths or urls to the individual OME-Zarr image
+            to be used as control conditions.
+        feature_table_name: Name of the feature table that contains the
+            measurements to be normalized.
+    """
+    ctrl_zarr_urls: list[str]
+    feature_table_name: str
+
+
+class InitArgsCorrect4iBleachingArtifacts(BaseModel):
+    """
+    Correct 4i Bleaching Artifacts init args.
+
+    Attributes:
+        current_scale_factors: scale factors for intensity features of the
+            zarr-url to be corrected.
+        feature_table_name: Name of the feature table that contains the
+            measurements to be corrected.
+    """
+    current_scale_factors: dict[str, dict[int, float]]
+    feature_table_name: str

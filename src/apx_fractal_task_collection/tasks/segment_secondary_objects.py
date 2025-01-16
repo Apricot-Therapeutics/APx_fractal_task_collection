@@ -328,4 +328,3 @@ if __name__ == "__main__":
         task_function=segment_secondary_objects,
         logger_name=logger.name,
     )
-

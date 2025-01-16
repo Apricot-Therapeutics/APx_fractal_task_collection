@@ -285,6 +285,23 @@ def get_channel_image_from_image(img_url: Path,
         return data_zyx
 
 
+def get_zarr_urls(zarr_dir: str) -> list[str]:
+    """
+    Get all zarr urls in a directory.
+
+    Args:
+        zarr_dir: Path to the directory containing the zarr files.
+
+    Returns:
+        List of zarr urls.
+    """
+    zarr_urls = list(Path(zarr_dir).glob(
+        pattern=f"[A-Z]/[0-9][0-9]/[0-9]"))
+    zarr_urls = [str(zarr_url) for zarr_url in zarr_urls]
+
+    return zarr_urls
+
+
 class TextureFeatures(BaseModel):
     """
     Validator to handle texture feature selection.

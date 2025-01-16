@@ -147,9 +147,25 @@ TASK_LIST = [
         tags=["Stitching", "Registration"]
     ),
     ParallelTask(
-        name="Merge Plate Metadata",
-        executable="tasks/merge_plate_metadata.py",
-        meta={"cpus_per_task": 1, "mem": 3750},
-        category="Other",
-    ),
+            name="Merge Plate Metadata",
+            executable="tasks/merge_plate_metadata.py",
+            meta={"cpus_per_task": 1, "mem": 3750},
+            category="Other",
+        ),
+    CompoundTask(
+            name="Normalize Feature Table",
+            executable_init="tasks/init_normalize_feature_table.py",
+            executable="tasks/normalize_feature_table.py",
+            meta={"cpus_per_task": 1, "mem": 3750},
+            category="Feature Table Processing",
+            tags=["Normalization", "Feature Table"]
+        ),
+    CompoundTask(
+            name="Correct 4i Bleaching Artifacts",
+            executable_init="tasks/init_correct_4i_bleaching_artifacts.py",
+            executable="tasks/correct_4i_bleaching_artifacts.py",
+            meta={"cpus_per_task": 1, "mem": 3750},
+            category="Feature Table Processing",
+            tags=["Correction", "Feature Table", "4i", "Bleaching"]
+        ),
 ]
