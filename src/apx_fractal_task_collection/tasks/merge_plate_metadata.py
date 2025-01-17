@@ -95,6 +95,10 @@ def merge_plate_metadata(  # noqa: C901
                        left_on=left_on,
                        right_on=right_on)
 
+    # replace missing values with string NA (np.nan or pd.NA does not work
+    # for some reason when saving the anndata table)
+    new_obs = new_obs.where(pd.notnull(new_obs), "NA")
+
     # drop the right_on column if it is not the same as left_on
     if left_on != right_on:
         new_obs = new_obs.drop(columns=right_on)

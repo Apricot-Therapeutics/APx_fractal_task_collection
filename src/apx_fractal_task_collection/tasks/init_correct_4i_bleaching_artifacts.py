@@ -216,6 +216,12 @@ def init_correct_4i_bleaching_artifacts(
         f"Running `init_correct_4i_bleaching_artifacts.py` for {zarr_urls=}"
     )
 
+    # append feature table name to model_output_dir
+    model_output_dir = f"{model_output_dir}/{feature_table_name}"
+
+    # make sure it exists
+    Path(model_output_dir).mkdir(parents=True, exist_ok=True)
+
     # filter zarr-urls to only include zarrs that have the feature table
     # (for example, aggregated tables are not present in all zarr files)
     zarr_urls = [zarr_url for zarr_url in zarr_urls if
