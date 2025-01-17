@@ -58,6 +58,7 @@ def filter_label_by_size(
     init_args: InitArgsFilterLabelBySize,
     # Task-specific arguments
     output_label_name: str,
+    output_label_image_name: str = "0",
     min_size: Optional[int] = None,
     max_size: Optional[int] = None,
     level: int = 0,
@@ -73,6 +74,8 @@ def filter_label_by_size(
         init_args: Intialization arguments provided by
             `init_filter_label_by_size`.
         output_label_name: Name of the output label image.
+        output_label_image_name: Name of the zarr image that will
+            contain the size filtered label image. Defaults to "0".
         min_size: Minimum size of objects to keep. If None, no minimum size
             filter is applied.
         max_size: Maximum size of objects to keep. If None, no maximum size
@@ -82,10 +85,13 @@ def filter_label_by_size(
         overwrite: If True, overwrite existing label image.
     """
     logger.info(f"Filtering label image '{init_args.label_name}' by size.")
-    label_image = da.from_zarr(f"{zarr_url}/labels/"
+    label_image = da.from_zarr(f"{init_args.label_zarr_url}/labels/"
                                f"{init_args.label_name}/{level}")
 
-    ngff_image_meta = load_NgffImageMeta(zarr_url)
+    output_zarr_url = f"{init_args.label_zarr_url.rsplit('/', 1)[0]}/" \
+                      f"{output_label_image_name}"
+
+    ngff_image_meta = load_NgffImageMeta(init_args.label_zarr_url)
     num_levels = ngff_image_meta.num_levels
     coarsening_xy = ngff_image_meta.coarsening_xy
 
@@ -142,7 +148,7 @@ def filter_label_by_size(
         ],
     }
 
-    image_group = zarr.group(zarr_url)
+    image_group = zarr.group(output_zarr_url)
     label_group = prepare_label_group(
         image_group,
         output_label_name,
@@ -154,7 +160,7 @@ def filter_label_by_size(
     logger.info(
         f"Helper function `prepare_label_group` returned {label_group=}"
     )
-    out = f"{zarr_url}/labels/{output_label_name}/0"
+    out = f"{output_zarr_url}/labels/{output_label_name}/0"
     logger.info(f"Output label path: {out}")
     store = zarr.storage.FSStore(str(out))
     label_dtype = np.uint32
@@ -193,7 +199,7 @@ def filter_label_by_size(
     # Starting from on-disk highest-resolution data, build and write to disk a
     # pyramid of coarser levels
     build_pyramid(
-        zarrurl=out.rsplit("/", 1)[0],
+        zarrurl=f"{output_zarr_url}/labels/{output_label_name}",
         overwrite=overwrite,
         num_levels=num_levels,
         coarsening_xy=coarsening_xy,

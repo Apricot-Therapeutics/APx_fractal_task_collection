@@ -1266,12 +1266,6 @@
             "title": "Label Name",
             "type": "string",
             "description": "Name of the label image to be filtered by size. Needs to exist in OME-Zarr file."
-          },
-          "output_label_image_name": {
-            "default": "0",
-            "title": "Output Label Image Name",
-            "type": "string",
-            "description": "Name of the zarr image that will contain the size filtered label image. Defaults to \"0\". In case you saved, for example, illumination corrected images in the same zarr without overwriting the original images, you can specify a different name here (e.g. \"0_illum_corrected\")."
           }
         },
         "required": [
@@ -1320,6 +1314,12 @@
             "title": "Output Label Name",
             "type": "string",
             "description": "Name of the output label image."
+          },
+          "output_label_image_name": {
+            "default": "0",
+            "title": "Output Label Image Name",
+            "type": "string",
+            "description": "Name of the zarr image that will contain the size filtered label image. Defaults to \"0\"."
           },
           "min_size": {
             "title": "Min Size",

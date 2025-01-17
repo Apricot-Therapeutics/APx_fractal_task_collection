@@ -27,7 +27,6 @@ def init_filter_label_by_size(
         zarr_dir: str,
         # Core parameters
         label_name: str,
-        output_label_image_name: str = "0",
 ) -> dict[str, list[dict[str, Any]]]:
     """
     Initialized Filter Label by Size task
@@ -44,11 +43,6 @@ def init_filter_label_by_size(
             (standard argument for Fractal tasks, managed by Fractal server).
         label_name: Name of the label image to be filtered by size.
             Needs to exist in OME-Zarr file.
-        output_label_image_name: Name of the zarr image that will
-            contain the size filtered label image. Defaults to "0".
-            In case you saved, for example, illumination corrected images in
-            the same zarr without overwriting the original images, you can
-            specify a different name here (e.g. "0_illum_corrected").
 
     Returns:
         task_output: Dictionary for Fractal server that contains a
@@ -64,10 +58,8 @@ def init_filter_label_by_size(
         label_zarr_url = get_label_zarr_url(well_list,
                                             label_name)
 
-        # generate zarr_url by taking the first entry of well_list and
-        # replacing the last part of the path with the output_label_image_name
-        zarr_url = (f"{well_list[0].rsplit('/', 1)[0]}/"
-                    f"{output_label_image_name}")
+        # generate zarr_url by taking the first entry of well_list
+        zarr_url = well_list[0]
 
         parallelization_list.append(
             dict(
