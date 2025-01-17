@@ -1064,12 +1064,11 @@ def test_merge_plate_metadata(test_data_dir):
         new_feature_table_name='feature_table_2',
     )
 
-    ngff_image = NgffImage(zarr_url, "r")
-
-    feature_table = ngff_image.tables.get_table("feature_table_2").table
+    feature_table = ad.read_zarr(f"{zarr_url}/tables/feature_table_2")
+    obs = feature_table.obs
 
     # assert that the feature table contains the column treatment
-    assert 'treatment' in feature_table.columns, \
+    assert 'treatment' in obs.columns, \
         f"Column treatment not found in feature table"
 
 
@@ -1221,6 +1220,17 @@ def test_correct_4i_bleaching_artifacts(test_data_dir):
             f"Expected correction factor of {corr_value},"
             f" but got correction factor of "
             f"{corr_factor_mean}")
+
+        # # assert that the plots have been generated
+        # plot_path = Path(test_data_dir).joinpath("plots/")
+        #
+        # assert plot_path.exists(),\
+        #     f"Plot folder not found at {plot_path}"
+
+        # assert that the decay models have been saved
+        decay_model_path = Path(test_data_dir).joinpath("feature_table_2", "decay_model_params.csv")
+        assert decay_model_path.exists(),\
+            f"Decay model file not found at {decay_model_path}"
 
 
 
