@@ -2,13 +2,13 @@
     "plate": {
         "columns": [
             {
-                "name": "1"
+                "name": "01"
             },
             {
-                "name": "2"
+                "name": "02"
             },
             {
-                "name": "3"
+                "name": "03"
             }
         ],
         "rows": [
@@ -23,12 +23,12 @@
         "wells": [
             {
                 "columnIndex": 1,
-                "path": "A/2",
+                "path": "A/02",
                 "rowIndex": 0
             },
             {
                 "columnIndex": 2,
-                "path": "B/3",
+                "path": "B/03",
                 "rowIndex": 1
             }
         ]

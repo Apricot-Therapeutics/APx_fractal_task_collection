@@ -2675,6 +2675,12 @@
             "title": "Normalization Method",
             "description": "Method to be used for normalization. Choices are: - z_score: z-score normalization [(X - mean) / std] - robust_z_score: robust z-score normalization [(X - median) / MAD]"
           },
+          "log_transform_before_normalization": {
+            "default": false,
+            "title": "Log Transform Before Normalization",
+            "type": "boolean",
+            "description": "Whether to log-transform the data before normalization."
+          },
           "output_table_name_suffix": {
             "default": "_normalized",
             "title": "Output Table Name Suffix",

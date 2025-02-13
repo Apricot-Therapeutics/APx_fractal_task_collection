@@ -142,6 +142,9 @@ def init_normalize_feature_table(
 
         ctrl_zarr_urls = filtered_ctrl_df['zarr_url'].tolist()
 
+        logger.info(f"Normalizing zarr at {row['zarr_url']} with "
+                    f"control wells at: {ctrl_zarr_urls}")
+
         parallelization_list.append(
             dict(
                 zarr_url=row.zarr_url,

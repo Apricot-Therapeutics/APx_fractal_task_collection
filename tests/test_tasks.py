@@ -56,24 +56,24 @@ from apx_fractal_task_collection.tasks.init_normalize_feature_table import init_
 from apx_fractal_task_collection.tasks.init_correct_4i_bleaching_artifacts import init_correct_4i_bleaching_artifacts
 from apx_fractal_task_collection.tasks.correct_4i_bleaching_artifacts import correct_4i_bleaching_artifacts
 
-WELL_COMPONENT_2D = "hcs_ngff_2D.zarr/A/2"
-IMAGE_COMPONENT_2D = "hcs_ngff_2D.zarr/A/2/0"
-WELL_COMPONENT_3D = "hcs_ngff_3D.zarr/A/2"
-IMAGE_COMPONENT_3D = "hcs_ngff_3D.zarr/A/2/0"
+WELL_COMPONENT_2D = "hcs_ngff_2D.zarr/A/02"
+IMAGE_COMPONENT_2D = "hcs_ngff_2D.zarr/A/02/0"
+WELL_COMPONENT_3D = "hcs_ngff_3D.zarr/A/02"
+IMAGE_COMPONENT_3D = "hcs_ngff_3D.zarr/A/02/0"
 
-IMAGE_LIST_2D = ["hcs_ngff_2D.zarr/A/2/0",
-                 "hcs_ngff_2D.zarr/A/2/1",
-                 "hcs_ngff_2D.zarr/A/2/2",
-                 "hcs_ngff_2D.zarr/B/3/0",
-                 "hcs_ngff_2D.zarr/B/3/1",
-                 "hcs_ngff_2D.zarr/B/3/2"]
+IMAGE_LIST_2D = ["hcs_ngff_2D.zarr/A/02/0",
+                 "hcs_ngff_2D.zarr/A/02/1",
+                 "hcs_ngff_2D.zarr/A/02/2",
+                 "hcs_ngff_2D.zarr/B/03/0",
+                 "hcs_ngff_2D.zarr/B/03/1",
+                 "hcs_ngff_2D.zarr/B/03/2"]
 
-IMAGE_LIST_3D = ["hcs_ngff_3D.zarr/A/2/0",
-                 "hcs_ngff_3D.zarr/A/2/1",
-                 "hcs_ngff_3D.zarr/A/2/2",
-                 "hcs_ngff_3D.zarr/B/3/0",
-                 "hcs_ngff_3D.zarr/B/3/1",
-                 "hcs_ngff_3D.zarr/B/3/2"]
+IMAGE_LIST_3D = ["hcs_ngff_3D.zarr/A/02/0",
+                 "hcs_ngff_3D.zarr/A/02/1",
+                 "hcs_ngff_3D.zarr/A/02/2",
+                 "hcs_ngff_3D.zarr/B/03/0",
+                 "hcs_ngff_3D.zarr/B/03/1",
+                 "hcs_ngff_3D.zarr/B/03/2"]
 
 
 @pytest.fixture(scope="function")
@@ -546,7 +546,7 @@ def test_filter_label_by_size(test_data_dir, image_list):
 def test_label_assignment_by_overlap(test_data_dir, image_list):
 
     image_list = [f"{test_data_dir}/{i}" for i in image_list]
-    image_list = [i for i in image_list if "A/2" in i]
+    image_list = [i for i in image_list if "A/02" in i]
     zarr_url = image_list[0]
     # create a feature table
     measure_features(
@@ -849,7 +849,7 @@ def test_multiplexed_pixel_clustering(test_data_dir, image_list):
         zarr_dir=test_data_dir,
         label_image_name='Label A',
         channels_to_use=['0_DAPI', '1_GFP'],
-        well_names=['A2', 'B3'],
+        well_names=['A02', 'B03'],
         som_shape=(10, 10),
         phenograph_neighbours=15,
         enforce_equal_object_count=True,
@@ -1221,11 +1221,11 @@ def test_correct_4i_bleaching_artifacts(test_data_dir):
             f" but got correction factor of "
             f"{corr_factor_mean}")
 
-        # # assert that the plots have been generated
-        # plot_path = Path(test_data_dir).joinpath("plots/")
-        #
-        # assert plot_path.exists(),\
-        #     f"Plot folder not found at {plot_path}"
+        # assert that the plots have been generated
+        plot_path = Path(test_data_dir).joinpath("feature_table_2","plots")
+
+        assert plot_path.exists(),\
+            f"Plot folder not found at {plot_path}"
 
         # assert that the decay models have been saved
         decay_model_path = Path(test_data_dir).joinpath("feature_table_2", "decay_model_params.csv")

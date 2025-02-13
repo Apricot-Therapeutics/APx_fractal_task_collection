@@ -1,7 +1,7 @@
 # Project metadata (see https://peps.python.org/pep-0621)
 [project]
 name = "apx-fractal-task-collection"
-version = "0.4.1"
+version = "0.4.1b1"
 description = "A collection of custom fractal tasks."
 readme = "README.md"
 license = { text = "BSD-3-Clause" }
@@ -14,7 +14,8 @@ requires-python = ">=3.8"
 dependencies = ["fractal-tasks-core", "scikit-image", "matplotlib", "image_registration", "pytest", "mahotas",
                 "basicpy", 'minisom', 'phenograph', 'scikit-learn',
                 "jax==0.4.23", "jaxlib==0.4.23", "SimpleITK-SimpleElastix", "ome-zarr", "ashlar", "pyfeats",
-                "pydantic>=2.0", "defusedxml", "ngio", "seaborn"]
+                "pydantic>=2.0", "defusedxml", "seaborn", "ngio @ git+https://github.com/fractal-analytics-platform/ngio.git"
+    ]
                 #"large-image"
                 #"GDAL @ https://github.com/girder/large_image_wheels/raw/wheelhouse/GDAL-3.9.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl#sha256=f24a565b7f7e7b6fe9bae55076161f9c219c9faa821d199b88abbae67215427d",
                 #"histomicstk @ https://github.com/adrtsc/HistomicsTK/blob/master/histomicstk-0.1.dev2951-cp310-cp310-linux_x86_64.whl"]

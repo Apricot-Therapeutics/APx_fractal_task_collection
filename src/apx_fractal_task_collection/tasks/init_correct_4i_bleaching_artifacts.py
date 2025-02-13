@@ -13,6 +13,7 @@ Initializes the parallelization list for Correct 4i Bleaching Artifacts Task.
 import logging
 from typing import Any, List
 from enum import Enum
+from functools import reduce
 import pandas as pd
 import string
 import scipy
@@ -100,18 +101,20 @@ def calculate_correction_factors(control_data,
     control_data = pd.merge(control_data, time_df, on='well_name', how='left')
 
     if mean_estimator == MeanEstimator.median:
-        averaged_df = control_data.set_index(
-            ['well_name']).groupby(['well_name', 'time']).median()
+        averaged_df = control_data.groupby(['well_name', 'time']).median()
+
     elif mean_estimator == MeanEstimator.mean:
-        averaged_df = control_data.set_index(
-            ['well_name']).groupby(['well_name', 'time']).mean()
+        averaged_df = control_data.groupby(['well_name', 'time']).mean()
 
     intensity_columns = [c for c in averaged_df.columns if 'Intensity' in c]
 
     # minmax scaling
+    min_ctrl_time = control_data['time'].min()
     averaged_df = averaged_df.div(averaged_df.loc[
                                       averaged_df.index.get_level_values(
-                                          'time') == 0].values)
+                                          'time') == min_ctrl_time].values)
+
+
     averaged_df.reset_index(inplace=True)
     decay_model_params = {}
 
@@ -238,10 +241,19 @@ def init_correct_4i_bleaching_artifacts(
     for col in additional_control_filters:
         condition_cycle_dict[col] = []
 
+    zarr_paths = [Path(z).parents[2] for z in zarr_urls]
+    zarr_path = np.unique(zarr_paths)
+
+    if len(zarr_path) > 1:
+        raise ValueError("This task currently only supports single plates")
+
     # using regex, find all subfolders with format '/[A-Z]/[0-9]{2}' in zarr dir
-    imaged_wells = list(Path(zarr_dir).glob(
+    imaged_wells = list(zarr_path[0].glob(
         pattern="[A-Z]/[0-9][0-9]/"))
     imaged_wells = [well.parent.name + well.name for well in imaged_wells]
+
+    logger.info(f"Found {len(imaged_wells)} imaged wells in the plate "
+                f"at {zarr_path[0]}")
 
     for zarr_url in zarr_urls:
         # get the condition
@@ -279,6 +291,9 @@ def init_correct_4i_bleaching_artifacts(
 
     cycle_scale_factors = {}
 
+    model_dfs = []
+    scale_factor_dfs = []
+
     # for each unique imaging cycle, read all control tables
     for cycle in ctrl_df['cycle'].unique():
         logger.info(f"Calculating correction factors for cycle {cycle}")
@@ -290,7 +305,7 @@ def init_correct_4i_bleaching_artifacts(
 
         cycle_ctrl_df = cycle_ctrl_data.to_df()
         cycle_ctrl_df['well_name'] = cycle_ctrl_data.obs['well_name']
-        cycle_ctrl_df.reset_index(inplace=True)
+        #cycle_ctrl_df.reset_index(inplace=True)
         
         # get model_df and decay_model_scale_factors_df
         model_df, scale_factors_df = calculate_correction_factors(
@@ -300,12 +315,21 @@ def init_correct_4i_bleaching_artifacts(
             plot_results,
             output_path=model_output_dir)
 
-        # save model_df and scale_factors_df
-        model_df.to_csv(f"{model_output_dir}/decay_model_params.csv")
-        scale_factors_df.to_csv(
-            f"{model_output_dir}/decay_model_scale_factors.csv")
-
+        # append to model_dfs and scale_factor_dfs
+        model_dfs.append(model_df)
+        scale_factor_dfs.append(scale_factors_df)
         cycle_scale_factors[cycle] = scale_factors_df
+
+    # save model_df and scale_factors_df
+    model_df = pd.concat(model_dfs)
+    model_df.to_csv(f"{model_output_dir}/decay_model_params.csv")
+
+    scale_factors_df = reduce(lambda x, y: pd.merge(x, y, on='well_name'),
+                              scale_factor_dfs)
+    scale_factors_df.set_index('well_name', inplace=True)
+
+    scale_factors_df.to_csv(
+        f"{model_output_dir}/decay_model_scale_factors.csv")
 
     # Create the parallelization list
     parallelization_list = []

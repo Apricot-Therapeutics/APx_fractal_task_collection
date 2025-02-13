@@ -15,6 +15,7 @@ import fractal_tasks_core
 import pandas as pd
 import zarr
 from enum import Enum
+import numpy as np
 
 from apx_fractal_task_collection.io_models import InitArgsNormalizeFeatureTable
 from fractal_tasks_core.tables import write_table
@@ -69,6 +70,7 @@ def normalize_feature_table(  # noqa: C901
     init_args: InitArgsNormalizeFeatureTable,
     # Task-specific arguments:
     normalization_method: NormalizationMethod = NormalizationMethod.robust_z_score,
+    log_transform_before_normalization: bool = False,
     output_table_name_suffix: str = "_normalized",
 ):
     """
@@ -84,12 +86,14 @@ def normalize_feature_table(  # noqa: C901
         normalization_method: Method to be used for normalization. Choices are:
             - z_score: z-score normalization [(X - mean) / std]
             - robust_z_score: robust z-score normalization [(X - median) / MAD]
+        log_transform_before_normalization: Whether to log-transform the data before normalization.
         output_table_name_suffix: Suffix to be added to the output table name.
     """
 
     # Load the feature table
     feature_table = ad.read_zarr(
         f"{zarr_url}/tables/{init_args.feature_table_name}")
+    feature_table_df = feature_table.to_df()
 
     # Load the feature tables of the control wells
     ctrl_feature_tables = [
@@ -100,10 +104,14 @@ def normalize_feature_table(  # noqa: C901
 
     # concatenate the control feature tables
     ctrl_df = pd.concat([f.to_df() for f in ctrl_feature_tables])
-    
+
+    if log_transform_before_normalization:
+        feature_table_df = np.log1p(feature_table_df)
+        ctrl_df = np.log1p(ctrl_df)
+
     # Normalize the measurements
     normalized_feature_table = normalization_method.normalize(
-        data=feature_table.to_df(),
+        data=feature_table_df,
         ctrl_data=ctrl_df)
 
     # convert to anndata table
