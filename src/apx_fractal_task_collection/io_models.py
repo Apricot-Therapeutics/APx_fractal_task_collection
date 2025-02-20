@@ -1,7 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel
 from enum import Enum
-import pandas as pd
 
 
 class InitArgsSegmentSecondary(BaseModel):
