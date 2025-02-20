@@ -21,7 +21,7 @@ import numpy as np
 from pydantic import Field
 from pydantic import validate_call
 
-from apx_fractal_task_collection.io_models import InitArgsBaSiCPyCalculate
+from apx_fractal_task_collection.io_models import InitArgsBaSiCPyCalculate, CorrectBy
 from apx_fractal_task_collection.utils import BaSiCPyModelParams
 
 from fractal_tasks_core.channels import OmeroChannel
@@ -66,13 +66,15 @@ def calculate_basicpy_illumination_models(
     # take care of channel label init arg (has well name in it if
     # compute_per_well)
     if init_args.compute_per_well:
-        channel_label = init_args.channel_label.split("_ch_lbl_")[1]
+        channel_name = init_args.channel_name.split("_ch_")[1]
     else:
-        channel_label = init_args.channel_label
+        channel_name = init_args.channel_name
 
+    # Check if illumination profiles are calculated per channel or wavelength
+    correct_by = init_args.correct_by
     logger.info(
-        f"Calculating illumination profile for channel"
-        f" {channel_label}.")
+        f"Calculating illumination profile for channel "
+        f"{channel_name} based on {correct_by=}.")
 
 
     # Read attributes from NGFF metadata
@@ -121,12 +123,18 @@ def calculate_basicpy_illumination_models(
                     raise ValueError(
                         "ERROR: inconsistent image sizes in list_indices"
                     )
-
-        tmp_channel: OmeroChannel = get_channel_from_image_zarr(
-            image_zarr_path=zarr_url,
-            wavelength_id=None,
-            label=channel_label,
-        )
+        if correct_by == CorrectBy.channel_label:
+            tmp_channel: OmeroChannel = get_channel_from_image_zarr(
+                image_zarr_path=zarr_url,
+                wavelength_id=None,
+                label=channel_name,
+            )
+        else:
+            tmp_channel: OmeroChannel = get_channel_from_image_zarr(
+                image_zarr_path=zarr_url,
+                wavelength_id=channel_name,
+                label=None,
+            )
         ind_channel = tmp_channel.index
         data_zyx = \
         da.from_zarr(f"{zarr_url}/0")[
@@ -154,7 +162,7 @@ def calculate_basicpy_illumination_models(
 
     # calculate illumination correction profile
     logger.info(f"Now calculating illumination correction for channel"
-                f" {channel_label}.")
+                f" {channel_name}.")
     basic = BaSiC(
         autosegment=advanced_basicpy_model_params.autosegment,
         autosegment_margin=advanced_basicpy_model_params.autosegment_margin,
@@ -186,14 +194,14 @@ def calculate_basicpy_illumination_models(
         basic.fit(np.squeeze(ROI_data))
     logger.info(
         f"Finished calculating illumination correction for channel"
-        f" {channel_label}.")
+        f" {channel_name}.")
 
     # save illumination correction model
     logger.info(f"Now saving illumination correction model for channel"
-                f" {channel_label}.")
+                f" {channel_name}.")
     illum_path = Path(illumination_profiles_folder)
     illum_path.mkdir(parents=True, exist_ok=True)
-    filename = illum_path.joinpath(init_args.channel_label)
+    filename = illum_path.joinpath(init_args.channel_name)
     basic.save_model(model_dir=filename, overwrite=overwrite)
 
 if __name__ == "__main__":

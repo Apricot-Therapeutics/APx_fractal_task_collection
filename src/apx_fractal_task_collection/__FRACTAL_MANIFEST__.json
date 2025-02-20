@@ -1365,6 +1365,17 @@
         "mem": 10000
       },
       "args_schema_non_parallel": {
+        "$defs": {
+          "CorrectBy": {
+            "description": "Enum for BaSiCPy correction options.",
+            "enum": [
+              "wavelength id",
+              "channel label"
+            ],
+            "title": "CorrectBy",
+            "type": "string"
+          }
+        },
         "additionalProperties": false,
         "properties": {
           "zarr_urls": {
@@ -1385,6 +1396,16 @@
             "title": "N Images",
             "type": "integer",
             "description": "Number of images to use to calculate BaSiCPy model."
+          },
+          "correct_by": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/CorrectBy"
+              }
+            ],
+            "default": "channel label",
+            "title": "Correct By",
+            "description": "Defines how illumination correction will be calculated. - channel label: illumination correction will be calculated per channel label - wavelength id: illumination correction will be calculated per wavelength id"
           },
           "compute_per_well": {
             "default": false,
@@ -1550,12 +1571,25 @@
             "title": "BaSiCPyModelParams",
             "type": "object"
           },
+          "CorrectBy": {
+            "description": "Enum for BaSiCPy correction options.",
+            "enum": [
+              "wavelength id",
+              "channel label"
+            ],
+            "title": "CorrectBy",
+            "type": "string"
+          },
           "InitArgsBaSiCPyCalculate": {
             "description": "Arguments to be passed from BaSiCPy Calculate init to compute",
             "properties": {
-              "channel_label": {
-                "title": "Channel Label",
+              "channel_name": {
+                "title": "Channel Name",
                 "type": "string"
+              },
+              "correct_by": {
+                "$ref": "#/$defs/CorrectBy",
+                "title": "Correct_By"
               },
               "channel_zarr_urls": {
                 "items": {
@@ -1581,7 +1615,8 @@
               }
             },
             "required": [
-              "channel_label",
+              "channel_name",
+              "correct_by",
               "channel_zarr_urls",
               "channel_zarr_dict",
               "compute_per_well",
@@ -1646,6 +1681,17 @@
         "mem": 3750
       },
       "args_schema_parallel": {
+        "$defs": {
+          "CorrectBy": {
+            "description": "Enum for BaSiCPy correction options.",
+            "enum": [
+              "wavelength id",
+              "channel label"
+            ],
+            "title": "CorrectBy",
+            "type": "string"
+          }
+        },
         "additionalProperties": false,
         "properties": {
           "zarr_url": {
@@ -1658,6 +1704,16 @@
             "type": "string",
             "description": "Path of folder of illumination profiles."
           },
+          "correct_by": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/CorrectBy"
+              }
+            ],
+            "default": "channel label",
+            "title": "Correct By",
+            "description": "Defines how illumination correction have been calculated. - channel label: illumination correction has been calculated per channel label - wavelength id: illumination correction has been calculated per wavelength id"
+          },
           "illumination_exceptions": {
             "items": {
               "type": "string"
@@ -1665,6 +1721,12 @@
             "title": "Illumination Exceptions",
             "type": "array",
             "description": "List of channel labels that should not be corrected."
+          },
+          "darkfield": {
+            "default": true,
+            "title": "Darkfield",
+            "type": "boolean",
+            "description": "If `True`, darkfield correction will be performed."
           },
           "input_ROI_table": {
             "default": "FOV_ROI_table",

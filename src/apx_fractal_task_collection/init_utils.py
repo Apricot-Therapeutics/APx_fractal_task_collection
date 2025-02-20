@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pandas as pd
 import numpy as np
-import dask.array as da
 
 from defusedxml import ElementTree
 
@@ -69,9 +68,50 @@ def group_by_well_and_channel(zarr_urls: list[str]):
         well_id = zarr_url.rsplit("/", 3)[1] + zarr_url.rsplit("/", 3)[2]
         for channel in channels:
             if channel.label not in channel_dict:
-                channel_dict[f"well_{well_id}_ch_lbl_{channel.label}"] = [zarr_url]
+                channel_dict[f"well_{well_id}_ch_{channel.label}"] = [zarr_url]
             else:
-                channel_dict[f"well_{well_id}_ch_lbl_{channel.label}"].append(zarr_url)
+                channel_dict[f"well_{well_id}_ch_{channel.label}"].append(zarr_url)
+    return channel_dict
+
+
+def group_by_wavelength(zarr_urls: list[str]):
+    """
+    Create wavelength dictionaries for the zarr_urls
+
+    Keys are wavelength ids, values are a list of zarr_urls that belong to that wavelength.
+
+    zarr_urls: List of zarr_urls. Each zarr_url is a string that defines the
+        path to an individual zarr_url in an HCS plate
+    """
+    channel_dict = {}
+    for zarr_url in zarr_urls:
+        channels = get_omero_channel_list(image_zarr_path=zarr_url)
+        for channel in channels:
+            if channel.wavelength_id not in channel_dict:
+                channel_dict[channel.wavelength_id] = [zarr_url]
+            else:
+                channel_dict[channel.wavelength_id].append(zarr_url)
+    return channel_dict
+
+
+def group_by_well_and_wavelength(zarr_urls: list[str]):
+    """
+    Create wavelength dictionaries for the zarr_urls
+
+    Keys are wavelength ids, values are a list of zarr_urls that belong to that wavelength.
+
+    zarr_urls: List of zarr_urls. Each zarr_url is a string that defines the
+        path to an individual zarr_url in an HCS plate
+    """
+    channel_dict = {}
+    for zarr_url in zarr_urls:
+        channels = get_omero_channel_list(image_zarr_path=zarr_url)
+        well_id = zarr_url.rsplit("/", 3)[1] + zarr_url.rsplit("/", 3)[2]
+        for channel in channels:
+            if channel.wavelength_id not in channel_dict:
+                channel_dict[f"well_{well_id}_ch_{channel.wavelength_id}"] = [zarr_url]
+            else:
+                channel_dict[f"well_{well_id}_ch_{channel.wavelength_id}"].append(zarr_url)
     return channel_dict
 
 

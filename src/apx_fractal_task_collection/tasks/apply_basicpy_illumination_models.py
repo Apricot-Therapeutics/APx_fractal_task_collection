@@ -25,6 +25,7 @@ import zarr
 from basicpy import BaSiC
 from pydantic import validate_call
 
+from apx_fractal_task_collection.io_models import CorrectBy
 from fractal_tasks_core.channels import get_omero_channel_list
 from fractal_tasks_core.channels import OmeroChannel
 from fractal_tasks_core.ngff import load_NgffImageMeta
@@ -43,7 +44,7 @@ logger = logging.getLogger(__name__)
 def correct(
     img_stack: np.ndarray,
     flatfield: np.ndarray,
-    darkfield: np.ndarray,
+    darkfield: Optional[np.ndarray],
     baseline: int,
 ):
     """
@@ -55,7 +56,7 @@ def correct(
     Args:
         img_stack: 4D numpy array (czyx), with dummy size along c.
         flatfield: 2D numpy array (yx)
-        darkfield: 2D numpy array (yx)
+        darkfield: Optional 2D numpy array (yx)
         baseline: baseline value to be subtracted from the image
     """
 
@@ -74,7 +75,10 @@ def correct(
 
     #  Apply the normalized correction matrix (requires a float array)
     # img_stack = img_stack.astype(np.float64)
-    new_img_stack = (img_stack - darkfield) / flatfield [None, None, :, :]
+    if darkfield is not None:
+        new_img_stack = (img_stack - darkfield) / flatfield [None, None, :, :]
+    else:
+        new_img_stack = img_stack / flatfield [None, None, :, :]
 
     # Background subtraction
     new_img_stack = np.where(new_img_stack > baseline,
@@ -104,7 +108,9 @@ def apply_basicpy_illumination_models(
     zarr_url: str,
     # Task-specific arguments
     illumination_profiles_folder: str,
+    correct_by: CorrectBy = CorrectBy.channel_label,
     illumination_exceptions: Optional[list[str]] = None,
+    darkfield: bool = True,
     input_ROI_table: str = "FOV_ROI_table",
     overwrite_input: bool = True,
     suffix: str = "_illum_corr",
@@ -117,8 +123,12 @@ def apply_basicpy_illumination_models(
         zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
         illumination_profiles_folder: Path of folder of illumination profiles.
+        correct_by: Defines how illumination correction have been calculated. 
+            - channel label: illumination correction has been calculated per channel label
+            - wavelength id: illumination correction has been calculated per wavelength id
         illumination_exceptions: List of channel labels that should not be
             corrected.
+        darkfield: If `True`, darkfield correction will be performed.
         input_ROI_table: Name of the ROI table that contains the information
             about the location of the individual field of views (FOVs) to
             which the illumination correction shall be applied. Defaults to
@@ -151,13 +161,14 @@ def apply_basicpy_illumination_models(
                      if f.is_dir()]
     sample = str(profile_names[0])
 
-    if "well_" in sample and "_ch_lbl_" in sample:
+    if "well_" in sample and "_ch_" in sample:
         compute_per_well = True
     else:
         compute_per_well = False
 
     t_start = time.perf_counter()
     logger.info("Start illumination_correction")
+    logger.info(f"  {darkfield=}")
     logger.info(f"  {overwrite_input=}")
     logger.info(f"  {zarr_url=}")
     logger.info(f"  {zarr_url_new=}")
@@ -180,7 +191,10 @@ def apply_basicpy_illumination_models(
 
     if illumination_exceptions is not None:
         # Filter out channels that should not be corrected
-        channels = [c for c in channels if c.label not in illumination_exceptions]
+        if correct_by == CorrectBy.channel_label:
+            channels = [c for c in channels if c.label not in illumination_exceptions]
+        else:
+            channels = [c for c in channels if c.wavelength_id not in illumination_exceptions]
 
     num_channels = len(channels)
 
@@ -234,18 +248,33 @@ def apply_basicpy_illumination_models(
     num_ROIs = len(list_indices)
     for i_c, channel in enumerate(channels):
         # load illumination model
-        logger.info(
-            f"loading illumination model for channel {channel.label}"
-        )
-        basic = BaSiC()
-        if compute_per_well:
-            well_id = zarr_url.rsplit("/", 3)[1] + zarr_url.rsplit("/", 3)[2]
-            basic = basic.load_model(
-                illumination_profiles_folder +
-                f"/well_{well_id}_ch_lbl_{channel.label}")
+        if correct_by == CorrectBy.channel_label:
+            logger.info(
+                f"loading illumination model for channel {channel.label}"
+            )
+            basic = BaSiC()
+            if compute_per_well:
+                well_id = zarr_url.rsplit("/", 3)[1] + zarr_url.rsplit("/", 3)[2]
+                basic = basic.load_model(
+                    illumination_profiles_folder +
+                    f"/well_{well_id}_ch_{channel.label}")
+            else:
+                basic = basic.load_model(
+                    illumination_profiles_folder + f"/{channel.label}")
         else:
-            basic = basic.load_model(
-                illumination_profiles_folder + f"/{channel.label}")
+            logger.info(
+                f"loading illumination model for channel {channel.wavelength_id}"
+            )
+            basic = BaSiC()
+            if compute_per_well:
+                well_id = zarr_url.rsplit("/", 3)[1] + zarr_url.rsplit("/", 3)[2]
+                basic = basic.load_model(
+                    illumination_profiles_folder +
+                    f"/well_{well_id}_ch_{channel.wavelength_id}")
+            else:
+                basic = basic.load_model(
+                    illumination_profiles_folder + f"/{channel.wavelength_id}")
+            
         for i_ROI, indices in enumerate(list_indices):
             # Define region
             s_z, e_z, s_y, e_y, s_x, e_x = indices[:]
@@ -259,13 +288,21 @@ def apply_basicpy_illumination_models(
                 f"Now processing ROI {i_ROI + 1}/{num_ROIs} "
                 f"for channel {i_c + 1}/{num_channels}"
             )
+            if darkfield is True:
             # Execute illumination correction
-            corrected_fov = correct(
-                img_stack=data_czyx[region].compute(),
-                flatfield=basic.flatfield,
-                darkfield=basic.darkfield,
-                baseline=int(np.median(basic.baseline))
-            )
+                corrected_fov = correct(
+                    img_stack=data_czyx[region].compute(),
+                    flatfield=basic.flatfield,
+                    darkfield=basic.darkfield,
+                    baseline=int(np.median(basic.baseline))
+                )
+            else:
+                corrected_fov = correct(
+                    img_stack=data_czyx[region].compute(),
+                    flatfield=basic.flatfield,
+                    darkfield=None,
+                    baseline=int(np.median(basic.baseline))
+                )
             # Write to disk
             da.array(corrected_fov).to_zarr(
                 url=new_zarr,

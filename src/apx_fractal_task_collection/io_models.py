@@ -1,6 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel
-import pandas as pd
+from enum import Enum
 
 
 class InitArgsSegmentSecondary(BaseModel):
@@ -154,14 +154,25 @@ class InitArgsFilterLabelBySize(BaseModel):
     label_name: str
     label_zarr_url: str
 
+class CorrectBy(Enum):
+    """
+    Enum for BaSiCPy correction options.
+    """
+
+    wavelength_id = "wavelength id"
+    channel_label = "channel label"
+
+
 class InitArgsBaSiCPyCalculate(BaseModel):
     """
 
     Arguments to be passed from BaSiCPy Calculate init to compute
 
     Attributes:
-        channel_label: label of the channel for which the illumination model
-            will be calculated.
+        channel_name: name of the channel for which the illumination model
+            will be calculated. can be channel label or wavelength id.
+        correct_by: if illumination profile will be calculated per channel label
+            or wavelength id.
         channel_zarr_urls: list of zarr urls specifying the images that
             contain the channel and will be used to calculate the illumination
             model.
@@ -175,7 +186,8 @@ class InitArgsBaSiCPyCalculate(BaseModel):
 
     """
 
-    channel_label: str
+    channel_name: str
+    correct_by: CorrectBy
     channel_zarr_urls: list[str]
     channel_zarr_dict: dict[str, int]
     compute_per_well: bool
