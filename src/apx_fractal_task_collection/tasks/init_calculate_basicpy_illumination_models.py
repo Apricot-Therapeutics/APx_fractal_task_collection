@@ -13,7 +13,13 @@ Initializes the parallelization list for BaSiCPy illumination correction.
 """
 import logging
 from typing import Any, Optional
-from apx_fractal_task_collection.init_utils import group_by_channel, group_by_well_and_channel
+from enum import Enum
+
+from apx_fractal_task_collection.io_models import CorrectBy
+from apx_fractal_task_collection.init_utils import (group_by_channel, 
+                                                    group_by_well_and_channel, 
+                                                    group_by_wavelength, 
+                                                    group_by_well_and_wavelength)
 import random
 from pydantic import validate_call
 import pandas as pd
@@ -29,6 +35,7 @@ def init_calculate_basicpy_illumination_models(
     zarr_dir: str,
     # Core parameters
     n_images: int = 150,
+    correct_by: CorrectBy = CorrectBy.channel_label,
     compute_per_well: bool = False,
     exclude_border_FOVs: bool = False,
 ) -> dict[str, list[dict[str, Any]]]:
@@ -46,6 +53,9 @@ def init_calculate_basicpy_illumination_models(
             created. Not used by this task.
             (standard argument for Fractal tasks, managed by Fractal server).
         n_images: Number of images to use to calculate BaSiCPy model.
+        correct_by: Defines how illumination correction will be calculated. 
+            - channel label: illumination correction will be calculated per channel label
+            - wavelength id: illumination correction will be calculated per wavelength id
         exclude_border_FOVs: If True, exclude border FOVs from the calculation.
             Useful if the whole well was imaged and the border FOVs have some
             artifacts.
@@ -66,31 +76,61 @@ def init_calculate_basicpy_illumination_models(
     logger.info(
         f"Calculating illumination profiles based on {n_images} "
         f"randomly sampled images.")
+    
+    logger.info(
+        f"Illumination profiles will be calculated based on {correct_by}."
+    )
+    
+    if correct_by == CorrectBy.channel_label:
+        if compute_per_well:
+            channel_dict = group_by_well_and_channel(zarr_urls)
+        else:
+            channel_dict = group_by_channel(zarr_urls)
 
-    if compute_per_well:
-        channel_dict = group_by_well_and_channel(zarr_urls)
+            FOV_ROI_table = ad.read_zarr(f"{zarr_urls[0]}/tables/FOV_ROI_table")
+            FOV_ROI_df = FOV_ROI_table.to_df()
+
+            # exclude FOVs where x_micrometer or y_micrometer is equal to 0 or
+            # the max of x_micrometer or y_micrometer
+            if exclude_border_FOVs:
+                FOV_ROI_table = FOV_ROI_table[
+                    (FOV_ROI_df['x_micrometer'] != 0)
+                    & (FOV_ROI_df['y_micrometer'] != 0)
+                    & (FOV_ROI_df['x_micrometer'] != FOV_ROI_df['x_micrometer'].max())
+                    & (FOV_ROI_df['y_micrometer'] != FOV_ROI_df['y_micrometer'].max())
+                , :]
+
+            n_FOVs = len(FOV_ROI_table)
+
+            # repeat each entry in the channel_dict n_FOVs times
+            for channel, channel_list in channel_dict.items():
+                channel_dict[channel] = channel_list * n_FOVs
+
+    # Correct by wavelength id
     else:
-        channel_dict = group_by_channel(zarr_urls)
+        if compute_per_well:
+            channel_dict = group_by_well_and_wavelength(zarr_urls)
+        else:
+            channel_dict = group_by_wavelength(zarr_urls)
 
-        FOV_ROI_table = ad.read_zarr(f"{zarr_urls[0]}/tables/FOV_ROI_table")
-        FOV_ROI_df = FOV_ROI_table.to_df()
+            FOV_ROI_table = ad.read_zarr(f"{zarr_urls[0]}/tables/FOV_ROI_table")
+            FOV_ROI_df = FOV_ROI_table.to_df()
 
-        # exclude FOVs where x_micrometer or y_micrometer is equal to 0 or
-        # the max of x_micrometer or y_micrometer
-        if exclude_border_FOVs:
-            FOV_ROI_table = FOV_ROI_table[
-                (FOV_ROI_df['x_micrometer'] != 0)
-                & (FOV_ROI_df['y_micrometer'] != 0)
-                & (FOV_ROI_df['x_micrometer'] != FOV_ROI_df['x_micrometer'].max())
-                & (FOV_ROI_df['y_micrometer'] != FOV_ROI_df['y_micrometer'].max())
-            , :]
+            # exclude FOVs where x_micrometer or y_micrometer is equal to 0 or
+            # the max of x_micrometer or y_micrometer
+            if exclude_border_FOVs:
+                FOV_ROI_table = FOV_ROI_table[
+                    (FOV_ROI_df['x_micrometer'] != 0)
+                    & (FOV_ROI_df['y_micrometer'] != 0)
+                    & (FOV_ROI_df['x_micrometer'] != FOV_ROI_df['x_micrometer'].max())
+                    & (FOV_ROI_df['y_micrometer'] != FOV_ROI_df['y_micrometer'].max())
+                , :]
 
-        n_FOVs = len(FOV_ROI_table)
+            n_FOVs = len(FOV_ROI_table)
 
-        # repeat each entry in the channel_dict n_FOVs times
-        for channel, channel_list in channel_dict.items():
-            channel_dict[channel] = channel_list * n_FOVs
-
+            # repeat each entry in the channel_dict n_FOVs times
+            for channel, channel_list in channel_dict.items():
+                channel_dict[channel] = channel_list * n_FOVs
 
     # Create the parallelization list
     parallelization_list = []
@@ -120,7 +160,8 @@ def init_calculate_basicpy_illumination_models(
             dict(
                 zarr_url=zarr_url,
                 init_args=dict(
-                    channel_label=channel,
+                    channel_name=channel,
+                    correct_by=correct_by,
                     channel_zarr_urls=channel_zarr_urls,
                     channel_zarr_dict=channel_zarr_dict,
                     compute_per_well=compute_per_well,
@@ -129,7 +170,7 @@ def init_calculate_basicpy_illumination_models(
             )
         )
     return dict(parallelization_list=parallelization_list)
-
+    
 
 if __name__ == "__main__":
     from fractal_tasks_core.tasks._utils import run_fractal_task

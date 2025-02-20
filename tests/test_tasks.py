@@ -20,8 +20,11 @@ from apx_fractal_task_collection.tasks.clip_label_image import clip_label_image
 from apx_fractal_task_collection.tasks.init_clip_label_image import init_clip_label_image
 from apx_fractal_task_collection.tasks.segment_secondary_objects import segment_secondary_objects
 from apx_fractal_task_collection.tasks.init_segment_secondary_objects import init_segment_secondary_objects
+from apx_fractal_task_collection.io_models import CorrectBy
+from apx_fractal_task_collection.tasks.init_calculate_basicpy_illumination_models import (
+    init_calculate_basicpy_illumination_models,
+)
 from apx_fractal_task_collection.tasks.calculate_basicpy_illumination_models import calculate_basicpy_illumination_models
-from apx_fractal_task_collection.tasks.init_calculate_basicpy_illumination_models import init_calculate_basicpy_illumination_models
 from apx_fractal_task_collection.tasks.apply_basicpy_illumination_models import apply_basicpy_illumination_models
 from apx_fractal_task_collection.tasks.convert_channel_to_label import convert_channel_to_label
 from apx_fractal_task_collection.tasks.init_convert_channel_to_label import init_convert_channel_to_label
@@ -404,7 +407,7 @@ def test_detect_blob_centroids(test_data_dir, image_list):
         f"label image not found at {label_path}"
 
 @pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
-def test_illumination_correction(test_data_dir, image_list):
+def test_illumination_correction_by_label(test_data_dir, image_list):
 
     image_list = [f"{test_data_dir}/{i}" for i in image_list]
     compute_per_well = False
@@ -413,6 +416,7 @@ def test_illumination_correction(test_data_dir, image_list):
         zarr_urls=image_list,
         zarr_dir=test_data_dir,
         n_images=1,
+        correct_by=CorrectBy.channel_label,
         compute_per_well=compute_per_well
     )
 
@@ -428,7 +432,9 @@ def test_illumination_correction(test_data_dir, image_list):
     apply_basicpy_illumination_models(
         zarr_url=image_list[0],
         illumination_profiles_folder=f"{test_data_dir}/illumination_profiles",
+        correct_by = CorrectBy.channel_label,
         illumination_exceptions=["0_DAPI"],
+        darkfield=True,
         overwrite_input=False,
     )
 
@@ -445,18 +451,18 @@ def test_illumination_correction(test_data_dir, image_list):
     # assert that illumination profiles folder contains the expected subfolders
 
     if compute_per_well:
-        expected_subfolders = ['well_A2_ch_lbl_2_DAPI',
-                               'well_A2_ch_lbl_0_GFP',
-                               'well_A2_ch_lbl_0_DAPI',
-                               'well_A2_ch_lbl_1_GFP',
-                               'well_A2_ch_lbl_1_DAPI',
-                               'well_B3_ch_lbl_2_GFP',
-                               'well_B3_ch_lbl_1_DAPI',
-                               'well_B3_ch_lbl_1_GFP',
-                               'well_A2_ch_lbl_2_GFP',
-                               'well_B3_ch_lbl_0_GFP',
-                               'well_B3_ch_lbl_2_DAPI',
-                               'well_B3_ch_lbl_0_DAPI']
+        expected_subfolders = ['well_A02_ch_2_DAPI',
+                               'well_A02_ch_0_GFP',
+                               'well_A02_ch_0_DAPI',
+                               'well_A02_ch_1_GFP',
+                               'well_A02_ch_1_DAPI',
+                               'well_B03_ch_2_GFP',
+                               'well_B03_ch_1_DAPI',
+                               'well_B03_ch_1_GFP',
+                               'well_A02_ch_2_GFP',
+                               'well_B03_ch_0_GFP',
+                               'well_B03_ch_2_DAPI',
+                               'well_B03_ch_0_DAPI']
     else:
         expected_subfolders = ['0_DAPI', '0_GFP',
                                '1_DAPI', '1_GFP',
@@ -468,6 +474,66 @@ def test_illumination_correction(test_data_dir, image_list):
         f"Expected subfolders {expected_subfolders}," \
         f" but got {subfolders}"
 
+
+@pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
+def test_illumination_correction_by_wavelength(test_data_dir, image_list):
+
+    image_list = [f"{test_data_dir}/{i}" for i in image_list]
+    compute_per_well = False
+
+    parallelization_list = init_calculate_basicpy_illumination_models(
+        zarr_urls=image_list,
+        zarr_dir=test_data_dir,
+        n_images=1,
+        correct_by=CorrectBy.wavelength_id,
+        compute_per_well=compute_per_well
+    )
+
+    for channel in parallelization_list['parallelization_list']:
+        calculate_basicpy_illumination_models(
+            zarr_url=channel['zarr_url'],
+            init_args=channel['init_args'],
+            illumination_profiles_folder=f"{test_data_dir}/illumination_profiles",
+            advanced_basicpy_model_params=BaSiCPyModelParams(),
+            overwrite=True
+        )
+
+    apply_basicpy_illumination_models(
+        zarr_url=image_list[0],
+        illumination_profiles_folder=f"{test_data_dir}/illumination_profiles",
+        correct_by = CorrectBy.wavelength_id,
+        illumination_exceptions=["Blue - FITC"],
+        darkfield=False,
+        overwrite_input=False,
+    )
+
+    # assert that the illumination corrected image was created
+    corrected_image_path = Path(image_list[0]).parent.joinpath("0_illum_corr")
+    assert corrected_image_path.exists(),\
+        f"Corrected image not found at {corrected_image_path}"
+
+    # assert that illumination profiles folder was created
+    illumination_profiles_folder = Path(f"{test_data_dir}/illumination_profiles")
+    assert illumination_profiles_folder.exists(),\
+        f"Illumination profiles not found at {illumination_profiles_folder}"
+
+    # assert that illumination profiles folder contains the expected subfolders
+
+    if compute_per_well:
+        expected_subfolders = ['well_A02_ch_Blue - FITC',
+                               'well_A02_ch_UV - DAPI',
+                               'well_B03_ch_Blue - FITC',
+                               'well_B03_ch_UV - DAPI']
+        
+    else:
+        expected_subfolders = ['Blue - FITC', 'UV - DAPI']
+
+
+    subfolders = [f.name for f in illumination_profiles_folder.iterdir()]
+    assert sorted(subfolders) == sorted(expected_subfolders), \
+        f"Expected subfolders {expected_subfolders}," \
+        f" but got {subfolders}" 
+    
 
 @pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
 def test_convert_channel_to_label(test_data_dir, image_list):
