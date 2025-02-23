@@ -123,11 +123,11 @@ def apply_basicpy_illumination_models(
         zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
         illumination_profiles_folder: Path of folder of illumination profiles.
-        correct_by: Defines how illumination correction have been calculated. 
+        correct_by: Defines how illumination correction has been calculated. 
             - channel label: illumination correction has been calculated per channel label
             - wavelength id: illumination correction has been calculated per wavelength id
-        illumination_exceptions: List of channel labels that should not be
-            corrected.
+        illumination_exceptions: List of channel labels or wavelength ids that 
+            should not be corrected.
         darkfield: If `True`, darkfield correction will be performed.
         input_ROI_table: Name of the ROI table that contains the information
             about the location of the individual field of views (FOVs) to

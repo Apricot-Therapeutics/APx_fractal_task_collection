@@ -21,7 +21,7 @@ import numpy as np
 from pydantic import Field
 from pydantic import validate_call
 
-from apx_fractal_task_collection.io_models import InitArgsBaSiCPyCalculate, CorrectBy
+from apx_fractal_task_collection.io_models import InitArgsBaSiCPyCalculate
 from apx_fractal_task_collection.utils import BaSiCPyModelParams
 
 from fractal_tasks_core.channels import OmeroChannel
@@ -50,7 +50,7 @@ def calculate_basicpy_illumination_models(
 
     """
     Calculates illumination correction profiles based on a random sample
-    of images of for each channel.
+    of images for each channel_label or wavelength.
 
     Args:
         zarr_url: Path or url to the individual OME-Zarr image to be processed.
@@ -123,7 +123,7 @@ def calculate_basicpy_illumination_models(
                     raise ValueError(
                         "ERROR: inconsistent image sizes in list_indices"
                     )
-        if correct_by == CorrectBy.channel_label:
+        if correct_by == "channel_label":
             tmp_channel: OmeroChannel = get_channel_from_image_zarr(
                 image_zarr_path=zarr_url,
                 wavelength_id=None,

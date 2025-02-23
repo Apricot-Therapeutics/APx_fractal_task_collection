@@ -171,7 +171,7 @@ class InitArgsBaSiCPyCalculate(BaseModel):
     Attributes:
         channel_name: name of the channel for which the illumination model
             will be calculated. can be channel label or wavelength id.
-        correct_by: if illumination profile will be calculated per channel label
+        correct_by: if illumination profile will be calculated per channel_label
             or wavelength id.
         channel_zarr_urls: list of zarr urls specifying the images that
             contain the channel and will be used to calculate the illumination
@@ -187,7 +187,7 @@ class InitArgsBaSiCPyCalculate(BaseModel):
     """
 
     channel_name: str
-    correct_by: CorrectBy
+    correct_by: str
     channel_zarr_urls: list[str]
     channel_zarr_dict: dict[str, int]
     compute_per_well: bool

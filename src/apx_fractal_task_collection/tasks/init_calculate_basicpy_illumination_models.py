@@ -79,7 +79,7 @@ def init_calculate_basicpy_illumination_models(
     logger.info(
         f"Illumination profiles will be calculated based on {correct_by}."
     )
-    
+        
     if correct_by == CorrectBy.channel_label:
         if compute_per_well:
             channel_dict = group_by_well_and_channel(zarr_urls)
@@ -160,7 +160,8 @@ def init_calculate_basicpy_illumination_models(
                 zarr_url=zarr_url,
                 init_args=dict(
                     channel_name=channel,
-                    correct_by=correct_by,
+                    # convert to str to avoid JSON serialization error
+                    correct_by=correct_by.name,
                     channel_zarr_urls=channel_zarr_urls,
                     channel_zarr_dict=channel_zarr_dict,
                     compute_per_well=compute_per_well,
