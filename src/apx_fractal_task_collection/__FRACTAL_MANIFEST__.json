@@ -1571,15 +1571,6 @@
             "title": "BaSiCPyModelParams",
             "type": "object"
           },
-          "CorrectBy": {
-            "description": "Enum for BaSiCPy correction options.",
-            "enum": [
-              "wavelength id",
-              "channel label"
-            ],
-            "title": "CorrectBy",
-            "type": "string"
-          },
           "InitArgsBaSiCPyCalculate": {
             "description": "Arguments to be passed from BaSiCPy Calculate init to compute",
             "properties": {
@@ -1588,8 +1579,8 @@
                 "type": "string"
               },
               "correct_by": {
-                "$ref": "#/$defs/CorrectBy",
-                "title": "Correct_By"
+                "title": "Correct By",
+                "type": "string"
               },
               "channel_zarr_urls": {
                 "items": {
@@ -1663,7 +1654,7 @@
         "type": "object",
         "title": "CalculateBasicpyIlluminationModels"
       },
-      "docs_info": "## init_calculate_basicpy_illumination_models\nInitialized BaSiCPy illumination correction task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform illumination correction with BaSiCPy.\n## calculate_basicpy_illumination_models\nCalculates illumination correction profiles based on a random sample\nof images of for each channel.\n",
+      "docs_info": "## init_calculate_basicpy_illumination_models\nInitialized BaSiCPy illumination correction task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform illumination correction with BaSiCPy.\n## calculate_basicpy_illumination_models\nCalculates illumination correction profiles based on a random sample\nof images for each channel_label or wavelength.\n",
       "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
@@ -1712,7 +1703,7 @@
             ],
             "default": "channel label",
             "title": "Correct By",
-            "description": "Defines how illumination correction have been calculated. - channel label: illumination correction has been calculated per channel label - wavelength id: illumination correction has been calculated per wavelength id"
+            "description": "Defines how illumination correction has been calculated. - channel label: illumination correction has been calculated per channel label - wavelength id: illumination correction has been calculated per wavelength id"
           },
           "illumination_exceptions": {
             "items": {
@@ -1720,7 +1711,7 @@
             },
             "title": "Illumination Exceptions",
             "type": "array",
-            "description": "List of channel labels that should not be corrected."
+            "description": "List of channel labels or wavelength ids that should not be corrected."
           },
           "darkfield": {
             "default": true,
