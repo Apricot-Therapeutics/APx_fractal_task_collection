@@ -1719,6 +1719,12 @@
             "type": "boolean",
             "description": "If `True`, darkfield correction will be performed."
           },
+          "baseline": {
+            "default": true,
+            "title": "Baseline",
+            "type": "boolean",
+            "description": "If `True`, baseline subtraction will be performed."
+          },
           "input_ROI_table": {
             "default": "FOV_ROI_table",
             "title": "Input Roi Table",
