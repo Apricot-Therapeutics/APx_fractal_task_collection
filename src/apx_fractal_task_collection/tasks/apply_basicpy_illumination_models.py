@@ -69,7 +69,8 @@ def correct(
             "Error in illumination_correction:\n"
             f"{img_stack.shape=}\n"
         )
-        
+    
+    # Resampling flatfield and darkfield if necessary
     if flatfield.shape != img_stack.shape[2:]:
         logger.warning(
             "Flatfield correction matrix shape does not match image shape. "
@@ -85,9 +86,9 @@ def correct(
                 "Resampling ...")
             darkfield = resample_to_shape(darkfield, img_stack.shape[2:])
 
-        
     # Store info about dtype
     dtype = img_stack.dtype
+    dtype_max = np.iinfo(dtype).max
     
     # Apply the correction matrices
     if darkfield is not None:
@@ -101,6 +102,16 @@ def correct(
                                 new_img_stack - baseline,
                                 0)
 
+    # Handle edge case: corrected image may have values beyond the limit of
+    # the encoding, e.g. beyond 65535 for 16bit images. This clips values
+    # that surpass this limit and triggers a warning
+    if np.sum(new_img_stack > dtype_max) > 0:
+        warnings.warn(
+            "Illumination correction created values beyond the max range of "
+            f"the current image type. These have been clipped to {dtype_max=}."
+        )
+        new_img_stack[new_img_stack > dtype_max] = dtype_max
+        
     logger.info("End correct")
 
     # Cast back to original dtype and return
