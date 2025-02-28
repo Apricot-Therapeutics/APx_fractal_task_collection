@@ -12,7 +12,7 @@ authors = [
 # Required Python version and dependencies
 requires-python = ">=3.8"
 dependencies = ["fractal-tasks-core", "scikit-image", "matplotlib", "image_registration", "pytest", "mahotas",
-                "basicpy", 'minisom', 'phenograph', 'scikit-learn',
+                "basicpy", 'minisom', 'phenograph', 'scikit-learn', "tifffile==2025.1.10",
                 "jax==0.4.23", "jaxlib==0.4.23", "SimpleITK-SimpleElastix", "ome-zarr", "ashlar", "pyfeats",
                 "pydantic>=2.0", "defusedxml", "seaborn", "ngio @ git+https://github.com/fractal-analytics-platform/ngio.git"
     ]

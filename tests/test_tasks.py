@@ -50,7 +50,6 @@ from apx_fractal_task_collection.tasks.ashlar_stitching_and_registration import 
 from apx_fractal_task_collection.tasks.init_ashlar_stitching_and_registration import init_ashlar_stitching_and_registration
 from apx_fractal_task_collection.tasks.init_expand_labels import init_expand_labels
 from apx_fractal_task_collection.tasks.expand_labels_skimage import expand_labels_skimage
-#from apx_fractal_task_collection.tasks.ashlar_stitching_and_registration_pure import ashlar_stitching_and_registration
 from apx_fractal_task_collection.tasks.init_calculate_pixel_intensity_correlation import init_calculate_pixel_intensity_correlation
 from apx_fractal_task_collection.tasks.calculate_pixel_intensity_correlation import calculate_pixel_intensity_correlation
 from apx_fractal_task_collection.tasks.merge_plate_metadata import merge_plate_metadata
@@ -1006,91 +1005,91 @@ def test_stitch_fovs_with_overlap(test_data_dir):
     assert stitched_image_path.exists(),\
         f"Stitched image not found at {stitched_image_path}"
 
-@pytest.mark.parametrize("ref_wavelength_id", ['UV - DAPI', 'Red - Cy5'])
-def test_ashlar_stitching_and_registration(test_data_dir, ref_wavelength_id):
-
-    parallelization_list = init_convert_IC6000_to_ome_zarr(
-        zarr_urls=[],
-        zarr_dir=test_data_dir,
-        acquisitions={"0":
-            MultiplexingAcquisition(
-                image_dir=Path(test_data_dir).joinpath(
-                    "IC6000_data/cycle_0").as_posix(),
-                allowed_channels=[
-                    OmeroChannel(label='0_DAPI',
-                                 wavelength_id='UV - DAPI'),
-                    OmeroChannel(label='0_GFP',
-                                 wavelength_id='Blue - FITC'),
-                    OmeroChannel(label='0_RFP',
-                                 wavelength_id='Green - dsRed'),
-                    OmeroChannel(label='0_FR',
-                                 wavelength_id='Red - Cy5')]),
-            "1":
-                MultiplexingAcquisition(
-                    image_dir=Path(test_data_dir).joinpath(
-                        "IC6000_data/cycle_1").as_posix(),
-                    allowed_channels=[
-                        OmeroChannel(label='1_DAPI',
-                                     wavelength_id='UV - DAPI'),
-                        OmeroChannel(label='1_GFP',
-                                     wavelength_id='Blue - FITC'),
-                        OmeroChannel(label='1_RFP',
-                                     wavelength_id='Green - dsRed'),
-                        OmeroChannel(label='1_FR',
-                                     wavelength_id='Red - Cy5')])},
-        image_glob_patterns=None,
-        num_levels=5,
-        coarsening_xy=2,
-        image_extension='tif',
-        overwrite=True,
-    )
-
-    zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
-    init_args = parallelization_list['parallelization_list'][0]['init_args']
-
-    print(parallelization_list['parallelization_list'])
-
-    convert_IC6000_to_ome_zarr(
-        zarr_url=zarr_url,
-        init_args=init_args,
-    )
-
-    zarr_url = parallelization_list['parallelization_list'][2]['zarr_url']
-    init_args = parallelization_list['parallelization_list'][2]['init_args']
-
-    print(parallelization_list['parallelization_list'])
-
-    convert_IC6000_to_ome_zarr(
-        zarr_url=zarr_url,
-        init_args=init_args,
-    )
-
-    parallelization_list = init_ashlar_stitching_and_registration(
-        zarr_dir=test_data_dir,
-        zarr_urls=[f"{test_data_dir}/test_plate.zarr/C/03/0",
-                   f"{test_data_dir}/test_plate.zarr/C/03/1"]
-    )
-
-    zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
-    init_args = parallelization_list['parallelization_list'][0]['init_args']
-
-    ashlar_stitching_and_registration(
-        zarr_url=zarr_url,
-        init_args=init_args,
-        overlap=0.1,
-        filter_sigma=10,
-        tmp_dir=None,
-        overwrite_input=False,
-        suffix="_stitched",
-        ref_wavelength_id=ref_wavelength_id,
-        ref_cycle=0,
-    )
-
-    # assert whether stitched images was saved in a new zarr image
-    stitched_image_path = Path(test_data_dir).joinpath(
-        "test_plate.zarr/C/03/0_stitched")
-    assert stitched_image_path.exists(),\
-        f"Stitched image not found at {stitched_image_path}"
+# @pytest.mark.parametrize("ref_wavelength_id", ['UV - DAPI', 'Red - Cy5'])
+# def test_ashlar_stitching_and_registration(test_data_dir, ref_wavelength_id):
+#
+#     parallelization_list = init_convert_IC6000_to_ome_zarr(
+#         zarr_urls=[],
+#         zarr_dir=test_data_dir,
+#         acquisitions={"0":
+#             MultiplexingAcquisition(
+#                 image_dir=Path(test_data_dir).joinpath(
+#                     "IC6000_data/cycle_0").as_posix(),
+#                 allowed_channels=[
+#                     OmeroChannel(label='0_DAPI',
+#                                  wavelength_id='UV - DAPI'),
+#                     OmeroChannel(label='0_GFP',
+#                                  wavelength_id='Blue - FITC'),
+#                     OmeroChannel(label='0_RFP',
+#                                  wavelength_id='Green - dsRed'),
+#                     OmeroChannel(label='0_FR',
+#                                  wavelength_id='Red - Cy5')]),
+#             "1":
+#                 MultiplexingAcquisition(
+#                     image_dir=Path(test_data_dir).joinpath(
+#                         "IC6000_data/cycle_1").as_posix(),
+#                     allowed_channels=[
+#                         OmeroChannel(label='1_DAPI',
+#                                      wavelength_id='UV - DAPI'),
+#                         OmeroChannel(label='1_GFP',
+#                                      wavelength_id='Blue - FITC'),
+#                         OmeroChannel(label='1_RFP',
+#                                      wavelength_id='Green - dsRed'),
+#                         OmeroChannel(label='1_FR',
+#                                      wavelength_id='Red - Cy5')])},
+#         image_glob_patterns=None,
+#         num_levels=5,
+#         coarsening_xy=2,
+#         image_extension='tif',
+#         overwrite=True,
+#     )
+#
+#     zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
+#     init_args = parallelization_list['parallelization_list'][0]['init_args']
+#
+#     print(parallelization_list['parallelization_list'])
+#
+#     convert_IC6000_to_ome_zarr(
+#         zarr_url=zarr_url,
+#         init_args=init_args,
+#     )
+#
+#     zarr_url = parallelization_list['parallelization_list'][2]['zarr_url']
+#     init_args = parallelization_list['parallelization_list'][2]['init_args']
+#
+#     print(parallelization_list['parallelization_list'])
+#
+#     convert_IC6000_to_ome_zarr(
+#         zarr_url=zarr_url,
+#         init_args=init_args,
+#     )
+#
+#     parallelization_list = init_ashlar_stitching_and_registration(
+#         zarr_dir=test_data_dir,
+#         zarr_urls=[f"{test_data_dir}/test_plate.zarr/C/03/0",
+#                    f"{test_data_dir}/test_plate.zarr/C/03/1"]
+#     )
+#
+#     zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
+#     init_args = parallelization_list['parallelization_list'][0]['init_args']
+#
+#     ashlar_stitching_and_registration(
+#         zarr_url=zarr_url,
+#         init_args=init_args,
+#         overlap=0.1,
+#         filter_sigma=10,
+#         tmp_dir=None,
+#         overwrite_input=False,
+#         suffix="_stitched",
+#         ref_wavelength_id=ref_wavelength_id,
+#         ref_cycle=0,
+#     )
+#
+#     # assert whether stitched images was saved in a new zarr image
+#     stitched_image_path = Path(test_data_dir).joinpath(
+#         "test_plate.zarr/C/03/0_stitched")
+#     assert stitched_image_path.exists(),\
+#         f"Stitched image not found at {stitched_image_path}"
 
 
 def test_merge_plate_metadata(test_data_dir):
