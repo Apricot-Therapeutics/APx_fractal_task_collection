@@ -414,7 +414,7 @@ def test_illumination_correction_by_label(test_data_dir, image_list):
     parallelization_list = init_calculate_basicpy_illumination_models(
         zarr_urls=image_list,
         zarr_dir=test_data_dir,
-        n_images=1,
+        n_images=2,
         correct_by=CorrectBy.channel_label,
         compute_per_well=compute_per_well
     )
@@ -434,6 +434,7 @@ def test_illumination_correction_by_label(test_data_dir, image_list):
         correct_by = CorrectBy.channel_label,
         illumination_exceptions=["0_DAPI"],
         darkfield=True,
+        baseline=True,
         overwrite_input=False,
     )
 
@@ -503,6 +504,7 @@ def test_illumination_correction_by_wavelength(test_data_dir, image_list):
         correct_by = CorrectBy.wavelength_id,
         illumination_exceptions=["Blue - FITC"],
         darkfield=False,
+        baseline=False,
         overwrite_input=False,
     )
 

@@ -11,7 +11,6 @@
 import logging
 import random
 from pathlib import Path
-from typing import Any
 
 import anndata as ad
 from basicpy import BaSiC
@@ -46,7 +45,7 @@ def calculate_basicpy_illumination_models(
     advanced_basicpy_model_params: BaSiCPyModelParams = Field(
         default_factory=BaSiCPyModelParams),
     overwrite: bool = False,
-) -> dict[str, Any]:
+) -> None:
 
     """
     Calculates illumination correction profiles based on a random sample
@@ -188,10 +187,14 @@ def calculate_basicpy_illumination_models(
         working_size=advanced_basicpy_model_params.working_size,
     )
 
+
     if np.shape(ROI_data)[0] == 1:
+        logger.info(f"ROI data shape is {ROI_data[0, :, :, :].shape}.")
         basic.fit(ROI_data[0, :, :, :])
     else:
+        logger.info(f"ROI data shape is {np.squeeze(ROI_data).shape}.")
         basic.fit(np.squeeze(ROI_data))
+
     logger.info(
         f"Finished calculating illumination correction for channel"
         f" {channel_name}.")

@@ -24,6 +24,7 @@ import numpy as np
 import zarr
 from basicpy import BaSiC
 from pydantic import validate_call
+from scipy.ndimage import zoom
 
 from apx_fractal_task_collection.io_models import CorrectBy
 from fractal_tasks_core.channels import get_omero_channel_list
@@ -45,7 +46,7 @@ def correct(
     img_stack: np.ndarray,
     flatfield: np.ndarray,
     darkfield: Optional[np.ndarray],
-    baseline: int,
+    baseline: Optional[int],
 ):
     """
     Apply illumination correction to all fields of view.
@@ -57,33 +58,50 @@ def correct(
         img_stack: 4D numpy array (czyx), with dummy size along c.
         flatfield: 2D numpy array (yx)
         darkfield: Optional 2D numpy array (yx)
-        baseline: baseline value to be subtracted from the image
+        baseline: Optional baseline value to be subtracted from the image
     """
 
     logger.info(f"Start correct, {img_stack.shape}")
 
     # Check shapes
-    if flatfield.shape != img_stack.shape[2:] or img_stack.shape[0] != 1:
+    if img_stack.shape[0] != 1:
         raise ValueError(
             "Error in illumination_correction:\n"
-            f"{img_stack.shape=}\n{flatfield.shape=}"
+            f"{img_stack.shape=}\n"
         )
+    
+    # Resampling flatfield and darkfield if necessary
+    if flatfield.shape[-2:] != img_stack.shape[-2:]:
+        logger.warning(
+            f"Flatfield correction matrix shape does not match image shape in"
+            f" x and y. {img_stack[-2:].shape=}\n{flatfield.shape=}. "
+            "Resampling ...")
+        flatfield = resample_to_shape(flatfield, img_stack.shape[-2:])
+        
+    if darkfield is not None:
+        if darkfield.shape[-2:] != img_stack.shape[-2:]:
+            logger.warning(
+                "Darkfield correction matrix shape does not match image shape"
+                " in x and y. "
+                f"{img_stack[2:].shape=}\n{darkfield.shape=} "
+                "Resampling ...")
+            darkfield = resample_to_shape(darkfield, img_stack.shape[-2:])
 
     # Store info about dtype
     dtype = img_stack.dtype
     dtype_max = np.iinfo(dtype).max
-
-    #  Apply the normalized correction matrix (requires a float array)
-    # img_stack = img_stack.astype(np.float64)
+    
+    # Apply the correction matrices
     if darkfield is not None:
-        new_img_stack = (img_stack - darkfield) / flatfield [None, None, :, :]
+        new_img_stack = (img_stack - darkfield) / flatfield
     else:
-        new_img_stack = img_stack / flatfield [None, None, :, :]
+        new_img_stack = img_stack / flatfield
 
     # Background subtraction
-    new_img_stack = np.where(new_img_stack > baseline,
-                             new_img_stack - baseline,
-                             0)
+    if baseline is not None:
+        new_img_stack = np.where(new_img_stack > baseline,
+                                new_img_stack - baseline,
+                                0)
 
     # Handle edge case: corrected image may have values beyond the limit of
     # the encoding, e.g. beyond 65535 for 16bit images. This clips values
@@ -94,11 +112,24 @@ def correct(
             f"the current image type. These have been clipped to {dtype_max=}."
         )
         new_img_stack[new_img_stack > dtype_max] = dtype_max
-
+        
     logger.info("End correct")
 
     # Cast back to original dtype and return
     return new_img_stack.astype(dtype)
+
+
+def resample_to_shape(img, output_shape, order=3, mode='constant',
+                      cval=0.0, prefilter=True):
+    '''
+    Function resamples image to the desired shape.
+
+    Typically used to up or downscale a pyramid image by
+    a potency of 2 (e.g. 0.5, 1, 2 etc.)
+    '''
+    zoom_values = [o / i for i, o in zip(img.shape, output_shape)]
+    return zoom(img, zoom_values, order=order, mode=mode, cval=cval,
+                prefilter=prefilter)
 
 
 @validate_call
@@ -111,6 +142,7 @@ def apply_basicpy_illumination_models(
     correct_by: CorrectBy = CorrectBy.channel_label,
     illumination_exceptions: Optional[list[str]] = None,
     darkfield: bool = True,
+    baseline: bool = True,
     input_ROI_table: str = "FOV_ROI_table",
     overwrite_input: bool = True,
     suffix: str = "_illum_corr",
@@ -129,6 +161,7 @@ def apply_basicpy_illumination_models(
         illumination_exceptions: List of channel labels or wavelength ids that 
             should not be corrected.
         darkfield: If `True`, darkfield correction will be performed.
+        baseline: If `True`, baseline subtraction will be performed.
         input_ROI_table: Name of the ROI table that contains the information
             about the location of the individual field of views (FOVs) to
             which the illumination correction shall be applied. Defaults to
@@ -169,6 +202,7 @@ def apply_basicpy_illumination_models(
     t_start = time.perf_counter()
     logger.info("Start illumination_correction")
     logger.info(f"  {darkfield=}")
+    logger.info(f"  {baseline=}")
     logger.info(f"  {overwrite_input=}")
     logger.info(f"  {zarr_url=}")
     logger.info(f"  {zarr_url_new=}")
@@ -288,21 +322,18 @@ def apply_basicpy_illumination_models(
                 f"Now processing ROI {i_ROI + 1}/{num_ROIs} "
                 f"for channel {i_c + 1}/{num_channels}"
             )
-            if darkfield is True:
-            # Execute illumination correction
-                corrected_fov = correct(
-                    img_stack=data_czyx[region].compute(),
-                    flatfield=basic.flatfield,
-                    darkfield=basic.darkfield,
-                    baseline=int(np.median(basic.baseline))
-                )
-            else:
-                corrected_fov = correct(
-                    img_stack=data_czyx[region].compute(),
-                    flatfield=basic.flatfield,
-                    darkfield=None,
-                    baseline=int(np.median(basic.baseline))
-                )
+            
+            # Determine baseline value if baseline is True
+            baseline = int(np.median(basic.baseline)) if baseline else None
+
+            # Execute illumination correction with appropriate darkfield setting
+            corrected_fov = correct(
+                img_stack=data_czyx[region].compute(),
+                flatfield=basic.flatfield,
+                darkfield=basic.darkfield if darkfield else None,
+                baseline=baseline
+            )
+            
             # Write to disk
             da.array(corrected_fov).to_zarr(
                 url=new_zarr,
