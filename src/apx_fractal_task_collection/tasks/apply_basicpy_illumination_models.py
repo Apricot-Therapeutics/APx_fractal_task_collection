@@ -71,20 +71,21 @@ def correct(
         )
     
     # Resampling flatfield and darkfield if necessary
-    if flatfield.shape != img_stack.shape[2:]:
+    if flatfield.shape[-2:] != img_stack.shape[-2:]:
         logger.warning(
-            "Flatfield correction matrix shape does not match image shape. "
-            f"{img_stack[2:].shape=}\n{flatfield.shape=} "
+            f"Flatfield correction matrix shape does not match image shape in"
+            f" x and y. {img_stack[-2:].shape=}\n{flatfield.shape=}. "
             "Resampling ...")
-        flatfield = resample_to_shape(flatfield, img_stack.shape[2:])
+        flatfield = resample_to_shape(flatfield, img_stack.shape[-2:])
         
     if darkfield is not None:
-        if darkfield.shape != img_stack.shape[2:]:
+        if darkfield.shape[-2:] != img_stack.shape[-2:]:
             logger.warning(
-                "Darkfield correction matrix shape does not match image shape. "
+                "Darkfield correction matrix shape does not match image shape"
+                " in x and y. "
                 f"{img_stack[2:].shape=}\n{darkfield.shape=} "
                 "Resampling ...")
-            darkfield = resample_to_shape(darkfield, img_stack.shape[2:])
+            darkfield = resample_to_shape(darkfield, img_stack.shape[-2:])
 
     # Store info about dtype
     dtype = img_stack.dtype
@@ -92,9 +93,9 @@ def correct(
     
     # Apply the correction matrices
     if darkfield is not None:
-        new_img_stack = (img_stack - darkfield) / flatfield [None, None, :, :]
+        new_img_stack = (img_stack - darkfield) / flatfield
     else:
-        new_img_stack = img_stack / flatfield [None, None, :, :]
+        new_img_stack = img_stack / flatfield
 
     # Background subtraction
     if baseline is not None:
@@ -116,6 +117,19 @@ def correct(
 
     # Cast back to original dtype and return
     return new_img_stack.astype(dtype)
+
+
+def resample_to_shape(img, output_shape, order=3, mode='constant',
+                      cval=0.0, prefilter=True):
+    '''
+    Function resamples image to the desired shape.
+
+    Typically used to up or downscale a pyramid image by
+    a potency of 2 (e.g. 0.5, 1, 2 etc.)
+    '''
+    zoom_values = [o / i for i, o in zip(img.shape, output_shape)]
+    return zoom(img, zoom_values, order=order, mode=mode, cval=cval,
+                prefilter=prefilter)
 
 
 @validate_call
@@ -347,14 +361,6 @@ def apply_basicpy_illumination_models(
             image_list_updates=[dict(zarr_url=zarr_url_new, origin=zarr_url)]
         )
     return image_list_updates
-
-
-def resample_to_shape(img, output_shape, order=3, mode='constant', cval=0.0, prefilter=True):
-    ''' Function resamples image to the desired shape.
-    Typically used to up or downscale a pyramid image by a potency of 2 (e.g. 0.5, 1, 2 etc.)
-    '''
-    zoom_values = [o / i for i, o in zip(img.shape, output_shape)]
-    return zoom(img, zoom_values, order=order, mode=mode, cval=cval, prefilter=prefilter)
 
 
 if __name__ == "__main__":
