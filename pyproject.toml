@@ -6,7 +6,7 @@ description = "A collection of custom fractal tasks."
 readme = "README.md"
 license = { text = "BSD-3-Clause" }
 authors = [
-    { name = "Adrian Tschan", email = "adrian.tschan@uzh.ch" },
+    { name = "Adrian Tschan", email = "atschan@apricotx.com" },
 ]
 
 # Required Python version and dependencies
@@ -14,8 +14,7 @@ requires-python = ">=3.8"
 dependencies = ["fractal-tasks-core", "scikit-image", "matplotlib", "image_registration", "pytest", "mahotas",
                 "basicpy", 'minisom', 'phenograph', 'scikit-learn', "tifffile==2025.1.10",
                 "jax==0.4.23", "jaxlib==0.4.23", "SimpleITK-SimpleElastix", "ome-zarr", "ashlar", "pyfeats",
-                "pydantic>=2.0", "defusedxml", "seaborn", "ngio @ git+https://github.com/fractal-analytics-platform/ngio.git"
-    ]
+                "pydantic>=2.0", "defusedxml", "seaborn"]
 
 # Optional dependencies (e.g. for `pip install -e ".[dev]"`, see
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies)

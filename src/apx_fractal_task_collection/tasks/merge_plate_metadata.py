@@ -13,7 +13,6 @@ import fractal_tasks_core
 import pandas as pd
 import anndata as ad
 from pydantic import validate_call
-#from ngio.core import NgffImage
 from typing import Optional
 import zarr
 
