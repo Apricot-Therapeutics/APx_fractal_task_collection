@@ -74,7 +74,7 @@ jobs:
       - name: 🐍 Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.x"
 
       - name: 👷 Build
         run: |
@@ -83,7 +83,6 @@ jobs:
 
       - name: 🚢 Publish to PyPI
         # TODO remove the "if: false" line when the package is ready for pypi release
-        if: false
         uses: pypa/gh-action-pypi-publish@release/v1
 
       - uses: softprops/action-gh-release@v2
