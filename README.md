@@ -5,9 +5,9 @@ The APx Fractal Task Collection is mainainted by [Apricot Therapeutics AG](https
 
 ## Installation
 
-You can install the package locally with:
+You can install the package with pip:
 ```console
-pip install git+https://github.com/Apricot-Therapeutics/APx_fractal_task_collection.git
+pip install apx_fractal_task_collection
 ```
 
 ## Running tasks

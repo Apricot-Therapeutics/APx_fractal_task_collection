@@ -7,7 +7,6 @@ import pandas as pd
 import dask.array as da
 
 import pytest
-from ngio.core import NgffImage
 from devtools import debug
 from fractal_tasks_core.channels import ChannelInputModel
 from fractal_tasks_core.channels import OmeroChannel
