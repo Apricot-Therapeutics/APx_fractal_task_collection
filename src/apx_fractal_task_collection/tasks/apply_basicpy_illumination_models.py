@@ -142,7 +142,8 @@ def apply_basicpy_illumination_models(
     correct_by: CorrectBy = CorrectBy.channel_label,
     illumination_exceptions: Optional[list[str]] = None,
     darkfield: bool = True,
-    baseline: bool = True,
+    subtract_baseline: bool = True,
+    fixed_baseline: Optional[int] = None,
     input_ROI_table: str = "FOV_ROI_table",
     overwrite_input: bool = True,
     suffix: str = "_illum_corr",
@@ -161,7 +162,10 @@ def apply_basicpy_illumination_models(
         illumination_exceptions: List of channel labels or wavelength ids that 
             should not be corrected.
         darkfield: If `True`, darkfield correction will be performed.
-        baseline: If `True`, baseline subtraction will be performed.
+        subtract_baseline: If `True`, baseline subtraction will be performed.
+        fixed_baseline: Set a value if you want to subtract a fixed baseline
+            (e.g., 100). If `None` and subtract baseline is 'True', the median
+             of the basicpy baseline will be used.
         input_ROI_table: Name of the ROI table that contains the information
             about the location of the individual field of views (FOVs) to
             which the illumination correction shall be applied. Defaults to
@@ -202,7 +206,7 @@ def apply_basicpy_illumination_models(
     t_start = time.perf_counter()
     logger.info("Start illumination_correction")
     logger.info(f"  {darkfield=}")
-    logger.info(f"  {baseline=}")
+    logger.info(f"  {subtract_baseline=}")
     logger.info(f"  {overwrite_input=}")
     logger.info(f"  {zarr_url=}")
     logger.info(f"  {zarr_url_new=}")
@@ -322,9 +326,17 @@ def apply_basicpy_illumination_models(
                 f"Now processing ROI {i_ROI + 1}/{num_ROIs} "
                 f"for channel {i_c + 1}/{num_channels}"
             )
-            
-            # Determine baseline value if baseline is True
-            baseline = int(np.median(basic.baseline)) if baseline else None
+
+            if subtract_baseline:
+                if fixed_baseline is not None:
+                    logger.info(f"Using fixed baseline value {fixed_baseline}")
+                    baseline = fixed_baseline
+                else:
+                    logger.info(f"Using median of basicpy model baseline")
+                    baseline = int(np.median(basic.baseline))
+            else:
+                logger.info("No baseline correction applied")
+                baseline = None
 
             # Execute illumination correction with appropriate darkfield setting
             corrected_fov = correct(

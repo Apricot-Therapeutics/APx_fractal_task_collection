@@ -1719,11 +1719,16 @@
             "type": "boolean",
             "description": "If `True`, darkfield correction will be performed."
           },
-          "baseline": {
+          "subtract_baseline": {
             "default": true,
-            "title": "Baseline",
+            "title": "Subtract Baseline",
             "type": "boolean",
             "description": "If `True`, baseline subtraction will be performed."
+          },
+          "fixed_baseline": {
+            "title": "Fixed Baseline",
+            "type": "integer",
+            "description": "Set a value if you want to subtract a fixed baseline (e.g., 100). If `None` and subtract baseline is 'True', the median of the basicpy baseline will be used."
           },
           "input_ROI_table": {
             "default": "FOV_ROI_table",
