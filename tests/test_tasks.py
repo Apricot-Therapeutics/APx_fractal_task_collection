@@ -433,7 +433,8 @@ def test_illumination_correction_by_label(test_data_dir, image_list):
         correct_by = CorrectBy.channel_label,
         illumination_exceptions=["0_DAPI"],
         darkfield=True,
-        baseline=True,
+        subtract_baseline=True,
+        fixed_baseline=105,
         overwrite_input=False,
     )
 
@@ -503,7 +504,8 @@ def test_illumination_correction_by_wavelength(test_data_dir, image_list):
         correct_by = CorrectBy.wavelength_id,
         illumination_exceptions=["Blue - FITC"],
         darkfield=False,
-        baseline=False,
+        subtract_baseline=False,
+        fixed_baseline=105,
         overwrite_input=False,
     )
 
