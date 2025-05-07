@@ -38,6 +38,7 @@ from apx_fractal_task_collection.tasks.init_correct_chromatic_shift import init_
 from apx_fractal_task_collection.tasks.compress_zarr_for_visualization import compress_zarr_for_visualization
 from apx_fractal_task_collection.tasks.init_convert_IC6000_to_ome_zarr import init_convert_IC6000_to_ome_zarr
 from apx_fractal_task_collection.tasks.convert_IC6000_to_ome_zarr import convert_IC6000_to_ome_zarr
+from apx_fractal_task_collection.tasks.init_add_multiplexing_cycle_IC6000 import init_add_multiplexing_cycle_IC6000
 from apx_fractal_task_collection.tasks.multiplexed_pixel_clustering import multiplexed_pixel_clustering
 from apx_fractal_task_collection.tasks.stitch_fovs_with_overlap import stitch_fovs_with_overlap
 from apx_fractal_task_collection.tasks.detect_blob_centroids import detect_blob_centroids
@@ -905,6 +906,78 @@ def test_IC6000_conversion(test_data_dir):
         zarr_url=zarr_url,
         init_args=init_args,
     )
+
+
+def test_add_multiplexing_cycle_IC6000(test_data_dir):
+
+    parallelization_list = init_convert_IC6000_to_ome_zarr(
+        zarr_urls=[],
+        zarr_dir=test_data_dir,
+        acquisitions={"0":
+                          MultiplexingAcquisition(
+                              image_dir=Path(test_data_dir).joinpath("IC6000_data/cycle_0").as_posix(),
+                              allowed_channels=[
+                                  OmeroChannel(label='0_DAPI',
+                                               wavelength_id='UV - DAPI'),
+                                  OmeroChannel(label='0_GFP',
+                                               wavelength_id='Blue - FITC'),
+                                  OmeroChannel(label='0_RFP',
+                                               wavelength_id='Green - dsRed'),
+                                  OmeroChannel(label='0_FR',
+                                               wavelength_id='Red - Cy5')])},
+        image_glob_patterns=None,
+        num_levels=5,
+        coarsening_xy=2,
+        image_extension='tif',
+        overwrite=True,
+    )
+
+    zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
+    init_args = parallelization_list['parallelization_list'][0]['init_args']
+
+    convert_IC6000_to_ome_zarr(
+        zarr_url=zarr_url,
+        init_args=init_args,
+    )
+
+
+    # add multiplexing cycle
+    parallelization_list = init_add_multiplexing_cycle_IC6000(
+        zarr_urls=[],
+        zarr_dir=test_data_dir,
+        zarr_path=Path(test_data_dir).joinpath("test_plate.zarr").as_posix(),
+        acquisitions={"1":
+                          MultiplexingAcquisition(
+                              image_dir=Path(test_data_dir).joinpath("IC6000_data/cycle_1").as_posix(),
+                              allowed_channels=[
+                                  OmeroChannel(label='1_DAPI',
+                                               wavelength_id='UV - DAPI'),
+                                  OmeroChannel(label='1_GFP',
+                                               wavelength_id='Blue - FITC'),
+                                  OmeroChannel(label='1_RFP',
+                                               wavelength_id='Green - dsRed'),
+                                  OmeroChannel(label='1_FR',
+                                               wavelength_id='Red - Cy5')])},
+        image_glob_patterns=None,
+        num_levels=5,
+        coarsening_xy=2,
+        image_extension='tif',
+        overwrite=True,
+    )
+
+    zarr_url = parallelization_list['parallelization_list'][0]['zarr_url']
+    init_args = parallelization_list['parallelization_list'][0]['init_args']
+
+    convert_IC6000_to_ome_zarr(
+        zarr_url=zarr_url,
+        init_args=init_args,
+    )
+
+    # assert that the new cycle was added
+    cycle_1_path = Path(test_data_dir).joinpath("test_plate.zarr/C/03/1")
+    assert cycle_1_path.exists(),\
+        f"Cycle 1 not found at {cycle_1_path}"
+
 
 
 @pytest.mark.parametrize("image_list", [IMAGE_LIST_2D, IMAGE_LIST_3D])
