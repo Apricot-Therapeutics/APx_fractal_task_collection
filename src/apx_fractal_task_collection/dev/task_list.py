@@ -48,6 +48,15 @@ TASK_LIST = [
         tags=["IC6000", "IC6K", "IN Cell"]
     ),
     CompoundTask(
+        name="Add Multiplexing Cycle IC6000",
+        executable_init="tasks/init_add_multiplexing_cycle_IC6000.py",
+        executable="tasks/convert_IC6000_to_ome_zarr.py",
+        meta={"cpus_per_task": 1, "mem": 3750},
+        category="Conversion",
+        modality="HCS",
+        tags=["IC6000", "IC6K", "IN Cell"]
+    ),
+    CompoundTask(
         name="Label Assignment by Overlap",
         executable_init="tasks/init_label_assignment_by_overlap.py",
         executable="tasks/label_assignment_by_overlap.py",

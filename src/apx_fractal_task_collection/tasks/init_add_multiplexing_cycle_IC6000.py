@@ -18,27 +18,30 @@ import os
 from pathlib import Path
 from typing import Any
 from typing import Optional
-from typing import Sequence
 
-import pandas as pd
-import numpy as np
 import zarr
 from pydantic import validate_call
 from zarr.errors import ContainsGroupError
-from defusedxml import ElementTree
+
+from apx_fractal_task_collection.init_utils import (parse_platename,
+                                                    parse_filename,
+                                                    parse_IC6000_metadata)
+from apx_fractal_task_collection.io_models import InitArgsIC6000
 
 import fractal_tasks_core
 from fractal_tasks_core.channels import check_unique_wavelength_ids
 from fractal_tasks_core.channels import check_well_channel_labels
 from fractal_tasks_core.channels import define_omero_channels
-from fractal_tasks_core.channels import OmeroChannel
 from fractal_tasks_core.cellvoyager.filenames import glob_with_multiple_patterns
 from fractal_tasks_core.roi import prepare_FOV_ROI_table
 from fractal_tasks_core.roi import prepare_well_ROI_table
 from fractal_tasks_core.roi import remove_FOV_overlaps
+from fractal_tasks_core.tasks.io_models import MultiplexingAcquisition
 from fractal_tasks_core.zarr_utils import open_zarr_group_with_overwrite
 from fractal_tasks_core.tables import write_table
-
+from fractal_tasks_core.ngff.specs import NgffImageMeta
+from fractal_tasks_core.ngff.specs import Plate
+from fractal_tasks_core.ngff.specs import Well
 
 __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
@@ -48,124 +51,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def parse_platename(filename: str) -> dict[str, str]:
-    metadata = ElementTree.parse(filename).getroot()
-    return metadata.get("PlateID")
-
-
-def parse_filename(filename: str) -> dict[str, str]:
-    """
-    Parse image metadata from filename.
-
-    Args:
-        filename: Name of the image.
-
-    Returns:
-        Metadata dictionary.
-    """
-
-    # Remove extension and folder from filename
-    filename = Path(filename).with_suffix("").name
-    # Remove plate prefix
-    filename_split = filename.split("_")
-    if len(filename_split) > 1:
-        filename = filename_split[-1]
-    else:
-        filename = filename_split[0]
-
-    output = {}
-    output["well"] = filename.split("(")[0].split(" - ")[0] + \
-                     filename.split("(")[0].split(" - ")[1]
-    output["T"] = '0000'
-    output["F"] = filename.split("(fld ")[1].split(" wv")[0]
-    output["L"] = '01'
-    output["A"] = '01'
-    output["Z"] = '01'
-    output["C"] = filename.split(" wv ")[1].split(")")[0]
-
-    return output
-
-def parse_IC6000_metadata(metadata_path, filename_patterns):
-    metadata = ElementTree.parse(metadata_path)
-    obj_calibration = \
-        metadata.findall("AutoLeadAcquisitionProtocol")[0].findall(
-            "ObjectiveCalibration")[0]
-    pixel_size_x = float(obj_calibration.get("pixel_width"))
-    pixel_size_y = float(obj_calibration.get("pixel_height"))
-
-    camera_size = \
-        metadata.findall("AutoLeadAcquisitionProtocol")[0].findall("Camera")[
-            0].findall("Size")[0]
-    x_pixel = int(camera_size.get("width"))
-    y_pixel = int(camera_size.get("height"))
-
-    wavelengths = \
-        metadata.findall("AutoLeadAcquisitionProtocol")[0].findall(
-            "Wavelengths")[0].findall("Wavelength")
-    pixel_size_z = [float(w.get("z_step")) for w in wavelengths]
-    # warn if >1 unique values
-    pixel_size_z = np.unique(pixel_size_z)[0]
-
-    # hardcoded stuff
-    bit_depth = 16
-    z_micrometer = 0
-    z_pixel = 1
-
-    images = metadata.findall("Images")[0].findall("Image")
-    well_id = [
-        f"{image.findall('Well')[0].get('label').split(' -')[0]}{int(image.findall('Well')[0].get('label').split('- ')[1]):02d}"
-        for image in images]
-    field_index = [
-        int(image.findall("Identifier")[0].get("field_index")) + 1 for
-        image in images]
-    x_micrometer = [float(image.findall("PlatePosition_um")[0].get('x'))
-                    for image in images]
-    y_micrometer = [float(image.findall("PlatePosition_um")[0].get('y'))
-                    for image in images]
-    timestamp = [
-        pd.to_datetime(float(image.get("timestamp_sec")), unit="s") for
-        image in images]
-    filenames = [image.get("filename") for image in images]
-
-    df = pd.DataFrame(data={
-        'well_id': well_id,
-        'FieldIndex': field_index,
-        'x_micrometer': x_micrometer,
-        'y_micrometer': y_micrometer,
-        'z_micrometer': z_micrometer,
-        'pixel_size_z': pixel_size_z,
-        'z_pixel': z_pixel,
-        'Time': timestamp,
-        'pixel_size_x': pixel_size_x,
-        'pixel_size_y': pixel_size_y,
-        'x_pixel': x_pixel,
-        'y_pixel': y_pixel,
-        'bit_depth': bit_depth,
-        'filename': filenames})
-
-    if filename_patterns is not None:
-
-        patterns = [pattern.replace('*', r'') for pattern in
-                    filename_patterns]
-        for pattern in patterns:
-            df = df[df['filename'].str.contains(pattern)]
-
-    site_metadata = df.groupby(['well_id', 'FieldIndex']).apply(
-        lambda x: x.iloc[0])
-    site_metadata = site_metadata.set_index(['well_id', 'FieldIndex'])
-
-    total_files = df.groupby('well_id')['FieldIndex'].count().to_dict()
-
-    return site_metadata, total_files
-
-
 @validate_call
-def create_ome_zarr_multiplex_IC6000(
+def init_add_multiplexing_cycle_IC6000(
     *,
-    input_paths: Sequence[str],
-    output_path: str,
-    metadata: dict[str, Any],
-    allowed_channels: dict[str, list[OmeroChannel]],
+    # Fractal parameters
+    zarr_urls: list[str],
+    zarr_dir: str,
+    # Task-specific parameters
+    acquisitions: dict[str, MultiplexingAcquisition],
+    zarr_path: str,
     image_glob_patterns: Optional[list[str]] = None,
     num_levels: int = 5,
     coarsening_xy: int = 2,
@@ -175,31 +69,24 @@ def create_ome_zarr_multiplex_IC6000(
     """
     Create OME-NGFF structure and metadata to host a multiplexing dataset.
 
-    This task takes a set of image folders (i.e. different acquisition cycles)
-    and build the internal structure and metadata of a OME-NGFF zarr group,
-    without actually loading/writing the image data.
+    This task takes an existing zarr file and a set of image folders
+    (i.e. different acquisition cycles) and builds the internal structure and
+    metadata of a OME-NGFF zarr group, without actually loading/writing the
+     image data.
 
     Each element in input_paths should be treated as a different acquisition.
 
     Args:
-        input_paths: List of input paths where the image data from the
-            microscope is stored (as TIF or PNG).  Each element of the list is
-            treated as another cycle of the multiplexing data, the cycles are
-            ordered by their order in this list.  Should point to the parent
-            folder containing the images and the metadata files
-            `MeasurementData.mlf` and `MeasurementDetail.mrf` (if present).
-            Example: `["/path/cycle1/", "/path/cycle2/"]`. (standard argument
-            for Fractal tasks, managed by Fractal server).
-        output_path: Path were the output of this task is stored.
-            Example: `"/some/path/"` => puts the new OME-Zarr file in the
-            `/some/path/`.
+       zarr_urls: List of paths or urls to the individual OME-Zarr image to
+            be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
-        metadata: This parameter is not used by this task.
+        zarr_dir: path of the directory where the new OME-Zarrs will be
+            created. Not used by this task.
             (standard argument for Fractal tasks, managed by Fractal server).
-        allowed_channels: A dictionary of lists of `OmeroChannel`s, where
-            each channel must include the `wavelength_id` attribute and where
-            the `wavelength_id` values must be unique across each list.
-            Dictionary keys represent channel indices (`"0","1",..`).
+        acquisitions: dictionary of acquisitions. Each key is the acquisition
+            identifier (normally 0, 1, 2, 3 etc.). Each item defines the
+            acquisition by providing the image_dir and the allowed_channels.
+        zarr_path: Path to the zarr file to which to add multiplexing cycles.
         image_glob_patterns: If specified, only parse images with filenames
             that match with all these patterns. Patterns must be defined as in
             https://docs.python.org/3/library/fnmatch.html, Example:
@@ -225,19 +112,20 @@ def create_ome_zarr_multiplex_IC6000(
     # Preliminary checks on allowed_channels
     # Note that in metadata the keys of dictionary arguments should be
     # strings (and not integers), so that they can be read from a JSON file
-    for key, _channels in allowed_channels.items():
+    for key, values in acquisitions.items():
         if not isinstance(key, str):
-            raise ValueError(f"{allowed_channels=} has non-string keys")
-        check_unique_wavelength_ids(_channels)
+            raise ValueError(f"{acquisitions=} has non-string keys")
+        check_unique_wavelength_ids(values.allowed_channels)
 
     # Identify all plates and all channels, per input folders
     dict_acquisitions: dict = {}
 
-    for ind_in_path, in_path_str in enumerate(input_paths):
-        acquisition = str(ind_in_path)
-        in_path = Path(in_path_str)
-        xml_path = list(in_path.glob("*.xdce"))[0]
+    for acquisition, acq_input in acquisitions.items():
         dict_acquisitions[acquisition] = {}
+
+        # IC6000 may not contain plate name in filename, getting it from
+        # metadata file instead
+        xml_path = list(Path(acq_input.image_dir).glob("*.xdce"))[0]
 
         plate = parse_platename(xml_path)
         plate_prefix = ""
@@ -251,7 +139,7 @@ def create_ome_zarr_multiplex_IC6000(
         if image_glob_patterns:
             patterns.extend(image_glob_patterns)
         input_filenames = glob_with_multiple_patterns(
-            folder=in_path_str,
+            folder=acq_input.image_dir,
             include_patterns=patterns,
         )
 
@@ -265,6 +153,7 @@ def create_ome_zarr_multiplex_IC6000(
                 logger.warning(
                     f'Skipping "{Path(fn).name}". Original error: ' + str(e)
                 )
+
         plates = sorted(list(set(plates)))
         actual_wavelength_ids = sorted(list(set(actual_wavelength_ids)))
 
@@ -283,20 +172,12 @@ def create_ome_zarr_multiplex_IC6000(
         original_plate = plates[0]
         plate_prefix = plate_prefixes[0]
 
-        # Replace plate with the one of acquisition 0, if needed
-        if int(acquisition) > 0:
-            plate = dict_acquisitions["0"]["plate"]
-            logger.warning(
-                f"For {acquisition=}, we replace {original_plate=} with "
-                f"{plate=} (the one for acquisition 0)"
-            )
-
         # Check that all channels are in the allowed_channels
         allowed_wavelength_ids = [
-            c.wavelength_id for c in allowed_channels[acquisition]
+            c.wavelength_id for c in acq_input.allowed_channels
         ]
         if not set(actual_wavelength_ids).issubset(
-            set(allowed_wavelength_ids)
+                set(allowed_wavelength_ids)
         ):
             msg = "ERROR in create_ome_zarr\n"
             msg += f"actual_wavelength_ids: {actual_wavelength_ids}\n"
@@ -307,7 +188,7 @@ def create_ome_zarr_multiplex_IC6000(
         # are present
         actual_channels = [
             channel
-            for channel in allowed_channels[acquisition]
+            for channel in acq_input.allowed_channels
             if channel.wavelength_id in actual_wavelength_ids
         ]
 
@@ -318,56 +199,69 @@ def create_ome_zarr_multiplex_IC6000(
         dict_acquisitions[acquisition]["plate"] = plate
         dict_acquisitions[acquisition]["original_plate"] = original_plate
         dict_acquisitions[acquisition]["plate_prefix"] = plate_prefix
-        dict_acquisitions[acquisition]["image_folder"] = in_path
-        dict_acquisitions[acquisition]["original_paths"] = [in_path]
+        dict_acquisitions[acquisition][
+            "image_folder"] = acq_input.image_dir
+        dict_acquisitions[acquisition]["original_paths"] = [
+            acq_input.image_dir
+        ]
         dict_acquisitions[acquisition]["actual_channels"] = actual_channels
         dict_acquisitions[acquisition][
             "actual_wavelength_ids"
         ] = actual_wavelength_ids
 
-    acquisitions = sorted(list(dict_acquisitions.keys()))
+        dict_acquisitions[acquisition]["input_filenames"] = input_filenames
+
+    # create parallelization list
+    parallelization_list = []
+    acquisitions_sorted = sorted(list(acquisitions.keys()))
     current_plates = [item["plate"] for item in dict_acquisitions.values()]
     if len(set(current_plates)) > 1:
         raise ValueError(f"{current_plates=}")
     plate = current_plates[0]
 
-    zarrurl = dict_acquisitions[acquisitions[0]]["plate"] + ".zarr"
-    full_zarrurl = str(Path(output_path) / zarrurl)
-    logger.info(f"Creating {full_zarrurl=}")
+    #zarrurl = dict_acquisitions[acquisitions_sorted[0]]["plate"] + ".zarr"
+    full_zarrurl = zarr_path
+    logger.info(f"Extending zarr file at {zarr_path}")
     # Call zarr.open_group wrapper, which handles overwrite=True/False
-    group_plate = open_zarr_group_with_overwrite(
-        full_zarrurl, overwrite=overwrite
-    )
-    group_plate.attrs["plate"] = {
-        "acquisitions": [
-            {
+    #group_plate = open_zarr_group_with_overwrite(
+    #    full_zarrurl, overwrite=overwrite, open_group_kwargs={"mode": "r+"}
+    #)
+
+    group_plate = zarr.open_group(store=full_zarrurl, mode="r+")
+
+    # update the plate metadata with the new acquisitions
+    original_acquisitions = group_plate.attrs["plate"]["acquisitions"]
+    new_acquisitions = [{
                 "id": int(acquisition),
                 "name": dict_acquisitions[acquisition]["original_plate"],
             }
-            for acquisition in acquisitions
+            for acquisition in acquisitions_sorted
         ]
-    }
+
+    # combine original and new acquisitions
+    updated_acquisitions = original_acquisitions + new_acquisitions
+
+    group_plate.attrs["plate"] = {
+        "acquisitions": updated_acquisitions}
 
     zarrurls: dict[str, list[str]] = {"well": [], "image": []}
     zarrurls["plate"] = [f"{plate}.zarr"]
 
     ################################################################
-    logging.info(f"{acquisitions=}")
+    logging.info(f"{acquisitions_sorted=}")
 
-    for acquisition in acquisitions:
+    for acquisition in acquisitions_sorted:
 
         # Define plate zarr
         image_folder = dict_acquisitions[acquisition]["image_folder"]
         logger.info(f"Looking at {image_folder=}")
 
         # Obtain FOV-metadata dataframe
-
-        xml_path = list(Path(image_folder).glob("*.xdce"))[0]
+        xml_path = list(Path(acq_input.image_dir).glob("*.xdce"))[0]
         site_metadata, total_files = parse_IC6000_metadata(
             xml_path, filename_patterns=image_glob_patterns
         )
         site_metadata = remove_FOV_overlaps(site_metadata)
-
 
         # Extract pixel sizes and bit_depth
         pixel_size_z = site_metadata["pixel_size_z"][0]
@@ -379,44 +273,52 @@ def create_ome_zarr_multiplex_IC6000(
             raise ValueError(pixel_size_z, pixel_size_y, pixel_size_x)
 
         # Identify all wells
-        patterns = [f"*.{image_extension}"]
-        if image_glob_patterns:
-            patterns.extend(image_glob_patterns)
-        plate_images = glob_with_multiple_patterns(
-            folder=str(image_folder),
-            include_patterns=patterns,
-        )
+        # patterns = [f"*.{image_extension}"]
+        # if image_glob_patterns:
+        #     patterns.extend(image_glob_patterns)
+        # plate_images = glob_with_multiple_patterns(
+        #     folder=str(image_folder),
+        #     patterns=patterns,
+        # )
+
+        plate_images = dict_acquisitions[acquisition]["input_filenames"]
 
         wells = [
-            parse_filename(os.path.basename(fn))["well"] for fn in plate_images
+            parse_filename(os.path.basename(fn))["well"] for fn in
+            plate_images
         ]
+
         wells = sorted(list(set(wells)))
         logger.info(f"{wells=}")
 
         # Verify that all wells have all channels
         actual_channels = dict_acquisitions[acquisition]["actual_channels"]
+
         for well in wells:
-            patterns = [f"*{well[0]} - {well[1:]}(*.{image_extension}"]
-            if image_glob_patterns:
-                patterns.extend(image_glob_patterns)
-            well_images = glob_with_multiple_patterns(
-                folder=str(image_folder),
-                include_patterns=patterns,
-            )
+            # patterns = [f"*{well[0]} - {well[1:]}(*.{image_extension}"]
+            # if image_glob_patterns:
+            #     patterns.extend(image_glob_patterns)
+            # well_images = glob_with_multiple_patterns(
+            #     folder=str(image_folder),
+            #     patterns=patterns,
+            # )
+
+            well_images = [img for img in plate_images if
+                           f"{well[0]} - {well[1:]}(" in img]
 
             well_wavelength_ids = []
             for fpath in well_images:
                 try:
-                    filename_metadata = parse_filename(os.path.basename(fpath))
-                    #A = filename_metadata["A"]
-                    C = filename_metadata["C"]
-                    well_wavelength_ids.append(C)
+                    filename_metadata = parse_filename(
+                        os.path.basename(fpath))
+                    well_wavelength_ids.append(filename_metadata["C"])
                 except IndexError:
                     logger.info(f"Skipping {fpath}")
             well_wavelength_ids = sorted(list(set(well_wavelength_ids)))
             actual_wavelength_ids = dict_acquisitions[acquisition][
                 "actual_wavelength_ids"
             ]
+
             if well_wavelength_ids != actual_wavelength_ids:
                 raise ValueError(
                     f"ERROR: well {well} in plate {plate} (prefix: "
@@ -448,14 +350,32 @@ def create_ome_zarr_multiplex_IC6000(
             }
             for well_row_column in well_rows_columns
         ]
+        plate_attrs["version"] = __OME_NGFF_VERSION__
+        # Validate plate attrs
+        Plate(**plate_attrs)
         group_plate.attrs["plate"] = plate_attrs
 
         for row, column in well_rows_columns:
-
+            parallelization_list.append(
+                {
+                    "zarr_url": (
+                        f"{zarr_path}/{row}/{column}/"
+                        f"{acquisition}/"
+                    ),
+                    "init_args": InitArgsIC6000(
+                        image_dir=acquisitions[acquisition].image_dir,
+                        plate_prefix=plate_prefix,
+                        well_ID=row+column,
+                        image_extension=image_extension,
+                        image_glob_patterns=image_glob_patterns,
+                        acquisition=acquisition,
+                    ).dict(),
+                }
+            )
             try:
                 group_well = group_plate.create_group(f"{row}/{column}/")
                 logging.info(f"Created new group_well at {row}/{column}/")
-                group_well.attrs["well"] = {
+                well_attrs = {
                     "images": [
                         {
                             "path": f"{acquisition}",
@@ -464,6 +384,9 @@ def create_ome_zarr_multiplex_IC6000(
                     ],
                     "version": __OME_NGFF_VERSION__,
                 }
+                # Validate well attrs:
+                Well(**well_attrs)
+                group_well.attrs["well"] = well_attrs
                 zarrurls["well"].append(f"{plate}.zarr/{row}/{column}")
             except ContainsGroupError:
                 group_well = zarr.open_group(
@@ -473,17 +396,22 @@ def create_ome_zarr_multiplex_IC6000(
                     f"Loaded group_well from {full_zarrurl}/{row}/{column}"
                 )
                 current_images = group_well.attrs["well"]["images"] + [
-                    {"path": f"{acquisition}", "acquisition": int(acquisition)}
+                    {"path": f"{acquisition}",
+                     "acquisition": int(acquisition)}
                 ]
-                group_well.attrs["well"] = dict(
+                well_attrs = dict(
                     images=current_images,
                     version=group_well.attrs["well"]["version"],
                 )
+                # Validate well attrs:
+                Well(**well_attrs)
+                group_well.attrs["well"] = well_attrs
 
             group_image = group_well.create_group(
                 f"{acquisition}/"
             )  # noqa: F841
-            logging.info(f"Created image group {row}/{column}/{acquisition}")
+            logging.info(
+                f"Created image group {row}/{column}/{acquisition}")
             image = f"{plate}.zarr/{row}/{column}/{acquisition}"
             zarrurls["image"].append(image)
 
@@ -518,9 +446,9 @@ def create_ome_zarr_multiplex_IC6000(
                                         1,
                                         pixel_size_z,
                                         pixel_size_y
-                                        * coarsening_xy**ind_level,
+                                        * coarsening_xy ** ind_level,
                                         pixel_size_x
-                                        * coarsening_xy**ind_level,
+                                        * coarsening_xy ** ind_level,
                                     ],
                                 }
                             ],
@@ -541,9 +469,13 @@ def create_ome_zarr_multiplex_IC6000(
                 ),
             }
 
+            # Validate Image attrs
+            NgffImageMeta(**group_image.attrs)
+
             # Prepare AnnData tables for FOV/well ROIs
             well_id = row + column
-            FOV_ROIs_table = prepare_FOV_ROI_table(site_metadata.loc[well_id])
+            FOV_ROIs_table = prepare_FOV_ROI_table(
+                site_metadata.loc[well_id])
             well_ROIs_table = prepare_well_ROI_table(
                 site_metadata.loc[well_id]
             )
@@ -564,35 +496,21 @@ def create_ome_zarr_multiplex_IC6000(
                 table_attrs={"type": "roi_table"},
             )
 
-    # Check that the different images (e.g. different cycles) in the each well
-    # have unique labels
+    # Check that the different images (e.g. different acquisitions) in the each
+    # well have unique labels
     for well_path in zarrurls["well"]:
         check_well_channel_labels(
-            well_zarr_path=str(Path(output_path) / well_path)
+            well_zarr_path=str(Path(zarr_path).parent / well_path)
         )
 
-    original_paths = {
-        acquisition: dict_acquisitions[acquisition]["original_paths"]
-        for acquisition in acquisitions
-    }
-
-    metadata_update = dict(
-        plate=zarrurls["plate"],
-        well=zarrurls["well"],
-        image=zarrurls["image"],
-        num_levels=num_levels,
-        coarsening_xy=coarsening_xy,
-        original_paths=original_paths,
-        image_extension=image_extension,
-        image_glob_patterns=image_glob_patterns,
-    )
-    return metadata_update
+    return dict(parallelization_list=parallelization_list)
 
 
 if __name__ == "__main__":
     from fractal_tasks_core.tasks._utils import run_fractal_task
 
     run_fractal_task(
-        task_function=create_ome_zarr_multiplex_IC6000,
+        task_function=init_add_multiplexing_cycle_IC6000,
         logger_name=logger.name,
     )
+

@@ -872,6 +872,274 @@
       "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     },
     {
+      "name": "Add Multiplexing Cycle IC6000",
+      "category": "Conversion",
+      "modality": "HCS",
+      "tags": [
+        "IC6000",
+        "IC6K",
+        "IN Cell"
+      ],
+      "executable_non_parallel": "tasks/init_add_multiplexing_cycle_IC6000.py",
+      "executable_parallel": "tasks/convert_IC6000_to_ome_zarr.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 3750
+      },
+      "args_schema_non_parallel": {
+        "$defs": {
+          "MultiplexingAcquisition": {
+            "description": "Input class for Multiplexing Cellvoyager converter",
+            "properties": {
+              "image_dir": {
+                "title": "Image Dir",
+                "type": "string",
+                "description": "Path to the folder that contains the Cellvoyager image files for that acquisition and the MeasurementData & MeasurementDetail metadata files."
+              },
+              "allowed_channels": {
+                "items": {
+                  "$ref": "#/$defs/OmeroChannel"
+                },
+                "title": "Allowed Channels",
+                "type": "array",
+                "description": "A list of `OmeroChannel` objects, where each channel must include the `wavelength_id` attribute and where the `wavelength_id` values must be unique across the list."
+              }
+            },
+            "required": [
+              "image_dir",
+              "allowed_channels"
+            ],
+            "title": "MultiplexingAcquisition",
+            "type": "object"
+          },
+          "OmeroChannel": {
+            "description": "Custom class for Omero channels, based on OME-NGFF v0.4.",
+            "properties": {
+              "wavelength_id": {
+                "title": "Wavelength Id",
+                "type": "string",
+                "description": "Unique ID for the channel wavelength, e.g. `A01_C01`."
+              },
+              "index": {
+                "title": "Index",
+                "type": "integer",
+                "description": "Do not change. For internal use only."
+              },
+              "label": {
+                "title": "Label",
+                "type": "string",
+                "description": "Name of the channel."
+              },
+              "window": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/Window"
+                  }
+                ],
+                "title": "Window",
+                "description": "Optional `Window` object to set default display settings for napari."
+              },
+              "color": {
+                "title": "Color",
+                "type": "string",
+                "description": "Optional hex colormap to display the channel in napari (it must be of length 6, e.g. `00FFFF`)."
+              },
+              "active": {
+                "default": true,
+                "title": "Active",
+                "type": "boolean",
+                "description": "Should this channel be shown in the viewer?"
+              },
+              "coefficient": {
+                "default": 1,
+                "title": "Coefficient",
+                "type": "integer",
+                "description": "Do not change. Omero-channel attribute."
+              },
+              "inverted": {
+                "default": false,
+                "title": "Inverted",
+                "type": "boolean",
+                "description": "Do not change. Omero-channel attribute."
+              }
+            },
+            "required": [
+              "wavelength_id"
+            ],
+            "title": "OmeroChannel",
+            "type": "object"
+          },
+          "Window": {
+            "description": "Custom class for Omero-channel window, based on OME-NGFF v0.4.",
+            "properties": {
+              "min": {
+                "title": "Min",
+                "type": "integer",
+                "description": "Do not change. It will be set to `0` by default."
+              },
+              "max": {
+                "title": "Max",
+                "type": "integer",
+                "description": "Do not change. It will be set according to bit-depth of the images by default (e.g. 65535 for 16 bit images)."
+              },
+              "start": {
+                "title": "Start",
+                "type": "integer",
+                "description": "Lower-bound rescaling value for visualization."
+              },
+              "end": {
+                "title": "End",
+                "type": "integer",
+                "description": "Upper-bound rescaling value for visualization."
+              }
+            },
+            "required": [
+              "start",
+              "end"
+            ],
+            "title": "Window",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "zarr_urls": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Zarr Urls",
+            "type": "array",
+            "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server). zarr_dir: path of the directory where the new OME-Zarrs will be created. Not used by this task. (standard argument for Fractal tasks, managed by Fractal server). acquisitions: dictionary of acquisitions. Each key is the acquisition identifier (normally 0, 1, 2, 3 etc.). Each item defines the acquisition by providing the image_dir and the allowed_channels. zarr_path: Path to the zarr file to which to add multiplexing cycles. image_glob_patterns: If specified, only parse images with filenames that match with all these patterns. Patterns must be defined as in https://docs.python.org/3/library/fnmatch.html, Example: `image_glob_pattern=[\"*B - 03*\"]` => only process well B03 `image_glob_pattern=[\"*C - 09*\", \"*fld 16*\"]` => only process well C09, field of view 16. num_levels: Number of resolution-pyramid levels. If set to `5`, there will be the full-resolution level and 4 levels of downsampled images. coarsening_xy: Linear coarsening factor between subsequent levels. If set to `2`, level 1 is 2x downsampled, level 2 is 4x downsampled etc. image_extension: Filename extension of images (e.g. `\"tif\"` or `\"png\"`). overwrite: If `True`, overwrite the task output."
+          },
+          "zarr_dir": {
+            "title": "Zarr Dir",
+            "type": "string",
+            "description": "Missing description"
+          },
+          "acquisitions": {
+            "additionalProperties": {
+              "$ref": "#/$defs/MultiplexingAcquisition"
+            },
+            "title": "Acquisitions",
+            "type": "object",
+            "description": "Missing description"
+          },
+          "zarr_path": {
+            "title": "Zarr Path",
+            "type": "string",
+            "description": "Missing description"
+          },
+          "image_glob_patterns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Image Glob Patterns",
+            "type": "array",
+            "description": "Missing description"
+          },
+          "num_levels": {
+            "default": 5,
+            "title": "Num Levels",
+            "type": "integer",
+            "description": "Missing description"
+          },
+          "coarsening_xy": {
+            "default": 2,
+            "title": "Coarsening Xy",
+            "type": "integer",
+            "description": "Missing description"
+          },
+          "image_extension": {
+            "default": "tif",
+            "title": "Image Extension",
+            "type": "string",
+            "description": "Missing description"
+          },
+          "overwrite": {
+            "default": false,
+            "title": "Overwrite",
+            "type": "boolean",
+            "description": "Missing description"
+          }
+        },
+        "required": [
+          "zarr_urls",
+          "zarr_dir",
+          "acquisitions",
+          "zarr_path"
+        ],
+        "type": "object",
+        "title": "InitAddMultiplexingCycleIc6000"
+      },
+      "args_schema_parallel": {
+        "$defs": {
+          "InitArgsIC6000": {
+            "description": "Arguments to be passed from IC6000 converter init to compute",
+            "properties": {
+              "image_dir": {
+                "title": "Image Dir",
+                "type": "string"
+              },
+              "plate_prefix": {
+                "title": "Plate Prefix",
+                "type": "string"
+              },
+              "well_ID": {
+                "title": "Well Id",
+                "type": "string"
+              },
+              "image_extension": {
+                "title": "Image Extension",
+                "type": "string"
+              },
+              "image_glob_patterns": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Image Glob Patterns",
+                "type": "array"
+              },
+              "acquisition": {
+                "title": "Acquisition",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "image_dir",
+              "plate_prefix",
+              "well_ID",
+              "image_extension",
+              "image_glob_patterns",
+              "acquisition"
+            ],
+            "title": "InitArgsIC6000",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "init_args": {
+            "$ref": "#/$defs/InitArgsIC6000",
+            "title": "Init Args",
+            "description": "Intialization arguments provided by `init_convert_IC600_to_ome_zarr`."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "init_args"
+        ],
+        "type": "object",
+        "title": "ConvertIc6000ToOmeZarr"
+      },
+      "docs_info": "## init_add_multiplexing_cycle_IC6000\nCreate OME-NGFF structure and metadata to host a multiplexing dataset.\n\nThis task takes an existing zarr file and a set of image folders\n(i.e. different acquisition cycles) and builds the internal structure and\nmetadata of a OME-NGFF zarr group, without actually loading/writing the\n image data.\n\nEach element in input_paths should be treated as a different acquisition.\n## convert_IC6000_to_ome_zarr\nConvert IC6000 output (png, tif) to zarr file.\n\nThis task is run after \"init_convert_IC6000_to_ome_zarr\"\nand populates the empty OME-Zarr files that were prepared.\n",
+      "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
+    },
+    {
       "name": "Label Assignment by Overlap",
       "category": "Measurement",
       "executable_non_parallel": "tasks/init_label_assignment_by_overlap.py",
