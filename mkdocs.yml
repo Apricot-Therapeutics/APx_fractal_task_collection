@@ -1,0 +1,37 @@
+site_name: APx Fractal Task Collection
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Running Tasks: running_tasks.md
+  - Example Pipelines: example_pipelines.md
+  - Code Reference:
+      - tasks: reference/tasks_summary.md
+      - features: reference/features_summary.md
+      - init_utils: reference/init_utils.md
+      - io_models: reference/io_models.md
+      - utils: reference/utils.md
+  - About: about.md
+extra_css:
+  - stylesheets/extra.css
+theme:
+  name: material
+  logo: img/APx_logo_only.png
+  favicon: img/favicon.ico
+  palette:
+    primary: custom
+    highlight: red
+plugins:
+- search
+- mkdocstrings:
+    handlers: 
+      python:
+        options: 
+          show_root_toc_entry: false
+- gen-files:
+    scripts:
+      - docs/gen_ref_pages.py
+markdown_extensions:
+  - attr_list
+  - md_in_html
+  - pymdownx.blocks.caption
+
