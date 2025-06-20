@@ -37,7 +37,6 @@ from fractal_tasks_core.roi import prepare_FOV_ROI_table
 from fractal_tasks_core.roi import prepare_well_ROI_table
 from fractal_tasks_core.roi import remove_FOV_overlaps
 from fractal_tasks_core.tasks.io_models import MultiplexingAcquisition
-from fractal_tasks_core.zarr_utils import open_zarr_group_with_overwrite
 from fractal_tasks_core.tables import write_table
 from fractal_tasks_core.ngff.specs import NgffImageMeta
 from fractal_tasks_core.ngff.specs import Plate
@@ -127,7 +126,7 @@ def init_add_multiplexing_cycle_IC6000(
         # metadata file instead
         xml_path = list(Path(acq_input.image_dir).glob("*.xdce"))[0]
 
-        plate = parse_platename(xml_path)
+        plate = parse_platename(xml_path.as_posix())
         plate_prefix = ""
 
         actual_wavelength_ids = []

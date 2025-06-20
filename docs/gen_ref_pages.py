@@ -14,10 +14,11 @@ def write_combined_subpackage_page(subfolder: str):
 
     for py_file in sorted(folder_path.glob("*.py")):
         doc_path = Path("..", subfolder, f"{py_file.stem}")
+        write_path = Path("reference", subfolder, f"{py_file.stem}.md")
         if py_file.name == "__init__.py":
             continue  # skip empty/undocumented __init__.py
         else:
-            with mkdocs_gen_files.open(doc_path, "w") as f:
+            with mkdocs_gen_files.open(write_path, "w") as f:
                 mod_name = py_file.stem
                 full_mod = f"{PACKAGE}.{subfolder}.{mod_name}"
                 f.write(f"## `{full_mod}`\n\n")

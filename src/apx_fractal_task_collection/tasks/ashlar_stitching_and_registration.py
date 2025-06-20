@@ -20,7 +20,6 @@ from skimage import io
 from pydantic import validate_call
 from ashlar.scripts import ashlar
 from typing import Optional
-from natsort import natsorted
 
 
 from fractal_tasks_core.ngff import load_NgffImageMeta
@@ -48,28 +47,17 @@ def ashlar_stitching_and_registration(
     overwrite_input: bool = False,
     suffix: str = "_stitched",
     tmp_dir: Optional[str] = None,
-) -> None:
+) -> dict:
 
     """
     Stitches FOVs with overlap using ASHLAR (https://github.com/labsyspharm/ashlar)
     and register the stitched image to the reference cycle.
 
     Args:
-        input_paths: List of input paths where the image data is stored as
-            OME-Zarrs. Should point to the parent folder containing one or many
-            OME-Zarr files, not the actual OME-Zarr file. Example:
-            `["/some/path/"]`. This task only supports a single input path.
+        zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
-        output_path: Path were the output of this task is stored. Examples:
-            `"/some/path/"` => puts the new OME-Zarr file in the same folder as
-            the input OME-Zarr file; `"/some/new_path"` => puts the new
-            OME-Zarr file into a new folder at `/some/new_path`.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        component: Path to the OME-Zarr image in the OME-Zarr plate that is
-            processed. Example: `"some_plate.zarr/B/03/0"`.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        metadata: This parameter is not used by this task.
-            (standard argument for Fractal tasks, managed by Fractal server).
+        init_args: Intialization arguments provided by
+            `init_ashlar_stitching_and_registration`.
         overlap: The overlap between FOVs in percent (0-1).
         filter_sigma: The sigma of the Gaussian filter used to filter the
             FOVs for stitching. Can help to improve the stitching performance.

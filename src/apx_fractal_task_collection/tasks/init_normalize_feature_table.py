@@ -11,7 +11,7 @@
 Initializes the parallelization list for normalize feature table task.
 """
 import logging
-from typing import Any, List
+from typing import Any
 from enum import Enum
 import pandas as pd
 

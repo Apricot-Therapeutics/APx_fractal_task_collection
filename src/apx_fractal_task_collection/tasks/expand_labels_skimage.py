@@ -53,7 +53,6 @@ def expand_labels_skimage(  # noqa: C901
     # Task-specific arguments:
     ROI_table_name: str,
     distance: int = 30,
-    #spacing: int = 1,
     output_label_name: str,
     level: int = 0,
     overwrite: bool = True,
@@ -72,10 +71,6 @@ def expand_labels_skimage(  # noqa: C901
         ROI_table_name: Name of the table containing the ROIs.
         distance: Euclidean distance in pixels by which to grow the labels.
             Default is one.
-        spacing: Spacing of elements along each dimension. If a sequence, must
-            be of length equal to the input rank; if a single number,
-             this is used for all axes. If not specified, a grid spacing
-             of unity is implied.
         output_label_name: Name of the output label image.
         level: Resolution of the label image to calculate overlap.
             Only tested for level 0.

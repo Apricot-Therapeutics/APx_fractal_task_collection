@@ -10,7 +10,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, Sequence, Optional
+from typing import Optional
 import dask.array as da
 import fractal_tasks_core
 import pandas as pd
@@ -54,8 +54,8 @@ def measure_features(  # noqa: C901
         zarr_url: str,
         # Task-specific arguments:
         label_image_name: str,
-		ROI_table_name: str,
-		output_table_name: str,
+        ROI_table_name: str,
+        output_table_name: str,
         channels_to_include: Optional[list[ChannelInputModel]] = None,
         channels_to_exclude: Optional[list[ChannelInputModel]] = None,
         measure_intensity: bool = False,
@@ -77,8 +77,8 @@ def measure_features(  # noqa: C901
             (standard argument for Fractal tasks, managed by Fractal server).
         label_image_name: Name of the label image that contains the seeds.
             Needs to exist in OME-Zarr file.
-		ROI_table_name: Name of the ROI table to process.
-		output_table_name: Name of the feature table.
+        ROI_table_name: Name of the ROI table to process.
+        output_table_name: Name of the feature table.
         channels_to_include: List of channels to include for intensity
             and texture measurements. Use the channel label to indicate
             single channels. If None, all channels are included.

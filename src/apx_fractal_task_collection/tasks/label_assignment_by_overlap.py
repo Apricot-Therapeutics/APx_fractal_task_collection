@@ -31,10 +31,16 @@ __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 logger = logging.getLogger(__name__)
 
 
-def label_overlap(regionmask, intensity_image):
+def label_overlap(regionmask: np.ndarray,
+                  intensity_image: np.ndarray,
+) -> list[float, float]:
     """
     Scikit-image regionprops_table extra_properties function to compute
     max overlap between two label images.
+
+    regionmask: 2D numpy array of labels, where each label corresponds to a
+        child object.
+    intensity_image: 2D numpy array with parent objects.
     """
     parent_labels = np.where(regionmask > 0, intensity_image, 0)
 
@@ -62,6 +68,7 @@ def assign_objects(
     """
     Calculate the overlap between labels in label_a and label_b,
         and return a DataFrame of matching labels.
+
     label_a:  4D numpy array.
     label_b:  4D numpy array.
     overlap_threshold: float, the minimum fraction of child label object that
@@ -130,7 +137,7 @@ def label_assignment_by_overlap(  # noqa: C901
         f"{child_label_name}/{level}")
 
     # if there are no child labels, assignments will be all NaN
-    if np.unique(child_label).compute().size == 1:
+    if np.unique(child_label.compute()).size == 1:
         assignments = pd.DataFrame({'parent_label': pd.NA,
                                     'overlap': pd.NA}, index=pd.Index([]))
 

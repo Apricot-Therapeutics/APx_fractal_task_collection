@@ -4,6 +4,7 @@ from natsort import natsorted
 from pathlib import Path
 from fractal_tasks_core.channels import get_omero_channel_list
 from fractal_tasks_core.channels import get_channel_from_image_zarr
+from fractal_tasks_core.channels import OmeroChannel
 import dask.array as da
 from pydantic import BaseModel, model_validator
 from typing_extensions import Self, Literal
@@ -132,21 +133,25 @@ FEATURE_LABELS = {
 }
 
 
-def get_acquisition_from_channel_label(zarrurl: Path,
-                                       channel_label: str) -> str:
+def get_acquisition_from_channel_label(
+        zarrurl: Path,
+        channel_label: str,
+) -> str:
     """
     Get the acquisition name from the channel label.
 
     Args:
+        zarrurl: Path to the OME-Zarr file.
         channel_label: Label of the channel.
 
     Returns:
         The acquisition name.
     """
 
-    zarr_group = zarr.open(zarrurl, mode="r")
+    zarr_group = zarr.open(zarrurl.as_posix(), mode="r")
     first_well_url = zarr_group.attrs['plate']['wells'][0]['path']
-    well_group = zarr.open(zarrurl.joinpath(first_well_url), mode="r")
+    well_group = zarr.open(zarrurl.joinpath(first_well_url).as_posix(),
+                           mode="r")
 
     img_paths = natsorted(
         [image['path'] for image in well_group.attrs['well']["images"]])
@@ -157,7 +162,9 @@ def get_acquisition_from_channel_label(zarrurl: Path,
             first_well_url,
             img_path,
         )
-        channel_list = get_omero_channel_list(image_zarr_path=image_path)
+        channel_list = get_omero_channel_list(
+            image_zarr_path=image_path.as_posix()
+        )
         if channel_label in [c.label for c in channel_list]:
             actual_img_path = img_path
             break
@@ -165,18 +172,21 @@ def get_acquisition_from_channel_label(zarrurl: Path,
     return actual_img_path
 
 
-def get_acquisition_from_label_name(zarrurl: Path,
-                                    label_name: str) -> str:
+def get_acquisition_from_label_name(
+        zarrurl: Path,
+        label_name: str,
+) -> str:
     """
     Get the acquisition name from the label name.
 
     Args:
+        zarrurl: Path to the OME-Zarr file.
         label_name: Name of the label image.
 
     Returns:
         The acquisition name.
     """
-    well_group = zarr.open(zarrurl, mode="r")
+    well_group = zarr.open(zarrurl.as_posix(), mode="r")
     img_paths = natsorted(
         [image['path'] for image in well_group.attrs['well']["images"]])
 
@@ -194,17 +204,25 @@ def get_acquisition_from_label_name(zarrurl: Path,
     return actual_img_path
 
 
-def get_label_image_from_well(wellurl: Path, label_name: str, level: int = 0):
-    '''
-    Get the image data for a specific channel from an OME-Zarr file.
+def get_label_image_from_well(
+        wellurl: Path,
+        label_name: str,
+        level: int = 0,
+) -> tuple[da.Array, Path]:
+    """
+    Get the label image of a specific object from an OME-Zarr file.
 
     Args:
-        zarrurl: Path to the OME-Zarr file.
-        channel_label: Label of the channel to extract.
+        wellurl: Path to the well in the OME-Zarr file.
+        label_name: Name of the label image to extract.
+        level: Level of the image pyramid to extract (default is 0).
 
     Returns:
         The image data for the specified channel as dask array
-    '''
+
+    Raises:
+        FileNotFoundError: If no matching label image is found in any image group.
+    """
 
     well_group = zarr.open_group(wellurl, mode="r+")
     for image in well_group.attrs['well']['images']:
@@ -212,37 +230,43 @@ def get_label_image_from_well(wellurl: Path, label_name: str, level: int = 0):
             img_zarr_path = wellurl.joinpath(wellurl, image['path'])
             data_zyx = da.from_zarr(
                 img_zarr_path.joinpath("labels", label_name, str(level)))
-            break
-        except:
+            return data_zyx, img_zarr_path
+        except (KeyError, FileNotFoundError, zarr.errors.PathNotFoundError):
             continue
 
-    return data_zyx, img_zarr_path
+    raise FileNotFoundError(
+        f"Label '{label_name}' at level {level} not found in any image under {wellurl}"
+    )
 
 
-def get_channel_image_from_well(wellurl: Path,
-                                channel_label: str,
-                                level: int = 0):
-    '''
+
+def get_channel_image_from_well(
+        wellurl: Path,
+        channel_label: str,
+        level: int = 0,
+) -> tuple[da.Array, Path]:
+    """
     Get the image data for a specific channel from an OME-Zarr file.
 
     Args:
         wellurl: Path to the OME-Zarr file.
         channel_label: Label of the channel to extract.
+        level: Level of the image pyramid to extract (default is 0).
 
     Returns:
         The image data for the specified channel as dask array
-    '''
+    """
 
 
-    well_group = zarr.open(wellurl, mode='r')
+    well_group = zarr.open(wellurl.as_posix(), mode='r')
     for image in well_group.attrs['well']['images']:
         img_zarr_path = wellurl.joinpath(wellurl, image['path'])
         channel_list = get_omero_channel_list(
-            image_zarr_path=img_zarr_path)
+            image_zarr_path=img_zarr_path.as_posix())
 
         if channel_label in [c.label for c in channel_list]:
             tmp_channel: OmeroChannel = get_channel_from_image_zarr(
-                image_zarr_path=img_zarr_path,
+                image_zarr_path=img_zarr_path.as_posix(),
                 wavelength_id=None,
                 label=channel_label
             )
@@ -254,26 +278,29 @@ def get_channel_image_from_well(wellurl: Path,
             return data_zyx, img_zarr_path
         
 
-def get_channel_image_from_image(img_url: Path,
-                                 channel_label: str,
-                                 level: int = 0):
-    '''
+def get_channel_image_from_image(
+        img_url: Path,
+        channel_label: str,
+        level: int = 0,
+) -> da.Array:
+    """
     Get the image data for a specific channel from an OME-Zarr file.
 
     Args:
         img_url: Path to the OME-Zarr file.
         channel_label: Label of the channel to extract.
+        level: Level of the image pyramid to extract (default is 0).
 
     Returns:
         The image data for the specified channel as dask array
-    '''
+    """
 
     channel_list = get_omero_channel_list(
-        image_zarr_path=img_url)
+        image_zarr_path=img_url.as_posix())
 
     if channel_label in [c.label for c in channel_list]:
         tmp_channel: OmeroChannel = get_channel_from_image_zarr(
-            image_zarr_path=img_url,
+            image_zarr_path=img_url.as_posix(),
             wavelength_id=None,
             label=channel_label
         )

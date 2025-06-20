@@ -26,7 +26,18 @@ __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
 logger = logging.getLogger(__name__)
 
-def concat_features(feature_tables):
+def concat_features(feature_tables: list[ad.AnnData]) -> ad.AnnData:
+    """
+    Concatenate feature tables into a single Anndata object.
+
+    Args:
+        feature_tables: List of Anndata objects containing feature tables
+            for different zarr-images.
+
+    Returns:
+        feature_table: Anndata object containing the concatenated feature
+            tables, with unique variable names.
+    """
 
     well_table = ad.concat(feature_tables, axis=1, merge="same")
     well_table.var_names_make_unique(join="trash")
@@ -53,7 +64,7 @@ def aggregate_feature_tables(  # noqa: C901
         input_table_name: str,
         output_table_name: str,
         output_image: str = '0',
-        overwrite: bool = True
+        overwrite: bool = True,
 
 ) -> None:
     """
@@ -61,22 +72,13 @@ def aggregate_feature_tables(  # noqa: C901
     Anndata table containing feature measurements across all zarr-images.
 
     Args:
-        input_paths: Path to the parent folder of the NGFF image.
-            This task only supports a single input path.
+        zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
-        output_path: This argument is not used in this task.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        component: Path of the NGFF image, relative to `input_paths[0]`.
-            (standard argument for Fractal tasks, managed by Fractal server).
-        metadata: This argument is not used in this task.
-            (standard argument for Fractal tasks, managed by Fractal server).
+        init_args: Intialization arguments provided by
+            `init_aggregate_feature_tables`.
         input_table_name: Name of the feature table.
         output_table_name: Name of the aggregated feature table. If this is the
             same as the input_table_name, the input table will be overwritten.
-        tables_to_merge: List of feature tables to merge into the main
-            feature table. For example, if the input feature table is the table
-            for cells, tables to merge could include nuclei and cytoplasm.
-            Only use this option if you ran Label Assignment by Overlap first.
         output_image: In which zarr-image to store the aggregated feature
             table. By default, it is saved in the first image of the zarr. If
             output_table_name is the same as input_table_name, the table will

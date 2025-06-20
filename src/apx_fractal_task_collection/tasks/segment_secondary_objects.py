@@ -29,7 +29,8 @@ from typing import Optional
 from apx_fractal_task_collection.io_models import InitArgsSegmentSecondary
 
 from fractal_tasks_core.labels import prepare_label_group
-from fractal_tasks_core.channels import get_channel_from_image_zarr
+from fractal_tasks_core.channels import (get_channel_from_image_zarr,
+                                         OmeroChannel)
 from fractal_tasks_core.utils import rescale_datasets
 from fractal_tasks_core.ngff import load_NgffImageMeta
 from fractal_tasks_core.pyramids import build_pyramid
@@ -76,6 +77,11 @@ def watershed(intensity_image, label_image,
             struct = disk(5).astype('bool')
         elif len(intensity_image.shape) == 3:
             struct = ball(5).astype('bool')
+        else:
+            raise ValueError(
+                "Intensity image must be 2D or 3D. "
+                f"Got shape {intensity_image.shape}."
+            )
 
         background_mask = mh.thresholding.gbernsen(
             f=intensity_image,
