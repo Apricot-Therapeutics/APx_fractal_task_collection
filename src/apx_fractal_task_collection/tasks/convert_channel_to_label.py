@@ -23,7 +23,8 @@ from fractal_tasks_core.utils import rescale_datasets
 from fractal_tasks_core.labels import prepare_label_group
 from fractal_tasks_core.pyramids import build_pyramid
 from fractal_tasks_core.ngff import load_NgffImageMeta
-from fractal_tasks_core.channels import get_channel_from_image_zarr
+from fractal_tasks_core.channels import (get_channel_from_image_zarr,
+                                         OmeroChannel)
 
 
 logger = logging.getLogger(__name__)

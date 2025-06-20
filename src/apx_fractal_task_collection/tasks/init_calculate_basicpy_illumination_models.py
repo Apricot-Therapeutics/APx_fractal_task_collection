@@ -12,7 +12,7 @@
 Initializes the parallelization list for BaSiCPy illumination correction.
 """
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from apx_fractal_task_collection.io_models import CorrectBy
 from apx_fractal_task_collection.init_utils import (group_by_channel, 

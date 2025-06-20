@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_channel_image_from_zarr(zarrurl, channel_label):
-    '''
+    """
     Get the image data for a specific channel from an OME-Zarr file. This
     function collects all images across all wells and returns them as a single
     stack.
@@ -46,7 +46,7 @@ def get_channel_image_from_zarr(zarrurl, channel_label):
 
     Returns:
         The image data for the specified channel as dask array
-    '''
+    """
 
     img = []
     plate_group = zarr.open(zarrurl, mode='r')

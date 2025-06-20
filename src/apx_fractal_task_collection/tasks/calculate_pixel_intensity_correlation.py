@@ -22,7 +22,8 @@ from apx_fractal_task_collection.io_models import InitArgsCalculatePixelIntensit
 from apx_fractal_task_collection.features.intensity import object_intensity_correlation
 from apx_fractal_task_collection.utils import get_acquisition_from_label_name
 
-from fractal_tasks_core.channels import get_channel_from_image_zarr
+from fractal_tasks_core.channels import (get_channel_from_image_zarr,
+                                         OmeroChannel)
 from fractal_tasks_core.ngff import load_NgffImageMeta
 from fractal_tasks_core.roi import check_valid_ROI_indices
 from fractal_tasks_core.roi import (
@@ -61,7 +62,7 @@ def calculate_pixel_intensity_correlation(  # noqa: C901
         zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
         init_args: Intialization arguments provided by
-            `init_segment_secondary_objects`.
+            `init_calculate_pixel_intensity_correlation`.
         ROI_table_name: Name of the table containing the ROIs.
         output_table_name: Name of the output feature table.
         level: Resolution of the label image to calculate correlation.

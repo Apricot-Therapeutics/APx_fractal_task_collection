@@ -12,10 +12,8 @@ Initializes the parallelization list for the ashlar stitching and registration t
 """
 import logging
 from typing import Any
-from apx_fractal_task_collection.init_utils import (group_by_well,
-                                                    get_label_zarr_url)
+from apx_fractal_task_collection.init_utils import group_by_well
 from pydantic import validate_call
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 

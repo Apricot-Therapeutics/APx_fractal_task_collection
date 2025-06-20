@@ -11,12 +11,11 @@
 Initializes the parallelization list for calculate pixel intensity correlation.
 """
 import logging
-from typing import Any, Optional
+from typing import Any
 from apx_fractal_task_collection.init_utils import (group_by_well,
                                                     get_label_zarr_url,
                                                     get_channel_zarr_url)
 from pydantic import validate_call
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +46,8 @@ def init_calculate_pixel_intensity_correlation(
         label_name: Name of the label image that contains the seeds.
             Needs to exist in OME-Zarr file.
         correlation_pairs: List of dictionaries. Key and value represent
-        the label names of two channels that should be correlated.
-        CAREFUL: add a new dictionary for each correlation.
+            the label names of two channels that should be correlated.
+            CAREFUL: add a new dictionary for each correlation.
 
     Returns:
         task_output: Dictionary for Fractal server that contains a

@@ -37,6 +37,8 @@ def correct_4i_bleaching_artifacts(  # noqa: C901
     output_table_name_suffix: str = "_bleaching_corrected",
 ):
     """
+    Correct bleaching artifacts in the feature table of a 4i image.
+
     Correct bleaching aritfacts in the feature table with the selected control
     condition. Only intensity features are corrected. Currently, the correction
     is applied assuming a zig-zag (starting left-to-right) acquisition pattern.

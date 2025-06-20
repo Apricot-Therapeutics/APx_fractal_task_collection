@@ -12,10 +12,9 @@
 Initializes the parallelization list for secondary segmentation.
 """
 import logging
-from typing import Any, Optional
+from typing import Any
 from apx_fractal_task_collection.init_utils import (group_by_well,
-                                                    get_label_zarr_url,
-                                                    get_channel_zarr_url)
+                                                    get_label_zarr_url)
 from pydantic import validate_call
 from pathlib import Path
 
