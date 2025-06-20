@@ -11,7 +11,6 @@ from devtools import debug
 from fractal_tasks_core.channels import ChannelInputModel
 from fractal_tasks_core.channels import OmeroChannel
 from fractal_tasks_core.tasks.io_models import MultiplexingAcquisition
-#from fractal_tasks_core.tasks.copy_ome_zarr import copy_ome_zarr
 
 from apx_fractal_task_collection.utils import TextureFeatures, FEATURE_LABELS, BaSiCPyModelParams
 from apx_fractal_task_collection.tasks.measure_features import measure_features
@@ -35,7 +34,6 @@ from apx_fractal_task_collection.tasks.aggregate_feature_tables import aggregate
 from apx_fractal_task_collection.tasks.init_aggregate_feature_tables import init_aggregate_feature_tables
 from apx_fractal_task_collection.tasks.correct_chromatic_shift import correct_chromatic_shift
 from apx_fractal_task_collection.tasks.init_correct_chromatic_shift import init_correct_chromatic_shift
-from apx_fractal_task_collection.tasks.compress_zarr_for_visualization import compress_zarr_for_visualization
 from apx_fractal_task_collection.tasks.init_convert_IC6000_to_ome_zarr import init_convert_IC6000_to_ome_zarr
 from apx_fractal_task_collection.tasks.convert_IC6000_to_ome_zarr import convert_IC6000_to_ome_zarr
 from apx_fractal_task_collection.tasks.init_add_multiplexing_cycle_IC6000 import init_add_multiplexing_cycle_IC6000
@@ -45,7 +43,6 @@ from apx_fractal_task_collection.tasks.detect_blob_centroids import detect_blob_
 from apx_fractal_task_collection.tasks.init_detect_blob_centroids import init_detect_blob_centroids
 from apx_fractal_task_collection.tasks.mask_label_image import mask_label_image
 from apx_fractal_task_collection.tasks.init_mask_label_image import init_mask_label_image
-from apx_fractal_task_collection.tasks.calculate_registration_image_based_chi_squared_shift import calculate_registration_image_based_chi_squared_shift
 from apx_fractal_task_collection.tasks.ashlar_stitching_and_registration import ashlar_stitching_and_registration
 from apx_fractal_task_collection.tasks.init_ashlar_stitching_and_registration import init_ashlar_stitching_and_registration
 from apx_fractal_task_collection.tasks.init_expand_labels import init_expand_labels
@@ -176,13 +173,6 @@ def test_measure_features(test_data_dir, image_list):
                        intensity_columns +\
                        texture_columns +\
                        population_columns
-
-    #assert set(feature_table.var.index.tolist()) == set(expected_columns), \
-    #    f"Expected columns {expected_columns}," \
-    #    f" but got {feature_table.var.index.tolist()}"
-
-    # print values uniquely in feature_table.var.index.tolist() and not in expected_columns
-    print(f"this is a test{set(expected_columns) - set(feature_table.var.index.tolist())}")
 
     assert np.isin(feature_table.var.index.tolist(), expected_columns).all(), \
         f"Expected columns {expected_columns}," \
@@ -824,44 +814,6 @@ def test_correct_chromatic_shift(test_data_dir, image_list):
     assert corrected_image_path.exists(),\
         f"Corrected image not found at {corrected_image_path}"
 
-
-@pytest.mark.parametrize("component", [IMAGE_COMPONENT_2D, IMAGE_COMPONENT_3D])
-def test_registration(test_data_dir, component):
-    calculate_registration_image_based_chi_squared_shift(
-        input_paths=[test_data_dir],
-        output_path=test_data_dir,
-        metadata={},
-        component=component,
-        wavelength_id='A01_C01',
-        roi_table='FOV_ROI_table',
-        level=0,
-    )
-
-
-# @pytest.mark.parametrize("component", [WELL_COMPONENT_2D, WELL_COMPONENT_3D])
-# def test_compress_zarr_for_visualization(test_data_dir, component):
-#
-#     copy_ome_zarr(
-#         input_paths=[test_data_dir],
-#         output_path=test_data_dir,
-#         metadata={'plate': 'hcs_ngff',
-#                   'well': ['A/2', 'B/3'],
-#                   'image': ['0', '1', '2']},
-#         project_to_2D=False,
-#         suffix="vis",
-#         ROI_table_names=("well_ROI_table", "FOV_ROI_table")
-#     )
-#
-#     compress_zarr_for_visualization(
-#         input_paths=[test_data_dir],
-#         output_path=test_data_dir,
-#         metadata={'plate': 'hcs_ngff',
-#                   'copy_ome_zarr': {'suffix': 'vis'}},
-#         component=component,
-#         output_zarr_path=Path(test_data_dir).joinpath(
-#             "hcs_ngff_vis.zarr").as_posix(),
-#         overwrite=True
-#     )
 
 def test_IC6000_conversion(test_data_dir):
 
