@@ -107,7 +107,8 @@ def label_assignment_by_overlap(  # noqa: C901
         init_args: Intialization arguments provided by
             `init_label_assignment_by_overlap`.
         child_table_name: Name of the feature table associated with
-            the child label image.
+            the child label image. This feature table already needs to exist 
+            and the overlap is added to that table.
         level: Resolution of the label image to calculate overlap.
             Only tested for level 0.
         overlap_threshold: The minimum percentage (between 0 and 1) of child
@@ -133,9 +134,17 @@ def label_assignment_by_overlap(  # noqa: C901
     if np.unique(child_label).compute().size == 1:
         assignments = pd.DataFrame({'parent_label': pd.NA,
                                     'overlap': pd.NA}, index=pd.Index([]))
+        logger.info(
+            f"Label image was empty for child label {child_label_name}. "
+            "No labels could be matched."
+        )
 
     else:
         # make the assignment
+        logger.info(
+            "Calculating label assignments with overlap threshold "
+            f"{overlap_threshold}."
+        )
         assignments = assign_objects(parent_label.compute(),
                                      child_label.compute(),
                                      overlap_threshold,
@@ -159,6 +168,14 @@ def label_assignment_by_overlap(  # noqa: C901
         try:
             child_features = ad.read_zarr(child_feature_path)
         except:
+            logger.info(
+                f"Child feature table {child_table_name} was not found in "
+                f" well {zarr_url} for image {image['path']}. "
+                "A feature table of that name needs to exist before the "
+                "task is run for the label overlap to be saved into a table "
+                "of that image. In multiplexing scenarios, this may be " 
+                "intentional."
+            )
             continue
 
         if f'{parent_label_name}_label' in child_features.obs.columns:
@@ -190,6 +207,10 @@ def label_assignment_by_overlap(  # noqa: C901
         orig_attrs = child_table_group.attrs.asdict()
 
         img_group = zarr.group(child_feature_path.parents[1])
+        logger.info(
+            f"Updating the {child_table_name} feature table with overlap "
+            f"information in the image {zarr_url}/{image['path']}."
+        )
         write_table(img_group,
                     child_table_name,
                     child_features,
