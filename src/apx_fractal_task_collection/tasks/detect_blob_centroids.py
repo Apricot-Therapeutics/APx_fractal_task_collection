@@ -1,4 +1,3 @@
-"""
 # Copyright 2022 (C) Friedrich Miescher Institute for Biomedical Research and
 # University of Zurich
 #
@@ -14,7 +13,6 @@
 # <exact-lab.it> under contract with Liberali Lab from the Friedrich Miescher
 # Institute for Biomedical Research and Pelkmans Lab from the University of
 # Zurich.
-"""
 
 import logging
 
@@ -36,7 +34,8 @@ from fractal_tasks_core.roi import check_valid_ROI_indices
 from fractal_tasks_core.roi import (
     convert_ROI_table_to_indices,
 )
-from fractal_tasks_core.channels import get_channel_from_image_zarr
+from fractal_tasks_core.channels import (get_channel_from_image_zarr,
+                                         OmeroChannel)
 
 from pydantic import validate_call
 
@@ -46,15 +45,22 @@ __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
 logger = logging.getLogger(__name__)
 
-def blob_detection(intensity_image,
-                   min_sigma=1,
-                   max_sigma=10,
-                   num_sigma=3,
-                   threshold=0.002):
+def blob_detection(
+        intensity_image: np.ndarray,
+        min_sigma: int = 1,
+        max_sigma: int = 10,
+        num_sigma: int = 3,
+        threshold: float = 0.002,
+) -> np.ndarray:
     """
     Detect blobs in an intensity image.
     Args:
-        intensity_image:
+        intensity_image: 3D numpy array representing the intensity image.
+        min_sigma: Minimum standard deviation for Gaussian kernel.
+        max_sigma: Maximum standard deviation for Gaussian kernel.
+        num_sigma: Number of standard deviations to consider between min and
+            max sigma.
+        threshold: Threshold for blob detection.
 
     Returns:
         labels: 3D numpy array with the same shape as the input image,
@@ -100,6 +106,11 @@ def detect_blob_centroids(  # noqa: C901
         init_args: Intialization arguments provided by
             `init_detect_blob_centroids`.
         ROI_table_name: Name of the table containing the ROIs.
+        min_sigma: Minimum standard deviation for Gaussian kernel.
+        max_sigma: Maximum standard deviation for Gaussian kernel.
+        num_sigma: Number of standard deviations to consider between min and
+            max sigma.
+        threshold: Threshold for blob detection.
         output_label_name: Name of the output label image.
         level: Resolution of the label image to calculate overlap.
             Only tested for level 0.

@@ -11,7 +11,7 @@
 Initializes the parallelization list for Correct 4i Bleaching Artifacts Task.
 """
 import logging
-from typing import Any, List
+from typing import Any
 from enum import Enum
 from functools import reduce
 import pandas as pd
@@ -44,9 +44,9 @@ class MeanEstimator(Enum):
 
 
 class Plate():
-    '''
+    """
     Class to store metadata of a plate and which wells are imaged
-    '''
+    """
     def __init__(self):
         self.initialize_wells()
         self.time_index = list(range(0, 384))
@@ -105,6 +105,9 @@ def calculate_correction_factors(control_data,
 
     elif mean_estimator == MeanEstimator.mean:
         averaged_df = control_data.groupby(['well_name', 'time']).mean()
+
+    else:
+        raise ValueError(f"Unknown mean estimator: {mean_estimator}")
 
     intensity_columns = [c for c in averaged_df.columns if 'Intensity' in c]
 

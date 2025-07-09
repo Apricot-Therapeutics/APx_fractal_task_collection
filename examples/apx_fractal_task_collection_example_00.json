@@ -1,0 +1,386 @@
+{
+  "name": "example_workflow",
+  "task_list": [
+    {
+      "meta_non_parallel": null,
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 3750
+      },
+      "args_non_parallel": {
+        "acquisitions": {
+          "0": {
+            "image_dir": "/data/homes/apricot/Code/apx-fractal-task-collection/tests/data/IC6000_data/cycle_0",
+            "allowed_channels": [
+              {
+                "wavelength_id": "UV - DAPI",
+                "label": "0_405",
+                "active": true,
+                "coefficient": 1,
+                "inverted": false
+              },
+              {
+                "wavelength_id": "Blue - FITC",
+                "label": "0_488",
+                "active": true,
+                "coefficient": 1,
+                "inverted": false
+              },
+              {
+                "wavelength_id": "Green - dsRed",
+                "label": "0_568",
+                "active": true,
+                "coefficient": 1,
+                "inverted": false
+              },
+              {
+                "wavelength_id": "Red - Cy5",
+                "label": "0_647",
+                "active": true,
+                "coefficient": 1,
+                "inverted": false
+              }
+            ]
+          },
+          "1": {
+            "image_dir": "/data/homes/apricot/Code/apx-fractal-task-collection/tests/data/IC6000_data/cycle_1",
+            "allowed_channels": [
+              {
+                "wavelength_id": "UV - DAPI",
+                "label": "1_405",
+                "active": true,
+                "coefficient": 1,
+                "inverted": false
+              },
+              {
+                "wavelength_id": "Blue - FITC",
+                "label": "1_488",
+                "active": true,
+                "coefficient": 1,
+                "inverted": false
+              },
+              {
+                "wavelength_id": "Green - dsRed",
+                "label": "1_568",
+                "active": true,
+                "coefficient": 1,
+                "inverted": false
+              },
+              {
+                "wavelength_id": "Red - Cy5",
+                "label": "1_647",
+                "active": true,
+                "coefficient": 1,
+                "inverted": false
+              }
+            ]
+          }
+        },
+        "num_levels": 5,
+        "coarsening_xy": 2,
+        "image_extension": "tif",
+        "overwrite": false
+      },
+      "args_parallel": {},
+      "type_filters": {},
+      "task": {
+        "pkg_name": "apx-fractal-task-collection",
+        "version": "0.4.7",
+        "name": "Convert IC6000 to OME-Zarr"
+      }
+    },
+    {
+      "meta_non_parallel": null,
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 10000
+      },
+      "args_non_parallel": {
+        "n_images": 2,
+        "correct_by": "channel label",
+        "compute_per_well": false,
+        "exclude_border_FOVs": false
+      },
+      "args_parallel": {
+        "illumination_profiles_folder": "/data/active/apricot/APx_Fractal_example_data/illumination_models",
+        "overwrite": false
+      },
+      "type_filters": {},
+      "task": {
+        "pkg_name": "apx-fractal-task-collection",
+        "version": "0.4.7",
+        "name": "Calculate BaSiCPy Illumination Models"
+      }
+    },
+    {
+      "meta_non_parallel": null,
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 3750
+      },
+      "args_non_parallel": null,
+      "args_parallel": {
+        "illumination_profiles_folder": "/data/active/apricot/APx_Fractal_example_data/illumination_models",
+        "correct_by": "channel label",
+        "darkfield": true,
+        "subtract_baseline": true,
+        "input_ROI_table": "FOV_ROI_table",
+        "overwrite_input": true,
+        "suffix": "_illum_corr"
+      },
+      "type_filters": {},
+      "task": {
+        "pkg_name": "apx-fractal-task-collection",
+        "version": "0.4.7",
+        "name": "Apply BaSiCPy Illumination Models"
+      }
+    },
+    {
+      "meta_non_parallel": {
+        "cpus_per_task": 1,
+        "mem": 1000
+      },
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 8000
+      },
+      "args_non_parallel": {
+        "reference_acquisition": 0
+      },
+      "args_parallel": {
+        "wavelength_id": "UV - DAPI",
+        "method": "phase_cross_correlation",
+        "lower_rescale_quantile": 0,
+        "upper_rescale_quantile": 0.99,
+        "roi_table": "FOV_ROI_table",
+        "level": 0
+      },
+      "type_filters": {},
+      "task": {
+        "pkg_name": "fractal-tasks-core",
+        "version": "1.5.3",
+        "name": "Calculate Registration (image-based)"
+      }
+    },
+    {
+      "meta_non_parallel": {
+        "cpus_per_task": 1,
+        "mem": 1000
+      },
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 1000
+      },
+      "args_non_parallel": {
+        "reference_acquisition": 0
+      },
+      "args_parallel": {
+        "roi_table": "FOV_ROI_table"
+      },
+      "type_filters": {},
+      "task": {
+        "pkg_name": "fractal-tasks-core",
+        "version": "1.5.3",
+        "name": "Find Registration Consensus"
+      }
+    },
+    {
+      "meta_non_parallel": null,
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 4000
+      },
+      "args_non_parallel": null,
+      "args_parallel": {
+        "registered_roi_table": "registered_FOV_ROI_table",
+        "reference_acquisition": 0,
+        "overwrite_input": true
+      },
+      "type_filters": {},
+      "task": {
+        "pkg_name": "fractal-tasks-core",
+        "version": "1.5.3",
+        "name": "Apply Registration to Image"
+      }
+    },
+    {
+      "meta_non_parallel": null,
+      "meta_parallel": {
+        "cpus_per_task": 4,
+        "mem": 16000,
+        "needs_gpu": true
+      },
+      "args_non_parallel": null,
+      "args_parallel": {
+        "level": 0,
+        "channel": {
+          "label": "0_405"
+        },
+        "input_ROI_table": "registered_FOV_ROI_table",
+        "output_label_name": "nuclei",
+        "diameter_level0": 60,
+        "model_type": "cyto2",
+        "relabeling": true,
+        "use_masks": true,
+        "overwrite": true
+      },
+      "type_filters": {},
+      "task": {
+        "pkg_name": "fractal-tasks-core",
+        "version": "1.5.3",
+        "name": "Cellpose Segmentation"
+      }
+    },
+    {
+      "meta_non_parallel": null,
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 3750
+      },
+      "args_non_parallel": {
+        "channel_label": "0_568",
+        "label_name": "nuclei",
+        "output_label_image_name": "0"
+      },
+      "args_parallel": {
+        "ROI_table_name": "registered_FOV_ROI_table",
+        "min_threshold": 20,
+        "max_threshold": 30,
+        "gaussian_blur": 5,
+        "fill_holes_area": 100,
+        "contrast_threshold": 5,
+        "output_label_name": "cells",
+        "level": 0,
+        "overwrite": true
+      },
+      "type_filters": {},
+      "task": {
+        "pkg_name": "apx-fractal-task-collection",
+        "version": "0.4.7",
+        "name": "Segment Secondary Objects"
+      }
+    },
+    {
+      "meta_non_parallel": null,
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 3750
+      },
+      "args_non_parallel": null,
+      "args_parallel": {
+        "label_image_name": "nuclei",
+        "ROI_table_name": "registered_FOV_ROI_table",
+        "output_table_name": "nuclei_measurements",
+        "measure_intensity": true,
+        "measure_morphology": true,
+        "measure_texture": {
+          "haralick": false,
+          "laws_texture_energy": false,
+          "clip_value": 5000
+        },
+        "measure_population": false,
+        "calculate_internal_borders": false,
+        "level": 0,
+        "overwrite": true
+      },
+      "type_filters": {},
+      "task": {
+        "pkg_name": "apx-fractal-task-collection",
+        "version": "0.4.7",
+        "name": "Measure Features"
+      }
+    },
+    {
+      "meta_non_parallel": null,
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 3750
+      },
+      "args_non_parallel": null,
+      "args_parallel": {
+        "label_image_name": "cells",
+        "ROI_table_name": "registered_FOV_ROI_table",
+        "output_table_name": "cells_measurements",
+        "measure_intensity": true,
+        "measure_morphology": true,
+        "measure_texture": {
+          "haralick": false,
+          "laws_texture_energy": false,
+          "clip_value": 5000
+        },
+        "measure_population": false,
+        "calculate_internal_borders": false,
+        "level": 0,
+        "overwrite": true
+      },
+      "type_filters": {},
+      "task": {
+        "pkg_name": "apx-fractal-task-collection",
+        "version": "0.4.7",
+        "name": "Measure Features"
+      }
+    },
+    {
+      "meta_non_parallel": null,
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 3750
+      },
+      "args_non_parallel": {
+        "parent_label_name": "cells",
+        "child_label_name": "nuclei"
+      },
+      "args_parallel": {
+        "child_table_name": "nuclei_measurements",
+        "level": 0,
+        "overlap_threshold": 0.95
+      },
+      "type_filters": {},
+      "task": {
+        "pkg_name": "apx-fractal-task-collection",
+        "version": "0.4.7",
+        "name": "Label Assignment by Overlap"
+      }
+    },
+    {
+      "meta_non_parallel": null,
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 3750
+      },
+      "args_non_parallel": {},
+      "args_parallel": {
+        "input_table_name": "nuclei_measurements",
+        "output_table_name": "nuclei_measurements_agg",
+        "output_image": "0",
+        "overwrite": true
+      },
+      "type_filters": {},
+      "task": {
+        "pkg_name": "apx-fractal-task-collection",
+        "version": "0.4.7",
+        "name": "Aggregate Feature Tables"
+      }
+    },
+    {
+      "meta_non_parallel": null,
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 3750
+      },
+      "args_non_parallel": {},
+      "args_parallel": {
+        "input_table_name": "cells_measurements",
+        "output_table_name": "cells_measurements_agg",
+        "output_image": "0",
+        "overwrite": true
+      },
+      "type_filters": {},
+      "task": {
+        "pkg_name": "apx-fractal-task-collection",
+        "version": "0.4.7",
+        "name": "Aggregate Feature Tables"
+      }
+    }
+  ]
+}

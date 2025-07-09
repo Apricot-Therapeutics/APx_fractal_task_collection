@@ -37,10 +37,12 @@ def object_intensities(regionmask, intensity_image):
     return intensity_image[regionmask]
 
 
-def object_intensity_correlation(labels: np.ndarray,
-                                 ref_img: np.ndarray,
-                                 img: np.ndarray):
-    '''
+def object_intensity_correlation(
+        labels: np.ndarray,
+        ref_img: np.ndarray,
+        img: np.ndarray,
+) -> pd.DataFrame:
+    """
     Calculate the correlation between the pixel intensities of objects in two
     images (for example the same channel in two different acquisitions).
 
@@ -48,7 +50,7 @@ def object_intensity_correlation(labels: np.ndarray,
         labels: label image containing the objects
         ref_img: intensity image containing the pixel intensities of the reference image
         img: intensity image containing the pixel intensities of the second image
-    '''
+    """
 
     intensities_1 = pd.DataFrame(
         regionprops_table(np.squeeze(labels),

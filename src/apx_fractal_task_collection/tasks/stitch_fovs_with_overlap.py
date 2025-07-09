@@ -41,7 +41,7 @@ def stitch_fovs_with_overlap(
     overwrite_input: bool = True,
     suffix: str = "_stitched",
     tmp_dir: Optional[str] = None,
-) -> None:
+) -> dict:
 
     """
     Stitches FOVs with overlap using ASHLAR (https://github.com/labsyspharm/ashlar).

@@ -21,7 +21,8 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 
 from fractal_tasks_core.channels import (get_omero_channel_list, 
-                                         get_channel_from_image_zarr)
+                                         get_channel_from_image_zarr,
+                                         OmeroChannel)
 from fractal_tasks_core.ngff import load_NgffImageMeta
 from fractal_tasks_core.roi import (
     convert_ROI_table_to_indices,
@@ -33,20 +34,25 @@ from pydantic import validate_call
 logger = logging.getLogger(__name__)
 
 
-def get_channel_image_from_zarr(zarr_urls, channel_label, channel_image_name):
-    '''
+def get_channel_image_from_zarr(
+        zarr_urls: list[str],
+        channel_label: str,
+        channel_image_name: str,
+) -> tuple[np.ndarray, str]:
+    """
     Get the image data for a specific channel from an OME-Zarr file. This
     function collects all images across all wells and returns them as a single
     stack.
 
     Args:
-        zarrurl: Path to the OME-Zarr file.
+        zarr_urls: List of paths or urls to the individual OME-Zarr image to
+            be processed.
         channel_label: Label of the channel to extract.
         channel_image_name: Name of the zarr image containing the channel
 
     Returns:
         The image data for the specified channel as dask array
-    '''
+    """
 
     img = []
     channel_zarr_urls = [zarr_url for zarr_url in zarr_urls if
@@ -67,7 +73,16 @@ def get_channel_image_from_zarr(zarr_urls, channel_label, channel_image_name):
     return np.stack(img), tmp_channel.wavelength_id
 
 
-def correct_background(image_stack):
+def correct_background(image_stack: np.ndarray) -> np.ndarray:
+    """
+    Correct the background of an image stack with Gaussian filter approach.
+
+    Args:
+        image_stack: A numpy array to correct the background of.
+
+    Returns:
+        corrected_img: A numpy array with the background corrected.
+    """
 
     background = gaussian_filter(np.mean(image_stack, axis=0, keepdims=True),
                                  sigma=10).astype('uint16')
@@ -79,7 +94,21 @@ def correct_background(image_stack):
     return corrected_img
 
 
-def register_channel(channel_image, ref_image):
+def register_channel(channel_image: np.ndarray,
+                     ref_image: np.ndarray,
+                     ) -> list[dict[str, list[str]]]:
+    """
+    Register a channel image to a reference image using SimpleITK
+
+    Args:
+        channel_image: The channel image to be registered.
+        ref_image: The reference image.
+
+    Returns:
+        map: The transformation map that can be used to correct the channel
+            image.
+
+    """
 
     ref = correct_background(ref_image)
     img = correct_background(channel_image)

@@ -129,6 +129,7 @@ def measure_texture_features(label_image,
             intensity_image=intensity_image)
         feature_list.append(lte_features)
 
+    # all texture features are indexed by label -> concat behaves like a join
     texture_features = pd.concat(feature_list, axis=1)
     texture_features.reset_index(inplace=True)
     return texture_features

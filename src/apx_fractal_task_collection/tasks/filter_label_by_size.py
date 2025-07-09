@@ -32,8 +32,12 @@ logger = logging.getLogger(__name__)
 
 __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
-def remove_large_objects(img, max_size):
-    '''
+
+def remove_large_objects(
+        img: np.ndarray,
+        max_size: int,
+) -> np.ndarray:
+    """
     Remove objects larger than a specified size from a label image.
 
     Args:
@@ -42,7 +46,7 @@ def remove_large_objects(img, max_size):
 
     Returns:
         The label image with objects larger than max_size removed.
-    '''
+    """
 
     img_temp = remove_small_objects(img, min_size=max_size)
     img = np.where(img_temp == 0, img, 0)
@@ -108,7 +112,7 @@ def filter_label_by_size(
 
     if output_label_name == init_args.label_name:
 
-        logger.info(f"Overwriting label image '{label_name}' "
+        logger.info(f"Overwriting label image '{init_args.label_name}' "
                     f"with size filtered image.")
 
     else:

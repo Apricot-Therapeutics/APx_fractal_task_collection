@@ -81,17 +81,17 @@
           "label_image_name": {
             "title": "Label Image Name",
             "type": "string",
-            "description": "Name of the label image that contains the seeds. Needs to exist in OME-Zarr file. ROI_table_name: Name of the ROI table to process. output_table_name: Name of the feature table."
+            "description": "Name of the label image that contains the seeds. Needs to exist in OME-Zarr file."
           },
           "ROI_table_name": {
             "title": "Roi Table Name",
             "type": "string",
-            "description": "Missing description"
+            "description": "Name of the ROI table to process."
           },
           "output_table_name": {
             "title": "Output Table Name",
             "type": "string",
-            "description": "Missing description"
+            "description": "Name of the feature table."
           },
           "channels_to_include": {
             "items": {
@@ -196,17 +196,17 @@
             },
             "title": "Zarr Urls",
             "type": "array",
-            "description": "Missing description"
+            "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "zarr_dir": {
             "title": "Zarr Dir",
             "type": "string",
-            "description": "Missing description"
+            "description": "path of the directory where the new OME-Zarrs will be created. Not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "label_name": {
             "title": "Label Name",
             "type": "string",
-            "description": "Missing description"
+            "description": "Name of the label image that contains the seeds. Needs to exist in OME-Zarr file."
           },
           "correlation_pairs": {
             "items": {
@@ -217,7 +217,7 @@
             },
             "title": "Correlation Pairs",
             "type": "array",
-            "description": "Missing description"
+            "description": "List of dictionaries. Key and value represent the label names of two channels that should be correlated. CAREFUL: add a new dictionary for each correlation."
           }
         },
         "required": [
@@ -283,7 +283,7 @@
           "init_args": {
             "$ref": "#/$defs/InitArgsCalculatePixelIntensityCorrelation",
             "title": "Init Args",
-            "description": "Intialization arguments provided by `init_segment_secondary_objects`."
+            "description": "Intialization arguments provided by `init_calculate_pixel_intensity_correlation`."
           },
           "ROI_table_name": {
             "title": "Roi Table Name",
@@ -675,7 +675,7 @@
                   }
                 ],
                 "title": "Window",
-                "description": "Optional `Window` object to set default display settings. If unset, it will be set to the full bit range of the image (e.g. 0-65535 for 16 bit images)."
+                "description": "Optional `Window` object to set default display settings for napari."
               },
               "color": {
                 "title": "Color",
@@ -747,12 +747,12 @@
             },
             "title": "Zarr Urls",
             "type": "array",
-            "description": "Missing description"
+            "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "zarr_dir": {
             "title": "Zarr Dir",
             "type": "string",
-            "description": "Missing description"
+            "description": "path of the directory where the new OME-Zarrs will be created. Not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "acquisitions": {
             "additionalProperties": {
@@ -937,7 +937,7 @@
                   }
                 ],
                 "title": "Window",
-                "description": "Optional `Window` object to set default display settings. If unset, it will be set to the full bit range of the image (e.g. 0-65535 for 16 bit images)."
+                "description": "Optional `Window` object to set default display settings for napari."
               },
               "color": {
                 "title": "Color",
@@ -1009,12 +1009,12 @@
             },
             "title": "Zarr Urls",
             "type": "array",
-            "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server). zarr_dir: path of the directory where the new OME-Zarrs will be created. Not used by this task. (standard argument for Fractal tasks, managed by Fractal server). acquisitions: dictionary of acquisitions. Each key is the acquisition identifier (normally 0, 1, 2, 3 etc.). Each item defines the acquisition by providing the image_dir and the allowed_channels. zarr_path: Path to the zarr file to which to add multiplexing cycles. image_glob_patterns: If specified, only parse images with filenames that match with all these patterns. Patterns must be defined as in https://docs.python.org/3/library/fnmatch.html, Example: `image_glob_pattern=[\"*B - 03*\"]` => only process well B03 `image_glob_pattern=[\"*C - 09*\", \"*fld 16*\"]` => only process well C09, field of view 16. num_levels: Number of resolution-pyramid levels. If set to `5`, there will be the full-resolution level and 4 levels of downsampled images. coarsening_xy: Linear coarsening factor between subsequent levels. If set to `2`, level 1 is 2x downsampled, level 2 is 4x downsampled etc. image_extension: Filename extension of images (e.g. `\"tif\"` or `\"png\"`). overwrite: If `True`, overwrite the task output."
+            "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "zarr_dir": {
             "title": "Zarr Dir",
             "type": "string",
-            "description": "Missing description"
+            "description": "path of the directory where the new OME-Zarrs will be created. Not used by this task. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "acquisitions": {
             "additionalProperties": {
@@ -1022,12 +1022,12 @@
             },
             "title": "Acquisitions",
             "type": "object",
-            "description": "Missing description"
+            "description": "dictionary of acquisitions. Each key is the acquisition identifier (normally 0, 1, 2, 3 etc.). Each item defines the acquisition by providing the image_dir and the allowed_channels."
           },
           "zarr_path": {
             "title": "Zarr Path",
             "type": "string",
-            "description": "Missing description"
+            "description": "Path to the zarr file to which to add multiplexing cycles."
           },
           "image_glob_patterns": {
             "items": {
@@ -1035,31 +1035,31 @@
             },
             "title": "Image Glob Patterns",
             "type": "array",
-            "description": "Missing description"
+            "description": "If specified, only parse images with filenames that match with all these patterns. Patterns must be defined as in https://docs.python.org/3/library/fnmatch.html, Example: `image_glob_pattern=[\"*B - 03*\"]` => only process well B03 `image_glob_pattern=[\"*C - 09*\", \"*fld 16*\"]` => only process well C09, field of view 16."
           },
           "num_levels": {
             "default": 5,
             "title": "Num Levels",
             "type": "integer",
-            "description": "Missing description"
+            "description": "Number of resolution-pyramid levels. If set to `5`, there will be the full-resolution level and 4 levels of downsampled images."
           },
           "coarsening_xy": {
             "default": 2,
             "title": "Coarsening Xy",
             "type": "integer",
-            "description": "Missing description"
+            "description": "Linear coarsening factor between subsequent levels. If set to `2`, level 1 is 2x downsampled, level 2 is 4x downsampled etc."
           },
           "image_extension": {
             "default": "tif",
             "title": "Image Extension",
             "type": "string",
-            "description": "Missing description"
+            "description": "Filename extension of images (e.g. `\"tif\"` or `\"png\"`)."
           },
           "overwrite": {
             "default": false,
             "title": "Overwrite",
             "type": "boolean",
-            "description": "Missing description"
+            "description": "If `True`, overwrite the task output."
           }
         },
         "required": [
@@ -2085,12 +2085,12 @@
           "zarr_url": {
             "title": "Zarr Url",
             "type": "string",
-            "description": "Missing description"
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "init_args": {
             "$ref": "#/$defs/InitArgsAggregateFeatureTables",
             "title": "Init Args",
-            "description": "Missing description"
+            "description": "Intialization arguments provided by `init_aggregate_feature_tables`."
           },
           "input_table_name": {
             "title": "Input Table Name",
@@ -2630,25 +2630,25 @@
             "default": 1,
             "title": "Min Sigma",
             "type": "integer",
-            "description": "Missing description"
+            "description": "Minimum standard deviation for Gaussian kernel."
           },
           "max_sigma": {
             "default": 10,
             "title": "Max Sigma",
             "type": "integer",
-            "description": "Missing description"
+            "description": "Maximum standard deviation for Gaussian kernel."
           },
           "num_sigma": {
             "default": 3,
             "title": "Num Sigma",
             "type": "integer",
-            "description": "Missing description"
+            "description": "Number of standard deviations to consider between min and max sigma."
           },
           "threshold": {
             "default": 0.002,
             "title": "Threshold",
             "type": "number",
-            "description": "Missing description"
+            "description": "Threshold for blob detection."
           },
           "output_label_name": {
             "title": "Output Label Name",
@@ -2754,12 +2754,12 @@
           "zarr_url": {
             "title": "Zarr Url",
             "type": "string",
-            "description": "Missing description"
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
           "init_args": {
             "$ref": "#/$defs/InitArgsAshlarStitchingAndRegistration",
             "title": "Init Args",
-            "description": "Missing description"
+            "description": "Intialization arguments provided by `init_ashlar_stitching_and_registration`."
           },
           "overlap": {
             "default": 0.1,
@@ -3182,7 +3182,7 @@
         "type": "object",
         "title": "Correct4iBleachingArtifacts"
       },
-      "docs_info": "## init_correct_4i_bleaching_artifacts\nInitializes normalize feature table task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform correction of 4i bleaching artifacts.\n## correct_4i_bleaching_artifacts\nCorrect bleaching aritfacts in the feature table with the selected control\ncondition. Only intensity features are corrected. Currently, the correction\nis applied assuming a zig-zag (starting left-to-right) acquisition pattern.\nOther acquisition patterns may be supported in the future.\n",
+      "docs_info": "## init_correct_4i_bleaching_artifacts\nInitializes normalize feature table task\n\nThis task prepares a parallelization list of all zarr_urls that need to be\nused to perform correction of 4i bleaching artifacts.\n## correct_4i_bleaching_artifacts\nCorrect bleaching artifacts in the feature table of a 4i image.\n\nCorrect bleaching aritfacts in the feature table with the selected control\ncondition. Only intensity features are corrected. Currently, the correction\nis applied assuming a zig-zag (starting left-to-right) acquisition pattern.\nOther acquisition patterns may be supported in the future.\n",
       "docs_link": "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
     }
   ],

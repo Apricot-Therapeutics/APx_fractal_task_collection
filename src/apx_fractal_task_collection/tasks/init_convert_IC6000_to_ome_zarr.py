@@ -76,19 +76,11 @@ def init_convert_IC6000_to_ome_zarr(
     Each element in input_paths should be treated as a different acquisition.
 
     Args:
-        input_paths: List of input paths where the image data from the
-            microscope is stored (as TIF or PNG).  Each element of the list is
-            treated as another cycle of the multiplexing data, the cycles are
-            ordered by their order in this list.  Should point to the parent
-            folder containing the images and the metadata files
-            `MeasurementData.mlf` and `MeasurementDetail.mrf` (if present).
-            Example: `["/path/cycle1/", "/path/cycle2/"]`. (standard argument
-            for Fractal tasks, managed by Fractal server).
-        output_path: Path were the output of this task is stored.
-            Example: `"/some/path/"` => puts the new OME-Zarr file in the
-            `/some/path/`.
+        zarr_urls: List of paths or urls to the individual OME-Zarr image to
+            be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
-        metadata: This parameter is not used by this task.
+        zarr_dir: path of the directory where the new OME-Zarrs will be
+            created. Not used by this task.
             (standard argument for Fractal tasks, managed by Fractal server).
         acquisitions: dictionary of acquisitions. Each key is the acquisition
             identifier (normally 0, 1, 2, 3 etc.). Each item defines the
@@ -133,7 +125,7 @@ def init_convert_IC6000_to_ome_zarr(
         # metadata file instead
         xml_path = list(Path(acq_input.image_dir).glob("*.xdce"))[0]
 
-        plate = parse_platename(xml_path)
+        plate = parse_platename(xml_path.as_posix())
         plate_prefix = ""
 
         actual_wavelength_ids = []

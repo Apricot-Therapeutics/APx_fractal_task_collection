@@ -132,8 +132,6 @@ def filter_mpps(mpps: pd.DataFrame):
     Filter multiplexed pixel profiles.
     Args:
         mpps: multiplexed pixel profiles as pandas dataframe.
-        channels_to_use: list of channel labels to use
-        channels_to_exclude: list of channel labels to exclude
 
     Returns: filtered multiplexed pixel profiles as pandas dataframe where
     pixels that are above 0.999 quantile in one channel or below 0.33 quantile
@@ -197,16 +195,18 @@ def scale_mpps(mpps: pd.DataFrame):
     return mpps_scaled
 
 
-def get_image_from_mpps(mpps: pd.DataFrame, well_name: str,
-                        shape: list, column: str):
+def get_image_from_mpps(
+        mpps: pd.DataFrame,
+        well_name: str,
+        shape: list,
+        column: str,
+) -> np.ndarray:
     """
     Get label map of multiplexed pixel profiles.
 
     Args:
         mpps: multiplexed pixel profiles as pandas dataframe.
         well_name: name of well.
-        coords: Image coordinates to use.
-                Format: [y_start, y_end, x_start, x_end].
         shape: shape of label map.
         column: column to use for image.
 
@@ -357,6 +357,10 @@ def multiplexed_pixel_clustering(  # noqa: C901
         mpps_filtered = mpps.drop(columns=channels_to_exclude)
     elif channels_to_use is None and channels_to_exclude is None:
         mpps_filtered = mpps
+    else:
+        raise ValueError(
+            "Only one of `channels_to_use` or `channels_to_exclude` "
+            "should be specified. ")
 
     # scale mpps
     mpps_scaled = scale_mpps(mpps_filtered)

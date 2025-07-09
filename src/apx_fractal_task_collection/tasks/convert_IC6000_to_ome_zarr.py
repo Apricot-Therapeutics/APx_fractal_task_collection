@@ -14,7 +14,6 @@
 # Zurich.
 
 import logging
-from pathlib import Path
 
 import dask.array as da
 import zarr
@@ -43,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 def sort_fun(filename: str) -> list[int]:
     """
-    Takes a string (filename of a Yokogawa image), extract site and
+    Takes a string (filename of a IC6000 image), extract site and
     z-index metadata and returns them as a list of integers.
 
     Args:

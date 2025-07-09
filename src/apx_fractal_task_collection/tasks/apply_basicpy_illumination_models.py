@@ -47,7 +47,7 @@ def correct(
     flatfield: np.ndarray,
     darkfield: Optional[np.ndarray],
     baseline: Optional[int],
-):
+) -> np.ndarray:
     """
     Apply illumination correction to all fields of view.
 
@@ -100,8 +100,8 @@ def correct(
     # Background subtraction
     if baseline is not None:
         new_img_stack = np.where(new_img_stack > baseline,
-                                new_img_stack - baseline,
-                                0)
+                                 new_img_stack - baseline,
+                                 0)
 
     # Handle edge case: corrected image may have values beyond the limit of
     # the encoding, e.g. beyond 65535 for 16bit images. This clips values
@@ -121,12 +121,12 @@ def correct(
 
 def resample_to_shape(img, output_shape, order=3, mode='constant',
                       cval=0.0, prefilter=True):
-    '''
+    """
     Function resamples image to the desired shape.
 
     Typically used to up or downscale a pyramid image by
     a potency of 2 (e.g. 0.5, 1, 2 etc.)
-    '''
+    """
     zoom_values = [o / i for i, o in zip(img.shape, output_shape)]
     return zoom(img, zoom_values, order=order, mode=mode, cval=cval,
                 prefilter=prefilter)
@@ -260,7 +260,6 @@ def apply_basicpy_illumination_models(
                 raise ValueError(
                     "ERROR: inconsistent image sizes in list_indices"
                 )
-    img_size_y, img_size_x = img_size[:]
 
     # Lazily load highest-res level from original zarr array
     data_czyx = da.from_zarr(f"{zarr_url}/0")

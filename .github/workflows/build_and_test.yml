@@ -52,6 +52,9 @@ jobs:
 
       - name: Test core library with pytest
         run: python -m pytest tests
+
+      - name: Build MkDocs
+          run: mkdocs build
   
   deploy:
     name: Deploy
