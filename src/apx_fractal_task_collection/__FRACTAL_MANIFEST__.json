@@ -675,7 +675,7 @@
                   }
                 ],
                 "title": "Window",
-                "description": "Optional `Window` object to set default display settings for napari."
+                "description": "Optional `Window` object to set default display settings. If unset, it will be set to the full bit range of the image (e.g. 0-65535 for 16 bit images)."
               },
               "color": {
                 "title": "Color",
@@ -937,7 +937,7 @@
                   }
                 ],
                 "title": "Window",
-                "description": "Optional `Window` object to set default display settings for napari."
+                "description": "Optional `Window` object to set default display settings. If unset, it will be set to the full bit range of the image (e.g. 0-65535 for 16 bit images)."
               },
               "color": {
                 "title": "Color",
@@ -1231,7 +1231,7 @@
           "child_table_name": {
             "title": "Child Table Name",
             "type": "string",
-            "description": "Name of the feature table associated with the child label image."
+            "description": "Name of the feature table associated with the child label image. This feature table already needs to exist and the overlap is added to that table."
           },
           "level": {
             "default": 0,
