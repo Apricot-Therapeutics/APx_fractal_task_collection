@@ -54,7 +54,7 @@ jobs:
         run: python -m pytest tests
 
       - name: Build MkDocs
-          run: mkdocs build
+        run: mkdocs build
   
   deploy:
     name: Deploy
