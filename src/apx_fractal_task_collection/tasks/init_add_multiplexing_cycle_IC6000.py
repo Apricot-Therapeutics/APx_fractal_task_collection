@@ -76,7 +76,7 @@ def init_add_multiplexing_cycle_IC6000(
     Each element in input_paths should be treated as a different acquisition.
 
     Args:
-       zarr_urls: List of paths or urls to the individual OME-Zarr image to
+        zarr_urls: List of paths or urls to the individual OME-Zarr image to
             be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
         zarr_dir: path of the directory where the new OME-Zarrs will be
