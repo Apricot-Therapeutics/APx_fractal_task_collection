@@ -1,8 +1,21 @@
 """Fractal Task list for Fractal Helper Tasks."""
 
-from fractal_tasks_core.dev.task_models import (NonParallelTask,
-                                                ParallelTask,
-                                                CompoundTask)
+from fractal_task_tools.task_models import CompoundTask
+from fractal_task_tools.task_models import NonParallelTask
+from fractal_task_tools.task_models import ConverterCompoundTask
+from fractal_task_tools.task_models import ParallelTask
+
+AUTHORS = "Adrian Tschan"
+DOCS_LINK = "https://github.com/Apricot-Therapeutics/APx_fractal_task_collection"
+INPUT_MODELS = [
+    ["apx_fractal_task_collection", "utils.py", "TextureFeatures"],
+    ["apx_fractal_task_collection", "utils.py", "BaSiCPyModelParams"],
+    ["fractal_tasks_core", "channels.py", "ChannelInputModel"],
+    ["fractal_tasks_core", "channels.py", "OmeroChannel"],
+    ["fractal_tasks_core", "tasks/io_models.py", "MultiplexingAcquisition"],
+    ["fractal_tasks_core", "channels.py", "Window"],
+]
+
 
 TASK_LIST = [
     ParallelTask(
@@ -38,7 +51,7 @@ TASK_LIST = [
         meta={"cpus_per_task": 1, "mem": 3750},
         category="Image Processing",
     ),
-    CompoundTask(
+    ConverterCompoundTask(
         name="Convert IC6000 to OME-Zarr",
         executable_init="tasks/init_convert_IC6000_to_ome_zarr.py",
         executable="tasks/convert_IC6000_to_ome_zarr.py",
@@ -47,7 +60,7 @@ TASK_LIST = [
         modality="HCS",
         tags=["IC6000", "IC6K", "IN Cell"]
     ),
-    CompoundTask(
+    ConverterCompoundTask(
         name="Add Multiplexing Cycle IC6000",
         executable_init="tasks/init_add_multiplexing_cycle_IC6000.py",
         executable="tasks/convert_IC6000_to_ome_zarr.py",
