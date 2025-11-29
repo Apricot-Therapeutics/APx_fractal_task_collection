@@ -149,10 +149,14 @@ def clip_label_image(  # noqa: C901
     new_label_image = np.where(clipping_mask > 0, 0, label_image)
 
     # Compute and store 0-th level to disk
-    da.array(new_label_image).to_zarr(
-        url=mask_zarr,
-        compute=True,
-    )
+	# create a Dask array with chunks matching the target zarr chunks
+	dask_new_label = da.from_array(new_label_image, chunks=chunks)
+	
+	# write to the on-disk zarr array (mask_zarr)
+	dask_new_label.to_zarr(
+		url=mask_zarr,
+		compute=True,
+	)
 
     logger.info(
         f"Clipping done for {out}."
