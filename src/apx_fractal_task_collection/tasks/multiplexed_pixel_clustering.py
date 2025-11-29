@@ -554,24 +554,13 @@ def multiplexed_pixel_clustering(  # noqa: C901
 
 		# Compute and store 0-th level to disk
 		# create a Dask array with chunks matching the target zarr chunks
-		dask_new_label = da.from_array(mcu_labels, chunks=chunks)
+        dask_new_label = da.from_array(mcu_labels, chunks=chunks)
 		
 		# write to the on-disk zarr array (mask_zarr)
-		dask_new_label.to_zarr(
-			url=label_zarr,
-			compute=True,
-		)
-
-		
-		# Compute and store 0-th level to disk
-		# create a Dask array with chunks matching the target zarr chunks
-		dask_new_label = da.from_array(mcu_labels, chunks=chunks)
-		
-		# write to the on-disk zarr array (mask_zarr)
-		dask_new_label.to_zarr(
-			url=mask_zarr,
-			compute=True,
-		)
+        dask_new_label.to_zarr(
+            url=label_zarr,
+            compute=True,
+        )
 
         logger.info(
             f"Saved Multiplexed Pixel Map for {out}."

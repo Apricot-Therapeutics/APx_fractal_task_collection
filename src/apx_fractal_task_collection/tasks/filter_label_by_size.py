@@ -189,16 +189,15 @@ def filter_label_by_size(
         f"and chunks {label_image.chunks}"
     )
 
-	# Compute and store 0-th level to disk
-	# create a Dask array with chunks matching the target zarr chunks
-	dask_new_label = da.from_array(new_label_image, chunks=chunks)
-	
-	# write to the on-disk zarr array (mask_zarr)
-	dask_new_label.to_zarr(
-		url=mask_zarr,
-		compute=True,
-	)
+    # Compute and store 0-th level to disk
+    # create a Dask array with chunks matching the target zarr chunks
+    dask_new_label = da.from_array(new_label_image, chunks=chunks)
 
+    # write to the on-disk zarr array (mask_zarr)
+    dask_new_label.to_zarr(
+        url=mask_zarr,
+        compute=True,
+    )
 
     logger.info(
         f"Size filtering done for {out}."

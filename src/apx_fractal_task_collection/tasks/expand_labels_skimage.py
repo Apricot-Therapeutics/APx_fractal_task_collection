@@ -202,15 +202,15 @@ def expand_labels_skimage(  # noqa: C901
         if len(new_label_image.shape) == 2:
             new_label_image = np.expand_dims(new_label_image, axis=0)
 
-		# Create a Dask array with the same chunking as the target zarr array to avoid unsafe rechunking
-		dask_new_label = da.from_array(new_label_image, chunks=chunks)
+        # Create a Dask array with the same chunking as the target zarr array to avoid unsafe rechunking
+        dask_new_label = da.from_array(new_label_image, chunks=chunks)
 
-		# Write the region to the on-disk zarr array
-		dask_new_label.to_zarr(
-			url=mask_zarr,
-			region=region,
-			compute=True,
-		)
+        # Write the region to the on-disk zarr array
+        dask_new_label.to_zarr(
+            url=mask_zarr,
+            region=region,
+            compute=True,
+        )
 
     logger.info(
         f"Label expansion done for {out}."
