@@ -818,7 +818,6 @@ def test_correct_chromatic_shift(test_data_dir, image_list):
 def test_IC6000_conversion(test_data_dir):
 
     parallelization_list = init_convert_IC6000_to_ome_zarr(
-        zarr_urls=[],
         zarr_dir=test_data_dir,
         acquisitions={"0":
                           MultiplexingAcquisition(
@@ -863,7 +862,6 @@ def test_IC6000_conversion(test_data_dir):
 def test_add_multiplexing_cycle_IC6000(test_data_dir):
 
     parallelization_list = init_convert_IC6000_to_ome_zarr(
-        zarr_urls=[],
         zarr_dir=test_data_dir,
         acquisitions={"0":
                           MultiplexingAcquisition(
@@ -895,7 +893,6 @@ def test_add_multiplexing_cycle_IC6000(test_data_dir):
 
     # add multiplexing cycle
     parallelization_list = init_add_multiplexing_cycle_IC6000(
-        zarr_urls=[],
         zarr_dir=test_data_dir,
         zarr_path=Path(test_data_dir).joinpath("test_plate.zarr").as_posix(),
         acquisitions={"1":
@@ -976,7 +973,6 @@ def test_multiplexed_pixel_clustering(test_data_dir, image_list):
 def test_stitch_fovs_with_overlap(test_data_dir):
 
     parallelization_list = init_convert_IC6000_to_ome_zarr(
-        zarr_urls=[],
         zarr_dir=test_data_dir,
         acquisitions={"0":
             MultiplexingAcquisition(
@@ -1037,7 +1033,6 @@ def test_stitch_fovs_with_overlap(test_data_dir):
 # def test_ashlar_stitching_and_registration(test_data_dir, ref_wavelength_id):
 #
 #     parallelization_list = init_convert_IC6000_to_ome_zarr(
-#         zarr_urls=[],
 #         zarr_dir=test_data_dir,
 #         acquisitions={"0":
 #             MultiplexingAcquisition(

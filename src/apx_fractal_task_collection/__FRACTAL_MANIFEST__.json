@@ -12,6 +12,7 @@
         "regionprops"
       ],
       "docs_info": "### Purpose\n- Calculates **morphology**, **intensity**, **texture**, and **population features** for objects in a label image.\n- Supports **2D and 3D measurements** across multiple regions of interest (ROIs).\n- Extracts features for intensity images using configurable channel inclusion/exclusion.\n\n### Outputs\n- A **feature table** saved in the OME-Zarr structure, containing:\n  - Morphology features (e.g., size, shape, well coordinates).\n  - Intensity features (e.g., mean, max, min intensity per object).\n  - Texture features (e.g., Haralick, Laws' texture energy).\n  - Population features (e.g., densities and number of neighbours).\n- Updated ROI metadata with border and well location information.\n\n### Limitations\n- Does not support measurements for label images that do not have the same resolution as the intensity images.",
+      "type": "parallel",
       "executable_parallel": "tasks/measure_features.py",
       "meta_parallel": {
         "cpus_per_task": 1,
@@ -181,6 +182,7 @@
         "QC"
       ],
       "docs_info": "### Purpose\n- Calculates pixel intensity correlation between two channels for each object in a label image.  \n- Supports loading channels from different multiplexing acquisitions.  \n- Handles multiple channel pairs per well and large datasets efficiently.  \n\n### Outputs\n- A **feature table** in the OME-Zarr structure with correlation values for specified channel pairs for each object.  \n\n### Limitations\n- Requires consistent **label and channel names** across input zarrs.  \n- Assumes NGFF-compatible metadata.  \n- Only validated for **level 0 resolution**.",
+      "type": "compound",
       "executable_non_parallel": "tasks/init_calculate_pixel_intensity_correlation.py",
       "executable_parallel": "tasks/calculate_pixel_intensity_correlation.py",
       "meta_parallel": {
@@ -324,6 +326,7 @@
       "category": "Segmentation",
       "modality": "HCS",
       "docs_info": "### Purpose\n- Segments secondary objects based on primary labels and intensity images using watershed segmentation.  \n- Supports multiplexed and non-multiplexed acquisitions.  \n- Optional parameters allow for flexible handling of thresholds, blurring, and masking.  \n\n### Limitations\n- Requires consistent **label and channel names** across input zarrs.  \n- Assumes NGFF-compatible metadata.  \n- Only tested for **level 0 resolution**.  ",
+      "type": "compound",
       "executable_non_parallel": "tasks/init_segment_secondary_objects.py",
       "executable_parallel": "tasks/segment_secondary_objects.py",
       "meta_parallel": {
@@ -492,6 +495,7 @@
     {
       "name": "Expand Labels",
       "category": "Image Processing",
+      "type": "compound",
       "executable_non_parallel": "tasks/init_expand_labels.py",
       "executable_parallel": "tasks/expand_labels_skimage.py",
       "meta_parallel": {
@@ -618,6 +622,7 @@
         "IC6K",
         "IN Cell"
       ],
+      "type": "converter_compound",
       "executable_non_parallel": "tasks/init_convert_IC6000_to_ome_zarr.py",
       "executable_parallel": "tasks/convert_IC6000_to_ome_zarr.py",
       "meta_parallel": {
@@ -741,14 +746,6 @@
         },
         "additionalProperties": false,
         "properties": {
-          "zarr_urls": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Zarr Urls",
-            "type": "array",
-            "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
-          },
           "zarr_dir": {
             "title": "Zarr Dir",
             "type": "string",
@@ -796,7 +793,6 @@
           }
         },
         "required": [
-          "zarr_urls",
           "zarr_dir",
           "acquisitions"
         ],
@@ -880,6 +876,7 @@
         "IC6K",
         "IN Cell"
       ],
+      "type": "converter_compound",
       "executable_non_parallel": "tasks/init_add_multiplexing_cycle_IC6000.py",
       "executable_parallel": "tasks/convert_IC6000_to_ome_zarr.py",
       "meta_parallel": {
@@ -1003,14 +1000,6 @@
         },
         "additionalProperties": false,
         "properties": {
-          "zarr_urls": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Zarr Urls",
-            "type": "array",
-            "description": "List of paths or urls to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
-          },
           "zarr_dir": {
             "title": "Zarr Dir",
             "type": "string",
@@ -1063,7 +1052,6 @@
           }
         },
         "required": [
-          "zarr_urls",
           "zarr_dir",
           "acquisitions",
           "zarr_path"
@@ -1142,6 +1130,7 @@
     {
       "name": "Label Assignment by Overlap",
       "category": "Measurement",
+      "type": "compound",
       "executable_non_parallel": "tasks/init_label_assignment_by_overlap.py",
       "executable_parallel": "tasks/label_assignment_by_overlap.py",
       "meta_parallel": {
@@ -1260,6 +1249,7 @@
     {
       "name": "Clip Label Image",
       "category": "Image Processing",
+      "type": "compound",
       "executable_non_parallel": "tasks/init_clip_label_image.py",
       "executable_parallel": "tasks/clip_label_image.py",
       "meta_parallel": {
@@ -1384,6 +1374,7 @@
     {
       "name": "Mask Label Image",
       "category": "Image Processing",
+      "type": "compound",
       "executable_non_parallel": "tasks/init_mask_label_image.py",
       "executable_parallel": "tasks/mask_label_image.py",
       "meta_parallel": {
@@ -1508,6 +1499,7 @@
     {
       "name": "Filter Label by Size",
       "category": "Image Processing",
+      "type": "compound",
       "executable_non_parallel": "tasks/init_filter_label_by_size.py",
       "executable_parallel": "tasks/filter_label_by_size.py",
       "meta_parallel": {
@@ -1626,6 +1618,7 @@
     {
       "name": "Calculate BaSiCPy Illumination Models",
       "category": "Image Processing",
+      "type": "compound",
       "executable_non_parallel": "tasks/init_calculate_basicpy_illumination_models.py",
       "executable_parallel": "tasks/calculate_basicpy_illumination_models.py",
       "meta_parallel": {
@@ -1934,6 +1927,7 @@
         "illumination_corrected": true
       },
       "category": "Image Processing",
+      "type": "parallel",
       "executable_parallel": "tasks/apply_basicpy_illumination_models.py",
       "meta_parallel": {
         "cpus_per_task": 1,
@@ -2030,6 +2024,7 @@
     {
       "name": "Aggregate Feature Tables",
       "category": "Other",
+      "type": "compound",
       "executable_non_parallel": "tasks/init_aggregate_feature_tables.py",
       "executable_parallel": "tasks/aggregate_feature_tables.py",
       "meta_parallel": {
@@ -2141,6 +2136,7 @@
         "FOV",
         "Overlap"
       ],
+      "type": "parallel",
       "executable_parallel": "tasks/stitch_fovs_with_overlap.py",
       "meta_parallel": {
         "cpus_per_task": 1,
@@ -2202,6 +2198,7 @@
         "Pixel",
         "MCU"
       ],
+      "type": "non_parallel",
       "executable_non_parallel": "tasks/multiplexed_pixel_clustering.py",
       "meta_non_parallel": {
         "cpus_per_task": 1,
@@ -2335,6 +2332,7 @@
         "chromatic_shift_corrected": true
       },
       "category": "Image Processing",
+      "type": "compound",
       "executable_non_parallel": "tasks/init_correct_chromatic_shift.py",
       "executable_parallel": "tasks/correct_chromatic_shift.py",
       "meta_parallel": {
@@ -2443,6 +2441,7 @@
     {
       "name": "Convert Channel to Label",
       "category": "Other",
+      "type": "compound",
       "executable_non_parallel": "tasks/init_convert_channel_to_label.py",
       "executable_parallel": "tasks/convert_channel_to_label.py",
       "meta_parallel": {
@@ -2545,6 +2544,7 @@
     {
       "name": "Detect Blob Centroids",
       "category": "Segmentation",
+      "type": "compound",
       "executable_non_parallel": "tasks/init_detect_blob_centroids.py",
       "executable_parallel": "tasks/detect_blob_centroids.py",
       "meta_parallel": {
@@ -2699,6 +2699,7 @@
         "Stitching",
         "Registration"
       ],
+      "type": "compound",
       "executable_non_parallel": "tasks/init_ashlar_stitching_and_registration.py",
       "executable_parallel": "tasks/ashlar_stitching_and_registration.py",
       "meta_parallel": {
@@ -2816,6 +2817,7 @@
     {
       "name": "Merge Plate Metadata",
       "category": "Other",
+      "type": "parallel",
       "executable_parallel": "tasks/merge_plate_metadata.py",
       "meta_parallel": {
         "cpus_per_task": 1,
@@ -2874,6 +2876,7 @@
         "Normalization",
         "Feature Table"
       ],
+      "type": "compound",
       "executable_non_parallel": "tasks/init_normalize_feature_table.py",
       "executable_parallel": "tasks/normalize_feature_table.py",
       "meta_parallel": {
@@ -3039,6 +3042,7 @@
         "4i",
         "Bleaching"
       ],
+      "type": "compound",
       "executable_non_parallel": "tasks/init_correct_4i_bleaching_artifacts.py",
       "executable_parallel": "tasks/correct_4i_bleaching_artifacts.py",
       "meta_parallel": {
